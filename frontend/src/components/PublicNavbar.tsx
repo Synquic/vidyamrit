@@ -40,7 +40,7 @@ export default function PublicNavbar() {
                 Impact
               </a>
               <a
-                href="#get-involved"
+                href="/login"
                 className="font-sans text-gray-700 hover:text-amber-600 transition-colors"
               >
                 Get Involved
@@ -56,7 +56,12 @@ export default function PublicNavbar() {
 
           {/* Desktop CTA */}
           <div className="hidden md:block">
-            <Button className="bg-amber-500 hover:bg-amber-600 text-white">
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              onClick={() => {
+                window.location.replace("/login");
+              }}
+            >
               Support Now
             </Button>
           </div>

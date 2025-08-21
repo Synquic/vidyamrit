@@ -40,8 +40,11 @@ export default function LandingPage() {
             <Button
               size="lg"
               className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105"
+              onClick={() => {
+                window.location.replace("/login");
+              }}
             >
-              Join the Movement
+              Join the Movement 
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
