@@ -35,7 +35,7 @@ export const createSchool = async (req: Request, res: Response) => {
         res.status(201).json(school);
     } catch (error: any) {
         if (error.code === 11000) {
-            return res.status(400).json({ error: "School with this email already exists" });
+            return res.status(400).json({ error: error.message });
         }
         res.status(500).json({ error: "Error creating school" });
     }

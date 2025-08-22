@@ -5,22 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { SchoolAdminCards } from "@/components/SchoolCard";
 import {
   Select,
   SelectContent,
@@ -39,15 +24,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  ColumnDef,
-  SortingState,
-} from "@tanstack/react-table";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+// react-table removed — using card based UI
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   School,
@@ -56,7 +41,6 @@ import {
   updateSchool,
   deleteSchool,
 } from "@/services/schools";
-import ParseDate from "@/utils/parseDate";
 
 function ManageSchools() {
   const queryClient = useQueryClient();
@@ -64,20 +48,35 @@ function ManageSchools() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [formData, setFormData] = useState<
     Omit<School, "_id" | "createdAt" | "updatedAt">
   >({
     name: "",
     address: "",
-    principalName: "",
-    email: "",
-    phone: "",
+    udise_code: "",
     type: "private",
+    level: "primary",
     city: "",
     state: "",
     pinCode: "",
     establishedYear: new Date().getFullYear(),
+    school_admin: "",
+    contact_details: [
+      { designation: "Principal", name: "", email: "", phone_no: "" },
+    ],
+    evaluationChecklist: {
+      minEligibleStudents: {
+        eligibleCount: 0,
+        meetsCriteria: false,
+        notes: "",
+      },
+      dedicatedRoom: { images: [], notes: "", submittedAt: undefined },
+      supportDocuments: { documents: [], submittedAt: undefined },
+      ngoHistory: [],
+      infrastructureAdequacy: { rating: 0, notes: "" },
+      systemOutput: "followup",
+      status: "followup",
+    },
   });
 
   const {
@@ -138,14 +137,18 @@ function ManageSchools() {
     setFormData({
       name: school.name,
       address: school.address,
-      principalName: school.principalName,
-      email: school.email,
-      phone: school.phone,
+      udise_code: school.udise_code || "",
       type: school.type,
+      level: school.level || "primary",
       city: school.city,
       state: school.state,
       pinCode: school.pinCode,
       establishedYear: school.establishedYear,
+      school_admin: school.school_admin || "",
+      contact_details:
+        school.contact_details && school.contact_details.length
+          ? school.contact_details
+          : [{ designation: "Principal", name: "", email: "", phone_no: "" }],
     });
     setIsDialogOpen(true);
   };
@@ -161,85 +164,34 @@ function ManageSchools() {
     setFormData({
       name: "",
       address: "",
-      principalName: "",
-      email: "",
-      phone: "",
+      udise_code: "",
       type: "private",
+      level: "primary",
       city: "",
       state: "",
       pinCode: "",
       establishedYear: new Date().getFullYear(),
+      school_admin: "",
+      contact_details: [
+        { designation: "Principal", name: "", email: "", phone_no: "" },
+      ],
+      evaluationChecklist: {
+        minEligibleStudents: {
+          eligibleCount: 0,
+          meetsCriteria: false,
+          notes: "",
+        },
+        dedicatedRoom: { images: [], notes: "", submittedAt: undefined },
+        supportDocuments: { documents: [], submittedAt: undefined },
+        ngoHistory: [],
+        infrastructureAdequacy: { rating: 0, notes: "" },
+        systemOutput: "followup",
+        status: "followup",
+      },
     });
   };
 
-  const columns: ColumnDef<School>[] = [
-    {
-      accessorKey: "name",
-      header: "School Name",
-    },
-    {
-      accessorKey: "principalName",
-      header: "Principal",
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-    },
-    {
-      accessorKey: "phone",
-      header: "Phone",
-    },
-    {
-      accessorKey: "type",
-      header: "Type",
-      cell: ({ row }) => (
-        <span className="capitalize">{row.original.type}</span>
-      ),
-    },
-    {
-      accessorKey: "city",
-      header: "City",
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Created At",
-      cell: ({ row }) => ParseDate(row.original.createdAt || ""),
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleEdit(row.original)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setDeletingSchool(row.original);
-              setIsDeleteDialogOpen(true);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const table = useReactTable({
-    data: schools,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-  });
+  // no table; using card list below
 
   if (isLoading) {
     return (
@@ -268,55 +220,53 @@ function ManageSchools() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No schools found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div className="grid grid-cols-1 gap-6">
+        {schools.length === 0 ? (
+          <div className="col-span-full p-6 text-center text-muted-foreground">
+            No schools found.
+          </div>
+        ) : (
+          schools
+            .filter((school) => school._id)
+            .map((school) => (
+              <div key={school._id} className="relative group">
+                <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity z-10 space-x-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleEdit(school)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setDeletingSchool(school);
+                      setIsDeleteDialogOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+                <SchoolAdminCards
+                  school={{
+                    ...school,
+                    _id: school._id || "",
+                    createdAt: school.createdAt || new Date(),
+                    updatedAt: school.updatedAt || new Date(),
+                  }}
+                />
+              </div>
+            ))
+        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingSchool ? "Edit School" : "Add New School"}
             </DialogTitle>
@@ -326,32 +276,67 @@ function ManageSchools() {
                 : "Fill in the details to add a new school"}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="flex-1 overflow-y-auto px-6 my-4">
+            <div className="grid gap-6 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">School Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">School Type</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: "government" | "private") =>
+                      setFormData((prev) => ({ ...prev, type: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="government">Government</SelectItem>
+                      <SelectItem value="private">Private</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">School Name</Label>
+                <Label htmlFor="udise_code">UDISE Code</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
+                  id="udise_code"
+                  value={formData.udise_code}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      udise_code: e.target.value,
+                    }))
                   }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="type">School Type</Label>
+                <Label htmlFor="level">Level</Label>
                 <Select
-                  value={formData.type}
-                  onValueChange={(value: "government" | "private") =>
-                    setFormData((prev) => ({ ...prev, type: value }))
+                  value={formData.level}
+                  onValueChange={(value: "primary" | "middle") =>
+                    setFormData((prev) => ({ ...prev, level: value }))
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="government">Government</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="primary">Primary</SelectItem>
+                    <SelectItem value="middle">Middle</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -409,12 +394,23 @@ function ManageSchools() {
                 <Label htmlFor="principalName">Principal Name</Label>
                 <Input
                   id="principalName"
-                  value={formData.principalName}
+                  value={formData.contact_details?.[0]?.name || ""}
                   onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      principalName: e.target.value,
-                    }))
+                    setFormData((prev) => {
+                      const contacts = prev.contact_details
+                        ? [...prev.contact_details]
+                        : [];
+                      contacts[0] = {
+                        ...(contacts[0] || {
+                          designation: "Principal",
+                          name: "",
+                          email: "",
+                          phone_no: "",
+                        }),
+                        name: e.target.value,
+                      };
+                      return { ...prev, contact_details: contacts };
+                    })
                   }
                 />
               </div>
@@ -440,9 +436,23 @@ function ManageSchools() {
                 <Input
                   id="email"
                   type="email"
-                  value={formData.email}
+                  value={formData.contact_details?.[0]?.email || ""}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, email: e.target.value }))
+                    setFormData((prev) => {
+                      const contacts = prev.contact_details
+                        ? [...prev.contact_details]
+                        : [];
+                      contacts[0] = {
+                        ...(contacts[0] || {
+                          designation: "Principal",
+                          name: "",
+                          email: "",
+                          phone_no: "",
+                        }),
+                        email: e.target.value,
+                      };
+                      return { ...prev, contact_details: contacts };
+                    })
                   }
                 />
               </div>
@@ -450,11 +460,324 @@ function ManageSchools() {
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
-                  value={formData.phone}
+                  value={formData.contact_details?.[0]?.phone_no || ""}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, phone: e.target.value }))
+                    setFormData((prev) => {
+                      const contacts = prev.contact_details
+                        ? [...prev.contact_details]
+                        : [];
+                      contacts[0] = {
+                        ...(contacts[0] || {
+                          designation: "Principal",
+                          name: "",
+                          email: "",
+                          phone_no: "",
+                        }),
+                        phone_no: e.target.value,
+                      };
+                      return { ...prev, contact_details: contacts };
+                    })
                   }
                 />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="school_admin">School Admin (user id)</Label>
+              <Input
+                id="school_admin"
+                value={formData.school_admin}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    school_admin: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Other Contact Details</Label>
+              {(formData.contact_details || []).map((c, idx) => (
+                <div key={idx} className="grid grid-cols-4 gap-2 items-end">
+                  <div>
+                    <Label>Designation</Label>
+                    <Input
+                      value={c.designation}
+                      onChange={(e) => {
+                        const contacts = [...(formData.contact_details || [])];
+                        contacts[idx] = {
+                          ...contacts[idx],
+                          designation: e.target.value,
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          contact_details: contacts,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>Name</Label>
+                    <Input
+                      value={c.name}
+                      onChange={(e) => {
+                        const contacts = [...(formData.contact_details || [])];
+                        contacts[idx] = {
+                          ...contacts[idx],
+                          name: e.target.value,
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          contact_details: contacts,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      value={c.email}
+                      onChange={(e) => {
+                        const contacts = [...(formData.contact_details || [])];
+                        contacts[idx] = {
+                          ...contacts[idx],
+                          email: e.target.value,
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          contact_details: contacts,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div>
+                      <Label>Phone</Label>
+                      <Input
+                        value={c.phone_no}
+                        onChange={(e) => {
+                          const contacts = [
+                            ...(formData.contact_details || []),
+                          ];
+                          contacts[idx] = {
+                            ...contacts[idx],
+                            phone_no: e.target.value,
+                          };
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact_details: contacts,
+                          }));
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          const contacts = [
+                            ...(formData.contact_details || []),
+                          ];
+                          contacts.splice(idx, 1);
+                          setFormData((prev) => ({
+                            ...prev,
+                            contact_details: contacts,
+                          }));
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    contact_details: [
+                      ...(prev.contact_details || []),
+                      { designation: "", name: "", email: "", phone_no: "" },
+                    ],
+                  }));
+                }}
+              >
+                Add Contact
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="eligibleCount">Min. Eligible Students</Label>
+                <Input
+                  id="eligibleCount"
+                  type="number"
+                  value={
+                    formData.evaluationChecklist?.minEligibleStudents
+                      ?.eligibleCount || 0
+                  }
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      evaluationChecklist: {
+                        ...prev.evaluationChecklist,
+                        minEligibleStudents: {
+                          ...(prev.evaluationChecklist?.minEligibleStudents ||
+                            {}),
+                          eligibleCount: parseInt(e.target.value || "0"),
+                        },
+                      },
+                    }))
+                  }
+                />
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    id="meetsCriteria"
+                    type="checkbox"
+                    checked={
+                      !!formData.evaluationChecklist?.minEligibleStudents
+                        ?.meetsCriteria
+                    }
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        evaluationChecklist: {
+                          ...prev.evaluationChecklist,
+                          minEligibleStudents: {
+                            ...(prev.evaluationChecklist?.minEligibleStudents ||
+                              {}),
+                            meetsCriteria: e.target.checked,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                  <Label htmlFor="meetsCriteria">Meets Criteria</Label>
+                </div>
+                <Input
+                  id="eligibleNotes"
+                  value={
+                    formData.evaluationChecklist?.minEligibleStudents?.notes ||
+                    ""
+                  }
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      evaluationChecklist: {
+                        ...prev.evaluationChecklist,
+                        minEligibleStudents: {
+                          ...(prev.evaluationChecklist?.minEligibleStudents ||
+                            {}),
+                          notes: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                  placeholder="Notes"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="infrastructureRating">
+                  Infrastructure Rating
+                </Label>
+                <Input
+                  id="infrastructureRating"
+                  type="number"
+                  value={
+                    formData.evaluationChecklist?.infrastructureAdequacy
+                      ?.rating || 0
+                  }
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      evaluationChecklist: {
+                        ...prev.evaluationChecklist,
+                        infrastructureAdequacy: {
+                          ...(prev.evaluationChecklist
+                            ?.infrastructureAdequacy || {}),
+                          rating: parseInt(e.target.value || "0"),
+                        },
+                      },
+                    }))
+                  }
+                />
+                <Input
+                  id="infrastructureNotes"
+                  value={
+                    formData.evaluationChecklist?.infrastructureAdequacy
+                      ?.notes || ""
+                  }
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      evaluationChecklist: {
+                        ...prev.evaluationChecklist,
+                        infrastructureAdequacy: {
+                          ...(prev.evaluationChecklist
+                            ?.infrastructureAdequacy || {}),
+                          notes: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                  placeholder="Notes"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label>System Output</Label>
+                    <Select
+                      value={
+                        formData.evaluationChecklist?.systemOutput || "followup"
+                      }
+                      onValueChange={(v: "include" | "followup" | "reject") =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          evaluationChecklist: {
+                            ...prev.evaluationChecklist,
+                            systemOutput: v,
+                          },
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="System Output" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="include">Include</SelectItem>
+                        <SelectItem value="followup">Follow-up</SelectItem>
+                        <SelectItem value="reject">Reject</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select
+                      value={formData.evaluationChecklist?.status || "followup"}
+                      onValueChange={(
+                        v: "active" | "inactive" | "rejected" | "followup"
+                      ) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          evaluationChecklist: {
+                            ...prev.evaluationChecklist,
+                            status: v,
+                          },
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="followup">Follow-up</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

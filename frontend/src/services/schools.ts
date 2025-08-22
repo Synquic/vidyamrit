@@ -6,14 +6,43 @@ export interface School {
     _id?: string;
     name: string;
     address: string;
-    principalName: string;
-    email: string;
-    phone: string;
+    udise_code: string;
     type: 'government' | 'private';
+    level: 'primary' | 'middle';
     city: string;
     state: string;
     pinCode: string;
     establishedYear: number;
+    school_admin: string;
+    contact_details: {
+        designation: string;
+        name: string;
+        email: string;
+        phone_no: string;
+    }[];
+    evaluationChecklist?: {
+        minEligibleStudents?: {
+            eligibleCount?: number;
+            meetsCriteria?: boolean;
+            notes?: string;
+        };
+        dedicatedRoom?: {
+            images?: string[];
+            notes?: string;
+            submittedAt?: string;
+        };
+        supportDocuments?: {
+            documents?: { name: string; url: string }[];
+            submittedAt?: string;
+        };
+        ngoHistory?: Array<{ image?: string; text?: string; date?: string }>;
+        infrastructureAdequacy?: {
+            rating?: number;
+            notes?: string;
+        };
+        systemOutput?: 'include' | 'followup' | 'reject';
+        status?: 'active' | 'inactive' | 'rejected' | 'followup';
+    };
     createdAt?: string;
     updatedAt?: string;
 }
