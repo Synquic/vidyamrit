@@ -12,6 +12,7 @@ export interface IAssessment extends Document {
     date: Date; // Date of the assessment
 }
 
+
 const AssessmentSchema = new mongoose.Schema({
     student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
     school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
