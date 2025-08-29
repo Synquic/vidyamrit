@@ -4,8 +4,9 @@ import userRoutes from "./UserRoutes";
 import superAdminRouter from "./SuperAdminRoutes";
 import schoolRouter from "./SchoolRoutes";
 import schoolAdminRouter from "./SchoolAdminRoutes";
-import mentorRouter from "./MentorRoutes";
+import mentorRouter from "../models/MentorRoutes";
 import studentRouter from "./StudentRoutes";
+import cohortRouter from "./CohortRoutes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
@@ -19,9 +20,10 @@ router.use(authMiddleware);
 
 router.use('/users', userRoutes);
 router.use('/super-admin', superAdminRouter);
-router.use('/schools', schoolRouter);
 router.use('/school-admins', schoolAdminRouter);
+router.use('/schools', schoolRouter);
 router.use('/mentors', mentorRouter);
 router.use('/students', studentRouter);
+router.use('/cohorts', cohortRouter);
 
 export default router;

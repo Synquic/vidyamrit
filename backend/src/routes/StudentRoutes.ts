@@ -6,14 +6,11 @@ import { createStudent, getStudents, getStudent, updateStudent, deleteStudent } 
 
 const studentRouter = Router();
 
-// School Admin/Mentor Management Routes for Students
-studentRouter.use(authMiddleware, roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR));
-
 // Students are database records, no auth required for them
-studentRouter.post('/', createStudent); // Create a student record
-studentRouter.get('/', getStudents);    // Get all students (with optional schoolId filter)
-studentRouter.get('/:id', getStudent);  // Get a single student by MongoDB _id
-studentRouter.put('/:id', updateStudent); // Update student by MongoDB _id
-studentRouter.delete('/:id', deleteStudent); // Delete student by MongoDB _id
+studentRouter.post('/',authMiddleware, roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR), createStudent); // Create a student record
+studentRouter.get('/',authMiddleware, roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR), getStudents);    // Get all students (with optional schoolId filter)
+studentRouter.get('/:id',authMiddleware, roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR), getStudent);  // Get a single student by MongoDB _id
+studentRouter.put('/:id',authMiddleware, roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR), updateStudent); // Update student by MongoDB _id
+studentRouter.delete('/:id',authMiddleware, roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN), deleteStudent); // Delete student by MongoDB _id
 
 export default studentRouter;

@@ -14,10 +14,24 @@ export interface ICohort extends Document {
 const CohortSchema = new mongoose.Schema({
     name: { type: String, required: true },
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
-    mentorId: { type: String, required: true },
+    mentorId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true,
+        validate: {
+            validator: async function(value: mongoose.Types.ObjectId) {
+                const User = mongoose.model('User');
+                const user = await User.findById(value);
+                return user && user.role === 'mentor';
+            },
+            message: 'mentorId must reference a user with role MENTOR'
+        }
+    },
     students: [
         {
-            uid: { type: String, required: true }
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Student',
+            required: true
         }
     ],
     createdAt: { type: Date, default: Date.now },
