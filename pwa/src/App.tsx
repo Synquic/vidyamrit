@@ -1,0 +1,113 @@
+import PWABadge from "./components/pwa/PWABadge.tsx";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+//
+import { AuthProvider } from "./providers/AuthProvider";
+import "./lib/i18n";
+import { Toaster } from "@/components/ui/sonner";
+//
+import { AUTH_ROUTE_PATHS, DASHBOARD_ROUTE_PATHS } from "@/routes";
+//
+import ProtectedRoute from "./components/ProtectedRoute";
+import NotFoundComponent from "./components/NotFound";
+//
+import RegisterPage from "./pages/auth/RegisterPage";
+import LoginPage from "./pages/auth/LoginPage";
+import LogoutPage from "./pages/auth/LogoutPage";
+//
+import DashboardLayout from "./components/DashboardLayout";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+//
+import LandingPage from "./pages/public/LandingPage";
+import ManageSchoolAdmins from "./pages/dashboard/ManageSchoolAdmins";
+import ManageMentors from "./pages/dashboard/ManageMentors";
+import ManageStudents from "./pages/dashboard/ManageStudents";
+import ManageSchools from "./pages/dashboard/ManageSchools";
+import ManageCohorts from "./pages/dashboard/ManageCohorts";
+import BaselineAssessmentsPage from "./pages/dashboard/BaselineAssessmentsPage";
+import StudentsPage from "./pages/dashboard/StudentsPage";
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    Component: () => <LandingPage />,
+  },
+  // 404 not found
+  {
+    path: "*",
+    Component: () => <NotFoundComponent />,
+  },
+  // Auth routes
+  {
+    path: AUTH_ROUTE_PATHS.login,
+    Component: () => <LoginPage />,
+  },
+  {
+    path: AUTH_ROUTE_PATHS.register,
+    Component: () => <RegisterPage />,
+  },
+  {
+    path: AUTH_ROUTE_PATHS.logout,
+    Component: () => <LogoutPage />,
+  },
+  // Protected route with outlet for dashboard sidebar and layout
+  {
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <Outlet />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        path: DASHBOARD_ROUTE_PATHS.dashboard,
+        element: <DashboardPage />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.schools,
+        element: <ManageSchools />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.schoolAdmin,
+        element: <ManageSchoolAdmins />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.mentors,
+        element: <ManageMentors />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.students,
+        element: <ManageStudents />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.cohorts,
+        element: <ManageCohorts />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.baselineAssessments,
+        element: <BaselineAssessmentsPage />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.studentReports,
+        element: <StudentsPage />,
+      },
+    ],
+  },
+]);
+
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster richColors />
+        <PWABadge />
+      </QueryClientProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;

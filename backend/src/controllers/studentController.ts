@@ -1,55 +1,55 @@
 import { Response } from 'express';
-import User from '../models/UserModel';
+import Student from '../models/StudentModel';
 import { UserRole } from '../configs/roles';
 import { AuthRequest } from '../types/auth';
 import { CreateUserRequest, UpdateUserRequest, UserParams } from '../types/requests';
 
 export const createStudent = async (
-    req: AuthRequest<{}, {}, Omit<CreateUserRequest, 'password'>>,
+    req: AuthRequest,
     res: Response
 ) => {
     try {
-        const { name, email, uid, schoolId } = req.body;
-        const userSchoolId = req.user && req.user.role !== UserRole.SUPER_ADMIN ? req.user.schoolId : schoolId;
-
-        if (!userSchoolId) {
+        const {
+            roll_no,
+            name,
+            age,
+            gender,
+            class: className,
+            caste,
+            schoolId,
+            contactInfo = [],
+            knowledgeLevel = [],
+            cohort = []
+        } = req.body;
+        // School assignment logic (match UserModel)
+        let finalSchoolId = schoolId;
+        if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+            finalSchoolId = req.user.schoolId;
+        }
+        if (!finalSchoolId) {
             return res.status(400).json({ error: "School ID is required" });
         }
-
-        // Check if student already exists
-        const existingStudent = await User.findOne({ 
-            $or: [
-                { email, role: UserRole.STUDENT },
-                { uid, role: UserRole.STUDENT }
-            ]
-        });
+        // Check if student already exists in this school
+        const existingStudent = await Student.findOne({ roll_no, schoolId: finalSchoolId });
         if (existingStudent) {
-            return res.status(400).json({ 
-                error: existingStudent.email === email 
-                    ? "Student with this email already exists"
-                    : "Student with this roll number already exists"
-            });
+            return res.status(400).json({ error: "Student with this roll number already exists in this school" });
         }
-
-        // Create student in MongoDB with provided UID as roll number
-        const student = new User({
-            uid,  // Use provided UID as roll number
+        // Create student in MongoDB
+        const student = new Student({
+            roll_no,
             name,
-            email,
-            role: UserRole.STUDENT,
-            schoolId: userSchoolId
+            age,
+            gender,
+            class: className,
+            caste,
+            schoolId: finalSchoolId,
+            contactInfo,
+            knowledgeLevel,
+            cohort
         });
-
         await student.save();
         const populatedStudent = await student.populate('schoolId', 'name');
-
-        res.status(201).json({
-            _id: populatedStudent._id,
-            name: populatedStudent.name,
-            email: populatedStudent.email,
-            role: populatedStudent.role,
-            schoolId: populatedStudent.schoolId
-        });
+        res.status(201).json(populatedStudent);
     } catch (error) {
         console.error('Error in student creation:', error);
         res.status(500).json({ error: "Failed to create student" });
@@ -57,24 +57,21 @@ export const createStudent = async (
 };
 
 export const getStudents = async (
-    req: AuthRequest<{}, {}, {}>,
+    req: AuthRequest,
     res: Response
 ) => {
     try {
         const { schoolId } = req.query;
-        const filter: any = { role: UserRole.STUDENT };
-        
+        const filter: any = {};
         // If not super admin, only show students from user's school
         if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
             filter.schoolId = req.user.schoolId;
         } else if (schoolId) {
             filter.schoolId = schoolId;
         }
-
-        const students = await User.find(filter)
+        const students = await Student.find(filter)
             .select('-__v')
             .populate('schoolId', 'name');
-
         res.json(students);
     } catch (error) {
         console.error('Error fetching students:', error);
@@ -83,29 +80,22 @@ export const getStudents = async (
 };
 
 export const getStudent = async (
-    req: AuthRequest<UserParams>,
+    req: AuthRequest,
     res: Response
 ) => {
     try {
         const { id } = req.params;
-        const query: any = { 
-            _id: id, 
-            role: UserRole.STUDENT 
-        };
-
+        const query: any = { _id: id };
         // If not super admin, only allow fetching students from same school
         if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
             query.schoolId = req.user.schoolId;
         }
-
-        const student = await User.findOne(query)
+        const student = await Student.findOne(query)
             .select('-__v')
             .populate('schoolId', 'name');
-
         if (!student) {
             return res.status(404).json({ error: "Student not found" });
         }
-
         res.json(student);
     } catch (error) {
         console.error('Error fetching student:', error);
@@ -114,40 +104,37 @@ export const getStudent = async (
 };
 
 export const updateStudent = async (
-    req: AuthRequest<UserParams, {}, UpdateUserRequest>,
+    req: AuthRequest,
     res: Response
 ) => {
     try {
         const { id } = req.params;
-        const { name, email } = req.body;
-
-        const query: any = { _id: id, role: UserRole.STUDENT };
+        const updateFields = req.body;
+        const query: any = { _id: id };
         if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
             query.schoolId = req.user.schoolId;
         }
-
+        // Only allow updating fields that exist in StudentModel
+        const allowedFields = [
+            'roll_no', 'name', 'age', 'gender', 'class', 'caste', 'schoolId',
+            'contactInfo', 'knowledgeLevel', 'cohort'
+        ];
+        const filteredUpdate: any = {};
+        for (const key of allowedFields) {
+            if (updateFields[key] !== undefined) {
+                filteredUpdate[key] = updateFields[key];
+            }
+        }
         // Update the student record
-        const updatedStudent = await User.findOneAndUpdate(
+        const updatedStudent = await Student.findOneAndUpdate(
             query,
-            { 
-                ...(name && { name }),
-                ...(email && { email })
-            },
+            { ...filteredUpdate },
             { new: true }
         ).populate('schoolId', 'name');
-
         if (!updatedStudent) {
             return res.status(404).json({ error: "Student not found" });
         }
-
-        res.json({
-            _id: updatedStudent._id,
-            name: updatedStudent.name,
-            email: updatedStudent.email,
-            role: updatedStudent.role,
-            schoolId: updatedStudent.schoolId
-        });
-
+        res.json(updatedStudent);
     } catch (error) {
         console.error('Error updating student:', error);
         res.status(500).json({ error: "Failed to update student" });
@@ -155,22 +142,19 @@ export const updateStudent = async (
 };
 
 export const deleteStudent = async (
-    req: AuthRequest<UserParams>,
+    req: AuthRequest,
     res: Response
 ) => {
     try {
         const { id } = req.params;
-        const query: any = { _id: id, role: UserRole.STUDENT };
-        
+        const query: any = { _id: id };
         if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
             query.schoolId = req.user.schoolId;
         }
-
-        const deletedStudent = await User.findOneAndDelete(query);
+        const deletedStudent = await Student.findOneAndDelete(query);
         if (!deletedStudent) {
             return res.status(404).json({ error: "Student not found" });
         }
-
         res.json({ message: "Student deleted successfully" });
     } catch (error) {
         console.error('Error deleting student:', error);

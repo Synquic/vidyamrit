@@ -3,9 +3,9 @@ import mongoose, { Document } from 'mongoose';
 export interface ICohort extends Document {
     name: string;
     schoolId: mongoose.Types.ObjectId;
-    mentorId: string;
+    mentorId: mongoose.Types.ObjectId;
     students: Array<{
-        uid: string;
+        _id: string;
     }>;
     createdAt: Date;
     updatedAt: Date;

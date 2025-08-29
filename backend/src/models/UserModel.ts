@@ -7,6 +7,7 @@ export interface IUser extends Document {
     email: string;
     role: UserRole;
     schoolId?: mongoose.Types.ObjectId | null;
+    phoneNo: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     role: { type: String, enum: Object.values(UserRole), required: true },
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false },
+    phoneNo: { type: String, required: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });
