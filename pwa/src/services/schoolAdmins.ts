@@ -12,6 +12,7 @@ export interface SchoolAdmin {
         _id: string;
         name: string;
     };
+    phoneNo: string;
     createdAt: string;
 }
 
@@ -20,6 +21,7 @@ export interface CreateSchoolAdminDTO {
     email: string;
     password: string;
     schoolId: string;
+    phoneNo: string;
 }
 
 export const createSchoolAdmin = async (data: CreateSchoolAdminDTO): Promise<SchoolAdmin> => {
@@ -41,6 +43,7 @@ export interface UpdateSchoolAdminDTO {
     name?: string;
     email?: string;
     schoolId?: string;
+    phoneNo?: string;
 }
 
 export const updateSchoolAdmin = async (uid: string, data: UpdateSchoolAdminDTO): Promise<SchoolAdmin> => {

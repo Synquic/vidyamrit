@@ -7,7 +7,7 @@ export const createSchoolAdmin = async (req: Request, res: Response) => {
     let firebaseUser = null;
 
     try {
-        const { name, email, password, schoolId } = req.body;
+    const { name, email, password, schoolId, phoneNo } = req.body;
 
         if (!schoolId) {
             return res.status(400).json({ error: "School ID is required" });
@@ -34,6 +34,7 @@ export const createSchoolAdmin = async (req: Request, res: Response) => {
                 email: firebaseUser.email,
                 role: UserRole.SCHOOL_ADMIN,
                 schoolId,
+                phoneNo,
             });
 
             await user.save();
@@ -43,7 +44,8 @@ export const createSchoolAdmin = async (req: Request, res: Response) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                schoolId: user.schoolId
+                schoolId: user.schoolId,
+                phoneNo: user.phoneNo,
             });
         } catch (mongoError) {
             // If MongoDB save fails, clean up Firebase user
@@ -104,7 +106,7 @@ export const getSchoolAdmin = async (req: Request, res: Response) => {
 export const updateSchoolAdmin = async (req: Request, res: Response) => {
     try {
         const { uid } = req.params;
-        const { name, email, schoolId } = req.body;
+    const { name, email, schoolId, phoneNo } = req.body;
 
         // Find the school admin first
         const schoolAdmin = await User.findOne({ uid, role: UserRole.SCHOOL_ADMIN });
@@ -127,7 +129,8 @@ export const updateSchoolAdmin = async (req: Request, res: Response) => {
             { 
                 ...(name && { name }),
                 ...(email && { email }),
-                ...(schoolId && { schoolId })
+                ...(schoolId && { schoolId }),
+                ...(phoneNo && { phoneNo })
             },
             { new: true }
         ).populate('schoolId', 'name');
@@ -142,7 +145,8 @@ export const updateSchoolAdmin = async (req: Request, res: Response) => {
             name: updatedUser.name,
             email: updatedUser.email,
             role: updatedUser.role,
-            schoolId: updatedUser.schoolId
+            schoolId: updatedUser.schoolId,
+            phoneNo: updatedUser.phoneNo,
         });
 
     } catch (error: any) {
