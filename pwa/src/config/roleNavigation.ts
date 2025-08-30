@@ -3,6 +3,12 @@ import { DASHBOARD_ROUTE_PATHS } from "@/routes";
 import { School, UserPen, UserStar } from "lucide-react";
 import { RoleNavigation } from "@/types/navigation";
 
+export const universalNavigationItem = {
+    title: "Questions",
+    url: DASHBOARD_ROUTE_PATHS.assessmentQuestionSets,
+    icon: UserStar,
+};
+
 export const roleNavigation: RoleNavigation = {
     [UserRole.SUPER_ADMIN]: {
         title: "Super Admin",

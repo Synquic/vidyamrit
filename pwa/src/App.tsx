@@ -26,6 +26,7 @@ import ManageSchools from "./pages/dashboard/ManageSchools";
 import ManageCohorts from "./pages/dashboard/ManageCohorts";
 import BaselineAssessmentsPage from "./pages/dashboard/BaselineAssessmentsPage";
 import StudentsPage from "./pages/dashboard/StudentsPage";
+import ManageAssessmentQuestionSetsPage from "./pages/dashboard/ManageAssessmentQuestionSets";
 
 const router = createBrowserRouter([
   {
@@ -91,6 +92,10 @@ const router = createBrowserRouter([
       {
         path: DASHBOARD_ROUTE_PATHS.studentReports,
         element: <StudentsPage />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.assessmentQuestionSets,
+        element: <ManageAssessmentQuestionSetsPage />,
       },
     ],
   },

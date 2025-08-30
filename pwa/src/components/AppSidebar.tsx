@@ -5,7 +5,10 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { roleNavigation } from "@/config/roleNavigation";
+import {
+  roleNavigation,
+  universalNavigationItem,
+} from "@/config/roleNavigation";
 import { LogOut, User, EllipsisVertical, Info } from "lucide-react";
 import { SidebarItems } from "@/components/SidebarItems";
 import { OpenAssessments } from "@/components/OpenAssessments";
@@ -62,7 +65,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const accessibleRoles = canAccessRoles();
 
   const navigationItems = useMemo(
-    () => accessibleRoles.map((role) => roleNavigation[role]).filter(Boolean),
+    () => [
+      ...accessibleRoles.map((role) => roleNavigation[role]).filter(Boolean),
+      universalNavigationItem,
+    ],
     [accessibleRoles]
   );
 

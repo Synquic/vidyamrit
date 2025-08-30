@@ -21,6 +21,7 @@ export const DASHBOARD_ROUTE_PATHS = {
   baselineAssessments: "/baseline-assessments",
   //
   studentReports: "/student-reports",
+  assessmentQuestionSets: "/assessment-question-sets",
 
 } as const;
 

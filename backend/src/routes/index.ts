@@ -7,6 +7,8 @@ import schoolAdminRouter from "./SchoolAdminRoutes";
 import mentorRouter from "../models/MentorRoutes";
 import studentRouter from "./StudentRoutes";
 import cohortRouter from "./CohortRoutes";
+import assessmentRouter from "./AssessmentRoutes";
+import questionSetRouter from "./QuestionSetRoutes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
@@ -25,5 +27,7 @@ router.use('/schools', schoolRouter);
 router.use('/mentors', mentorRouter);
 router.use('/students', studentRouter);
 router.use('/cohorts', cohortRouter);
+router.use('/assessments',assessmentRouter);
+router.use('/question-sets', questionSetRouter)
 
 export default router;
