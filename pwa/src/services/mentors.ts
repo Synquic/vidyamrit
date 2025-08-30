@@ -2,11 +2,13 @@ import { apiUrl, authAxios } from './index';
 
 const baseUrl = `${apiUrl}/mentors`;
 
+
 export interface Mentor {
     _id: string;
     uid: string;
     name: string;
     email: string;
+    phoneNo: string;
     role: string;
     schoolId: {
         _id: string;
@@ -15,18 +17,23 @@ export interface Mentor {
     createdAt: string;
 }
 
+
 export interface CreateMentorDTO {
     name: string;
     email: string;
     password: string;
     schoolId: string;
+    phoneNo: string;
 }
+
 
 export interface UpdateMentorDTO {
     name?: string;
     email?: string;
     schoolId?: string | null;
+    phoneNo?: string;
 }
+
 
 export const createMentor = async (data: CreateMentorDTO): Promise<Mentor> => {
     const response = await authAxios.post(baseUrl, data);
@@ -44,6 +51,7 @@ export const getMentor = async (uid: string): Promise<Mentor> => {
     const response = await authAxios.get(`${baseUrl}/${uid}`);
     return response.data;
 };
+
 
 export const updateMentor = async (uid: string, data: UpdateMentorDTO): Promise<Mentor> => {
     const response = await authAxios.put(`${baseUrl}/${uid}`, data);

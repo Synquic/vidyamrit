@@ -61,6 +61,7 @@ function ManageMentors() {
     email: "",
     password: "",
     schoolId: "",
+    phoneNo: "",
   });
 
   const queryClient = useQueryClient();
@@ -72,12 +73,30 @@ function ManageMentors() {
     queryKey: ["mentors"],
     queryFn: () => getMentors(),
     select: (data) => {
-      // Filter mentors based on user role and school
+      // Show all mentors for super admin
       if (user?.role === UserRole.SUPER_ADMIN) {
-        return data; // Show all mentors for super admin
-      } else if (user && String(user.role) !== 'super_admin' && user.schoolId && typeof user.schoolId === "object") {
-        return data.filter((mentor) => mentor.schoolId._id === user.schoolId._id);
+        return data;
       }
+      // For school admin, show only mentors of their school
+      if (user?.role === UserRole.SCHOOL_ADMIN && user.schoolId) {
+        // Type guard for user.schoolId
+        let schoolId: string = "";
+        if (typeof user.schoolId === "object" && user.schoolId !== null && "_id" in user.schoolId) {
+          schoolId = user.schoolId._id;
+        } else if (typeof user.schoolId === "string") {
+          schoolId = user.schoolId;
+        }
+        return data.filter((mentor) => {
+          let mentorSchoolId: string = "";
+          if (mentor.schoolId && typeof mentor.schoolId === "object" && "_id" in mentor.schoolId) {
+            mentorSchoolId = mentor.schoolId._id;
+          } else if (typeof mentor.schoolId === "string") {
+            mentorSchoolId = mentor.schoolId;
+          }
+          return String(mentorSchoolId) === String(schoolId);
+        });
+      }
+      // For other roles, return empty or customize as needed
       return [];
     },
   });
@@ -145,10 +164,10 @@ function ManageMentors() {
         : formData.schoolId;
 
     if (editingMentor) {
-      const { name, email } = formData;
+      const { name, email, phoneNo } = formData;
       updateMutation.mutate({
         uid: editingMentor.uid,
-        data: { name, email, schoolId: schoolIdToUse },
+        data: { name, email, schoolId: schoolIdToUse, phoneNo },
       });
     } else {
       createMutation.mutate({ ...formData, schoolId: schoolIdToUse });
@@ -162,6 +181,7 @@ function ManageMentors() {
       email: mentor.email,
       password: "", // Password is not included in edit
       schoolId: mentor.schoolId._id,
+      phoneNo: mentor.phoneNo || "",
     });
     setIsOpen(true);
   };
@@ -174,6 +194,7 @@ function ManageMentors() {
       email: "",
       password: "",
       schoolId: "",
+      phoneNo: "",
     });
   };
 
@@ -216,6 +237,7 @@ function ManageMentors() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
               <TableHead>School</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -225,6 +247,7 @@ function ManageMentors() {
               <TableRow key={mentor._id}>
                 <TableCell>{mentor.name}</TableCell>
                 <TableCell>{mentor.email}</TableCell>
+                <TableCell>{mentor.phoneNo}</TableCell>
                 <TableCell>{mentor.schoolId.name}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -303,6 +326,17 @@ function ManageMentors() {
                 />
               </div>
             )}
+            <div className="space-y-2">
+              <Label htmlFor="phoneNo">Phone Number</Label>
+              <Input
+                id="phoneNo"
+                type="text"
+                value={formData.phoneNo}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, phoneNo: e.target.value }))
+                }
+              />
+            </div>
             {/* Only show school selector for super admin */}
             {user?.role === UserRole.SUPER_ADMIN && (
               <div className="space-y-2">

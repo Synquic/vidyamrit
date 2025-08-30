@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getStudents } from "@/services/students";
 import { getSchools } from "@/services/schools";
+import { getAssessments, Assessment } from "@/services/assessments";
 import {
   Select,
   SelectContent,
@@ -22,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search } from "lucide-react";
 
+
 function StudentsPage() {
   const [selectedSchool, setSelectedSchool] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,12 +40,25 @@ function StudentsPage() {
     queryFn: getSchools,
   });
 
+  // Fetch all assessments
+  const { data: assessments = [], isLoading: isLoadingAssessments } = useQuery({
+    queryKey: ["assessments"],
+    queryFn: getAssessments,
+  });
+
   // Filter students based on search query
   const filteredStudents = students.filter((student) =>
     student.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoadingStudents) {
+  // Helper: get latest assessment for a student
+  const getLatestAssessment = (studentId: string): Assessment | undefined => {
+    const studentAssessments = assessments.filter(a => a.student === studentId);
+    // Sort by date descending
+    return studentAssessments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+  };
+
+  if (isLoadingStudents || isLoadingAssessments) {
     return (
       <div className="flex h-[200px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -71,14 +86,14 @@ function StudentsPage() {
             />
           </div>
         </div>
-        <Select value={selectedSchool} onValueChange={setSelectedSchool}>
+        <Select value={selectedSchool || "all"} onValueChange={v => setSelectedSchool(v === "all" ? "" : v)}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by school" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Schools</SelectItem>
+            <SelectItem value="all">All Schools</SelectItem>
             {schools.map((school) => (
-              <SelectItem key={school._id} value={school._id || ""}>
+              <SelectItem key={school._id} value={school._id}>
                 {school.name}
               </SelectItem>
             ))}
@@ -96,32 +111,47 @@ function StudentsPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>School</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Latest Assessment</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredStudents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     No students found.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredStudents.map((student) => (
-                  <TableRow key={student._id}>
-                    <TableCell className="font-medium">
-                      {student.name}
-                    </TableCell>
-                    <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.schoolId.name}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={student.schoolId ? "default" : "secondary"}
-                      >
-                        {student.schoolId ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filteredStudents.map((student) => {
+                  const latestAssessment = getLatestAssessment(student._id);
+                  return (
+                    <TableRow key={student._id}>
+                      <TableCell className="font-medium">
+                        {student.name}
+                      </TableCell>
+                      <TableCell>{student.email}</TableCell>
+                      <TableCell>{student.schoolId.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={student.schoolId ? "default" : "secondary"}
+                        >
+                          {student.schoolId ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {latestAssessment ? (
+                          <div>
+                            <div className="text-xs font-semibold">{latestAssessment.subject.toUpperCase()}</div>
+                            <div className="text-xs">Level {latestAssessment.level}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(latestAssessment.date).toLocaleDateString()}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No assessment</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

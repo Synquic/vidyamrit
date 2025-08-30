@@ -4,6 +4,7 @@ export interface CreateUserRequest {
     password?: string; // Optional for students
     uid: string;     // Required for students (used as roll number)
     schoolId: string;
+    phoneNo?: string;
 }
 
 export interface UpdateUserRequest {
@@ -11,6 +12,7 @@ export interface UpdateUserRequest {
     email?: string;
     uid?: string;     // Allow updating roll number
     schoolId?: string;
+    phoneNo?: string;
 }
 
 // Add params types

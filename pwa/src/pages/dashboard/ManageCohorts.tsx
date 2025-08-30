@@ -9,9 +9,9 @@ import {
   type CreateCohortDTO,
   type UpdateCohortDTO,
 } from "@/services/cohorts";
-import { getSchools } from "@/services/schools";
-import { getMentors } from "@/services/mentors";
-import { getStudents } from "@/services/students";
+import { getSchools, type School } from "@/services/schools";
+import { getMentors, type Mentor } from "@/services/mentors";
+import { getStudents, type Student } from "@/services/students";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -49,7 +48,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, Loader2, Trash2, Edit } from "lucide-react";
 
@@ -62,7 +60,7 @@ function ManageCohorts() {
     name: "",
     schoolId: "",
     mentorId: "",
-    studentIds: [],
+    students: [],
   });
 
   const queryClient = useQueryClient();
@@ -73,24 +71,18 @@ function ManageCohorts() {
     queryFn: () => getCohorts(),
   });
 
-  // Fetch schools for the select dropdown
-  const { data: schools } = useQuery({
+  // Fetch all schools, mentors, students for name lookup
+  const { data: schools = [] } = useQuery({
     queryKey: ["schools"],
     queryFn: getSchools,
   });
-
-  // Fetch mentors based on selected school
-  const { data: mentors } = useQuery({
-    queryKey: ["mentors", formData.schoolId],
-    queryFn: () => getMentors(formData.schoolId),
-    enabled: !!formData.schoolId,
+  const { data: mentors = [] } = useQuery({
+    queryKey: ["mentors"],
+    queryFn: () => getMentors(),
   });
-
-  // Fetch students based on selected school
-  const { data: students } = useQuery({
-    queryKey: ["students", formData.schoolId],
-    queryFn: () => getStudents(formData.schoolId),
-    enabled: !!formData.schoolId,
+  const { data: students = [] } = useQuery({
+    queryKey: ["students"],
+    queryFn: () => getStudents(),
   });
 
   // Create cohort mutation
@@ -135,10 +127,10 @@ function ManageCohorts() {
 
   const handleSubmit = () => {
     if (editingCohort) {
-      const { name, mentorId, studentIds } = formData;
+      const { name, mentorId, students } = formData;
       updateMutation.mutate({
         id: editingCohort._id,
-        data: { name, mentorId, studentIds },
+        data: { name, mentorId, students },
       });
     } else {
       createMutation.mutate(formData);
@@ -151,7 +143,7 @@ function ManageCohorts() {
       name: cohort.name,
       schoolId: cohort.schoolId._id,
       mentorId: cohort.mentorId._id,
-      studentIds: cohort.students.map((student) => student._id),
+      students: cohort.students,
     });
     setIsOpen(true);
   };
@@ -163,7 +155,7 @@ function ManageCohorts() {
       name: "",
       schoolId: "",
       mentorId: "",
-      studentIds: [],
+      students: [],
     });
   };
 
@@ -210,9 +202,23 @@ function ManageCohorts() {
             {cohorts?.map((cohort) => (
               <TableRow key={cohort._id}>
                 <TableCell>{cohort.name}</TableCell>
-                <TableCell>{cohort.schoolId.name}</TableCell>
-                <TableCell>{cohort.mentorId.name}</TableCell>
-                <TableCell>{cohort.students.length} students</TableCell>
+                <TableCell>{(() => {
+                  const schoolId = typeof cohort.schoolId === 'string' ? cohort.schoolId : cohort.schoolId?._id;
+                  const school = schools.find((s: School) => s._id === schoolId);
+                  return school ? school.name : schoolId;
+                })()}</TableCell>
+                <TableCell>{(() => {
+                  const mentorId = typeof cohort.mentorId === 'string' ? cohort.mentorId : cohort.mentorId?._id;
+                  const mentor = mentors.find((m: Mentor) => m._id === mentorId);
+                  return mentor ? mentor.name : mentorId;
+                })()}</TableCell>
+                <TableCell>{Array.isArray(cohort.students)
+                  ? cohort.students.map((sid) => {
+                      const student = students.find((s: Student) => s._id === sid);
+                      return student ? student.name : sid;
+                    }).join(", ")
+                  : ""}
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button
@@ -263,90 +269,47 @@ function ManageCohorts() {
                 }
               />
             </div>
-            {!editingCohort && (
-              <div className="space-y-2">
-                <Label htmlFor="schoolId">School</Label>
-                <Select
-                  value={formData.schoolId}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      schoolId: value,
-                      mentorId: "", // Reset mentor when school changes
-                      studentIds: [], // Reset students when school changes
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a school" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools?.map((school) => (
-                      <SelectItem key={school._id} value={school._id || ""}>
-                        {school.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="space-y-2">
-              <Label htmlFor="mentorId">Mentor</Label>
-              <Select
-                value={formData.mentorId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, mentorId: value }))
+              <Label htmlFor="schoolId">School ID</Label>
+              <Input
+                id="schoolId"
+                value={formData.schoolId}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    schoolId: e.target.value,
+                    mentorId: "",
+                    students: [],
+                  }))
                 }
-                disabled={!formData.schoolId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a mentor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mentors?.map((mentor) => (
-                    <SelectItem key={mentor._id} value={mentor._id || ""}>
-                      {mentor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Enter school ID"
+              />
             </div>
             <div className="space-y-2">
-              <Label>Students</Label>
-              <ScrollArea className="h-[200px] rounded-md border p-4">
-                {students?.map((student) => (
-                  <div
-                    key={student._id}
-                    className="flex items-center space-x-2 py-1"
-                  >
-                    <Checkbox
-                      id={student._id}
-                      checked={formData.studentIds.includes(student._id || "")}
-                      onCheckedChange={(checked) => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          studentIds: checked
-                            ? [...prev.studentIds, student._id || ""]
-                            : prev.studentIds.filter(
-                                (id) => id !== student._id
-                              ),
-                        }));
-                      }}
-                    />
-                    <label
-                      htmlFor={student._id}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {student.name}
-                    </label>
-                  </div>
-                ))}
-              </ScrollArea>
-              {students?.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No students found in this school
-                </p>
-              )}
+              <Label htmlFor="mentorId">Mentor ID</Label>
+              <Input
+                id="mentorId"
+                value={formData.mentorId}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, mentorId: e.target.value }))
+                }
+                placeholder="Enter mentor ID"
+                disabled={!formData.schoolId}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="students">Student IDs (comma separated)</Label>
+              <Input
+                id="students"
+                value={formData.students.join(",")}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    students: e.target.value.split(",").map((id) => id.trim()).filter(Boolean),
+                  }))
+                }
+                placeholder="Enter student IDs separated by comma"
+              />
             </div>
           </div>
           <DialogFooter>

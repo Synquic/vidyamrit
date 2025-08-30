@@ -14,7 +14,7 @@ export const createMentor = async (
     let firebaseUser = null;
 
     try {
-        const { name, email, password, schoolId } = req.body;
+        const { name, email, password, schoolId, phoneNo } = req.body;
 
         if (!schoolId) {
             return res.status(400).json({ error: "School ID is required" });
@@ -41,6 +41,7 @@ export const createMentor = async (
                 email: firebaseUser.email,
                 role: UserRole.MENTOR,
                 schoolId,
+                phoneNo,
             });
 
             await user.save();
@@ -51,6 +52,7 @@ export const createMentor = async (
                 id: populatedUser._id,
                 name: populatedUser.name,
                 email: populatedUser.email,
+                phoneNo: populatedUser.phoneNo,
                 role: populatedUser.role,
                 schoolId: populatedUser.schoolId
             });
@@ -138,7 +140,7 @@ export const updateMentor = async (
 ) => {
     try {
         const { uid } = req.params;
-        const { name, email, schoolId } = req.body;
+        const { name, email, schoolId, phoneNo } = req.body;
         const { role, schoolId: userSchoolId } = req.user || {};
 
         // Find the mentor first
@@ -167,7 +169,8 @@ export const updateMentor = async (
             { 
                 ...(name && { name }),
                 ...(email && { email }),
-                ...(schoolId && { schoolId })
+                ...(schoolId && { schoolId }),
+                ...(phoneNo && { phoneNo })
             },
             { new: true }
         ).populate('schoolId', 'name');
@@ -180,6 +183,7 @@ export const updateMentor = async (
             id: updatedUser._id,
             name: updatedUser.name,
             email: updatedUser.email,
+            phoneNo: updatedUser.phoneNo,
             role: updatedUser.role,
             schoolId: updatedUser.schoolId
         });

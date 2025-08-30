@@ -13,10 +13,7 @@ export interface Cohort {
         _id: string;
         name: string;
     };
-    students: Array<{
-        _id: string;
-        name: string;
-    }>;
+    students: string[];
     createdAt: string;
     updatedAt: string;
 }
@@ -25,13 +22,13 @@ export interface CreateCohortDTO {
     name: string;
     schoolId: string;
     mentorId: string;
-    studentIds: string[];
+    students: string[];
 }
 
 export interface UpdateCohortDTO {
     name?: string;
     mentorId?: string;
-    studentIds?: string[];
+    students?: string[];
 }
 
 export const createCohort = async (data: CreateCohortDTO): Promise<Cohort> => {
@@ -39,10 +36,8 @@ export const createCohort = async (data: CreateCohortDTO): Promise<Cohort> => {
     return response.data;
 };
 
-export const getCohorts = async (schoolId?: string): Promise<Cohort[]> => {
-    const response = await authAxios.get(baseUrl, {
-        params: { schoolId }
-    });
+export const getCohorts = async (): Promise<Cohort[]> => {
+    const response = await authAxios.get(baseUrl);
     return response.data;
 };
 

@@ -7,9 +7,14 @@ import {
 } from "@/services/assessmentQuestionSets";
 import { Button } from "@/components/ui/button";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
+import { getStudents, Student } from "@/services/students";
+import { createAssessment } from "@/services/assessments";
+import { toast } from "sonner";
 
 export default function BaselineAssessmentsPage() {
   const [questionSets, setQuestionSets] = useState<AssessmentQuestionSet[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -17,6 +22,7 @@ export default function BaselineAssessmentsPage() {
 
   useEffect(() => {
     fetchQuestionSets();
+    fetchStudents();
   }, []);
 
   const fetchQuestionSets = async () => {
@@ -32,7 +38,20 @@ export default function BaselineAssessmentsPage() {
     }
   };
 
+  const fetchStudents = async () => {
+    try {
+      const data = await getStudents();
+      setStudents(data);
+    } catch {
+      setError("Failed to fetch students");
+    }
+  };
+
   const handleStartTest = (subject: string) => {
+    if (!selectedStudent) {
+      setError("Please select a student first.");
+      return;
+    }
     setSelectedSubject(subject);
     setModalOpen(true);
   };
@@ -47,6 +66,24 @@ export default function BaselineAssessmentsPage() {
       <h1 className="text-2xl font-bold mb-4">Baseline Assessments</h1>
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-600">{error}</p>}
+      <div className="mb-4">
+        <label className="block mb-2 font-medium">Select Student:</label>
+        <select
+          className="border rounded px-2 py-1 w-full max-w-md"
+          value={selectedStudent?._id || ""}
+          onChange={(e) => {
+            const student = students.find((s) => s._id === e.target.value);
+            setSelectedStudent(student || null);
+          }}
+        >
+          <option value="">-- Select --</option>
+          {students.map((student) => (
+            <option key={student._id} value={student._id}>
+              {student.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="space-y-4">
         {questionSets.map((set) => (
           <div
@@ -70,12 +107,30 @@ export default function BaselineAssessmentsPage() {
           </div>
         ))}
       </div>
-      {modalOpen && (
+      {modalOpen && selectedStudent && (
         <BaselineAssessmentModal
           isOpen={modalOpen}
           onClose={handleCloseModal}
           questionSets={questionSets}
           selectedSubject={selectedSubject}
+          selectedStudent={selectedStudent}
+          onSubmitAssessment={async (result: {
+            subject: string;
+            level: number;
+          }) => {
+            try {
+              await createAssessment({
+                student: selectedStudent._id,
+                school: selectedStudent.schoolId._id,
+                mentor: "mentor-id", // TODO: get from context/auth
+                subject: result.subject as "hindi" | "math" | "english",
+                level: result.level,
+              });
+              toast.success("Assessment submitted successfully");
+            } catch {
+              toast.error("Failed to submit assessment");
+            }
+          }}
         />
       )}
     </div>

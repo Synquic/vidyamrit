@@ -4,7 +4,7 @@ import userRoutes from "./UserRoutes";
 import superAdminRouter from "./SuperAdminRoutes";
 import schoolRouter from "./SchoolRoutes";
 import schoolAdminRouter from "./SchoolAdminRoutes";
-import mentorRouter from "../models/MentorRoutes";
+import mentorRouter from "./MentorRoutes";
 import studentRouter from "./StudentRoutes";
 import cohortRouter from "./CohortRoutes";
 import assessmentRouter from "./AssessmentRoutes";
