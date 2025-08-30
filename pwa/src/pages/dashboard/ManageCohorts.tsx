@@ -24,13 +24,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -202,22 +195,41 @@ function ManageCohorts() {
             {cohorts?.map((cohort) => (
               <TableRow key={cohort._id}>
                 <TableCell>{cohort.name}</TableCell>
-                <TableCell>{(() => {
-                  const schoolId = typeof cohort.schoolId === 'string' ? cohort.schoolId : cohort.schoolId?._id;
-                  const school = schools.find((s: School) => s._id === schoolId);
-                  return school ? school.name : schoolId;
-                })()}</TableCell>
-                <TableCell>{(() => {
-                  const mentorId = typeof cohort.mentorId === 'string' ? cohort.mentorId : cohort.mentorId?._id;
-                  const mentor = mentors.find((m: Mentor) => m._id === mentorId);
-                  return mentor ? mentor.name : mentorId;
-                })()}</TableCell>
-                <TableCell>{Array.isArray(cohort.students)
-                  ? cohort.students.map((sid) => {
-                      const student = students.find((s: Student) => s._id === sid);
-                      return student ? student.name : sid;
-                    }).join(", ")
-                  : ""}
+                <TableCell>
+                  {(() => {
+                    const schoolId =
+                      typeof cohort.schoolId === "string"
+                        ? cohort.schoolId
+                        : cohort.schoolId?._id;
+                    const school = schools.find(
+                      (s: School) => s._id === schoolId
+                    );
+                    return school ? school.name : schoolId;
+                  })()}
+                </TableCell>
+                <TableCell>
+                  {(() => {
+                    const mentorId =
+                      typeof cohort.mentorId === "string"
+                        ? cohort.mentorId
+                        : cohort.mentorId?._id;
+                    const mentor = mentors.find(
+                      (m: Mentor) => m._id === mentorId
+                    );
+                    return mentor ? mentor.name : mentorId;
+                  })()}
+                </TableCell>
+                <TableCell>
+                  {Array.isArray(cohort.students)
+                    ? cohort.students
+                        .map((sid) => {
+                          const student = students.find(
+                            (s: Student) => s._id === sid
+                          );
+                          return student ? student.name : sid;
+                        })
+                        .join(", ")
+                    : ""}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -305,7 +317,10 @@ function ManageCohorts() {
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    students: e.target.value.split(",").map((id) => id.trim()).filter(Boolean),
+                    students: e.target.value
+                      .split(",")
+                      .map((id) => id.trim())
+                      .filter(Boolean),
                   }))
                 }
                 placeholder="Enter student IDs separated by comma"

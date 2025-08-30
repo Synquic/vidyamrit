@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createStudent,
@@ -10,8 +10,6 @@ import {
   type UpdateStudentDTO,
 } from "@/services/students";
 import { getSchools, School } from "@/services/schools";
-import { AuthContext } from "@/contexts/AuthContext";
-import { UserRole } from "@/types/user";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,8 +50,6 @@ import { toast } from "sonner";
 import { Plus, Loader2, Trash2, Edit } from "lucide-react";
 
 function ManageStudents() {
-  const { user } = useContext(AuthContext) ?? {};
-  const isSuper = !!(user && user.role === UserRole.SUPER_ADMIN);
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -80,7 +76,7 @@ function ManageStudents() {
   });
 
   // Fetch schools for the select dropdown (for super admin)
-  const { data: schools = [], isLoading: schoolsLoading } = useQuery<School[]>({
+  const { data: schools = [] } = useQuery<School[]>({
     queryKey: ["schools"],
     queryFn: getSchools,
   });

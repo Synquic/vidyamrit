@@ -43,8 +43,8 @@ export interface School {
         systemOutput?: 'include' | 'followup' | 'reject';
         status?: 'active' | 'inactive' | 'rejected' | 'followup';
     };
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export const getSchools = async (): Promise<School[]> => {

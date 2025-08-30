@@ -23,7 +23,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search } from "lucide-react";
 
-
 function StudentsPage() {
   const [selectedSchool, setSelectedSchool] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,9 +52,13 @@ function StudentsPage() {
 
   // Helper: get latest assessment for a student
   const getLatestAssessment = (studentId: string): Assessment | undefined => {
-    const studentAssessments = assessments.filter(a => a.student === studentId);
+    const studentAssessments = assessments.filter(
+      (a) => a.student === studentId
+    );
     // Sort by date descending
-    return studentAssessments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+    return studentAssessments.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )[0];
   };
 
   if (isLoadingStudents || isLoadingAssessments) {
@@ -86,7 +89,10 @@ function StudentsPage() {
             />
           </div>
         </div>
-        <Select value={selectedSchool || "all"} onValueChange={v => setSelectedSchool(v === "all" ? "" : v)}>
+        <Select
+          value={selectedSchool || "all"}
+          onValueChange={(v) => setSelectedSchool(v === "all" ? "" : v)}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by school" />
           </SelectTrigger>
@@ -129,7 +135,6 @@ function StudentsPage() {
                       <TableCell className="font-medium">
                         {student.name}
                       </TableCell>
-                      <TableCell>{student.email}</TableCell>
                       <TableCell>{student.schoolId.name}</TableCell>
                       <TableCell>
                         <Badge
@@ -141,12 +146,22 @@ function StudentsPage() {
                       <TableCell>
                         {latestAssessment ? (
                           <div>
-                            <div className="text-xs font-semibold">{latestAssessment.subject.toUpperCase()}</div>
-                            <div className="text-xs">Level {latestAssessment.level}</div>
-                            <div className="text-xs text-muted-foreground">{new Date(latestAssessment.date).toLocaleDateString()}</div>
+                            <div className="text-xs font-semibold">
+                              {latestAssessment.subject.toUpperCase()}
+                            </div>
+                            <div className="text-xs">
+                              Level {latestAssessment.level}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(
+                                latestAssessment.date
+                              ).toLocaleDateString()}
+                            </div>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">No assessment</span>
+                          <span className="text-xs text-muted-foreground">
+                            No assessment
+                          </span>
                         )}
                       </TableCell>
                     </TableRow>

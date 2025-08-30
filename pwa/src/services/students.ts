@@ -6,28 +6,43 @@ export interface Student {
     uid: string;
     _id: string;
     name: string;
-    email: string;
+    age: number;
+    gender: string;
+    class: string;
+    caste: string;
     role: string;
-    rollNo: string;
+    roll_no: string;
     schoolId: {
         _id: string;
         name: string;
     };
     createdAt: string;
+    contactInfo:Array<object>;
+    knowledgeLevel:Array<object>;
+    cohort:Array<object>;
 }
 
 export interface CreateStudentDTO {
+    roll_no: string;
     name: string;
-    email: string;
-    uid: string;  // This will be used as roll number
+    age: number;
+    gender: string;
+    class: string;
+    caste: string;
     schoolId: string;
+    contactInfo:Array<object>
+    knowledgeLevel:Array<object>
+    cohort:Array<object>
 }
 
 export interface UpdateStudentDTO {
-    name?: string;
-    email?: string;
-    uid?: string;  // Allow updating roll number
-    schoolId?: string;
+    roll_no: string;
+    name: string;
+    age: number;
+    gender: string;
+    class: string;
+    caste: string;
+    schoolId: string;
 }
 
 export const createStudent = async (data: CreateStudentDTO): Promise<Student> => {

@@ -81,14 +81,22 @@ function ManageMentors() {
       if (user?.role === UserRole.SCHOOL_ADMIN && user.schoolId) {
         // Type guard for user.schoolId
         let schoolId: string = "";
-        if (typeof user.schoolId === "object" && user.schoolId !== null && "_id" in user.schoolId) {
+        if (
+          typeof user.schoolId === "object" &&
+          user.schoolId !== null &&
+          "_id" in user.schoolId
+        ) {
           schoolId = user.schoolId._id;
         } else if (typeof user.schoolId === "string") {
           schoolId = user.schoolId;
         }
         return data.filter((mentor) => {
           let mentorSchoolId: string = "";
-          if (mentor.schoolId && typeof mentor.schoolId === "object" && "_id" in mentor.schoolId) {
+          if (
+            mentor.schoolId &&
+            typeof mentor.schoolId === "object" &&
+            "_id" in mentor.schoolId
+          ) {
             mentorSchoolId = mentor.schoolId._id;
           } else if (typeof mentor.schoolId === "string") {
             mentorSchoolId = mentor.schoolId;
@@ -109,7 +117,12 @@ function ManageMentors() {
       // Filter schools based on user role
       if (user?.role === UserRole.SUPER_ADMIN) {
         return data; // Show all schools for super admin
-      } else if (user && String(user.role) !== 'super_admin' && user.schoolId && typeof user.schoolId === "object") {
+      } else if (
+        user &&
+        String(user.role) !== "super_admin" &&
+        user.schoolId &&
+        typeof user.schoolId === "object"
+      ) {
         return data.filter((school) => school._id === user.schoolId._id);
       }
       return [];
@@ -159,7 +172,10 @@ function ManageMentors() {
   const handleSubmit = () => {
     // If not super admin and has a schoolId, use that instead of form data
     const schoolIdToUse =
-      user && String(user.role) !== 'super_admin' && user.schoolId && typeof user.schoolId === "object"
+      user &&
+      String(user.role) !== "super_admin" &&
+      user.schoolId &&
+      typeof user.schoolId === "object"
         ? user.schoolId._id
         : formData.schoolId;
 

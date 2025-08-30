@@ -254,7 +254,7 @@ function ManageSchools() {
                 <SchoolAdminCards
                   school={{
                     ...school,
-                    _id: school._id || "",
+                    _id: school._id,
                     createdAt: school.createdAt || new Date(),
                     updatedAt: school.updatedAt || new Date(),
                   }}
