@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import AssessmentQuestionSet from '../models/AssessmentQuestionSetModel';
+import QuestionSet from '../models/QuestionSetModel';
 
 export const getQuestionSets = async (req: Request, res: Response) => {
     try {
@@ -7,7 +7,7 @@ export const getQuestionSets = async (req: Request, res: Response) => {
         const filter: any = {};
         if (subject) filter.subject = subject;
         if (version) filter.version = Number(version);
-        const sets = await AssessmentQuestionSet.find(filter).sort({ createdAt: -1 });
+        const sets = await QuestionSet.find(filter).sort({ createdAt: -1 });
         res.json(sets);
     } catch (error) {
         res.status(500).json({ error: "Error fetching question sets" });
@@ -16,7 +16,7 @@ export const getQuestionSets = async (req: Request, res: Response) => {
 
 export const getQuestionSet = async (req: Request, res: Response) => {
     try {
-        const set = await AssessmentQuestionSet.findById(req.params.id);
+        const set = await QuestionSet.findById(req.params.id);
         if (!set) return res.status(404).json({ error: "Question set not found" });
         res.json(set);
     } catch (error) {
@@ -26,7 +26,7 @@ export const getQuestionSet = async (req: Request, res: Response) => {
 
 export const createQuestionSet = async (req: Request, res: Response) => {
     try {
-        const set = new AssessmentQuestionSet(req.body);
+        const set = new QuestionSet(req.body);
         await set.save();
         res.status(201).json(set);
     } catch (error) {
@@ -36,7 +36,7 @@ export const createQuestionSet = async (req: Request, res: Response) => {
 
 export const updateQuestionSet = async (req: Request, res: Response) => {
     try {
-        const set = await AssessmentQuestionSet.findByIdAndUpdate(
+        const set = await QuestionSet.findByIdAndUpdate(
             req.params.id,
             { ...req.body, updatedAt: new Date() },
             { new: true, runValidators: true }
@@ -50,7 +50,7 @@ export const updateQuestionSet = async (req: Request, res: Response) => {
 
 export const deleteQuestionSet = async (req: Request, res: Response) => {
     try {
-        const set = await AssessmentQuestionSet.findByIdAndDelete(req.params.id);
+        const set = await QuestionSet.findByIdAndDelete(req.params.id);
         if (!set) return res.status(404).json({ error: "Question set not found" });
         res.json({ message: "Question set deleted successfully" });
     } catch (error) {

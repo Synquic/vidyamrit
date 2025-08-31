@@ -3,8 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import { RequestHandler } from 'express';
 import logger from './index';
+import dotenv from 'dotenv';
+dotenv.config();
 
-const logsDir = path.join(__dirname, '../../logs');
+const logsDir = process.env.LOGGER_PATH || path.join(__dirname, '../../../logs');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir);
 }

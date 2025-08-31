@@ -1,6 +1,6 @@
 import mongoose, { Document } from 'mongoose';
 
-export interface IAssessmentQuestionSet extends Document {
+export interface IQuestionSet extends Document {
     subject: string;
     version: number;
     levels: Array<{
@@ -17,9 +17,9 @@ export interface IAssessmentQuestionSet extends Document {
     updatedAt: Date;
 }
 
-const AssessmentQuestionSetSchema = new mongoose.Schema({
+const QuestionSetSchema = new mongoose.Schema({
     subject: { type: String, required: true },
-    version: { type: Number, required: true, default: 1 },
+    version: { type: Number, required: true},
     levels: [
         {
             level: { type: Number, required: true },
@@ -38,5 +38,5 @@ const AssessmentQuestionSetSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 
-const AssessmentQuestionSet = mongoose.model<IAssessmentQuestionSet>('AssessmentQuestionSet', AssessmentQuestionSetSchema);
-export default AssessmentQuestionSet;
+const QuestionSet = mongoose.model<IQuestionSet>('QuestionSet', QuestionSetSchema);
+export default QuestionSet;

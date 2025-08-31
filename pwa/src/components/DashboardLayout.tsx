@@ -20,6 +20,7 @@ import {
 import { AppSidebar } from "./AppSidebar";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/LanguageToggleButton";
+import Notifications from "./Notifications";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </BreadcrumbList>
           </Breadcrumb>
           <div className="flex-1" />
+          <Notifications />
           <LanguageToggleButton />
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>

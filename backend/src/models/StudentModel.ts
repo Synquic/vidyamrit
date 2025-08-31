@@ -1,5 +1,4 @@
 import mongoose, { Document } from 'mongoose';
-import { UserRole } from '../configs/roles';
 
 export interface IUser extends Document {
     roll_no: string;
@@ -45,8 +44,8 @@ const StudentSchema = new mongoose.Schema({
     contactInfo: [{
         name: { type: String, required: true },
         relation: { type: String, required: true },
-        occupation: { type: String, required: true },
-        phone_no: { type: String, required: true }
+        occupation: { type: String, required: false },
+        phone_no: { type: String, required: false }
     }],
     knowledgeLevel: [{
         level: { type: Number, required: true },
