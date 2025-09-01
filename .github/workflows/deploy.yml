@@ -102,11 +102,14 @@ jobs:
             cd backend
             npm install
 
+            echo "🔨 Building backend"
+            npm run build
+
             echo "🔑 Linking Firebase key"
             ln -sf /home/ubuntu/secrets/firebaseServiceAccountKey.json ./firebaseServiceAccountKey.json
 
-            echo "🚀 Restarting backend with PM2"
-            pm2 restart backend-app || pm2 start src/index.js --name backend-app
+            echo "🚀 Restarting backend with PM2 (serving dist/index.js)"
+            pm2 restart backend-app || pm2 start dist/index.js --name backend-app
 
             echo "🌐 Deploying frontend to Nginx"
             sudo rm -rf /var/www/html/*
