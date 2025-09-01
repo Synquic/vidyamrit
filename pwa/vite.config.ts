@@ -7,10 +7,10 @@ import tailwindcss from "@tailwindcss/vite"
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), VitePWA({
-    strategies: 'injectManifest',
+    strategies: 'injectManifest',   // Service Worker strategy, generateSw generates sw.js completely automatically, injectManifest will compile YOUR CUSTOM sw and inject precached manifest into it.
     srcDir: 'src',
     filename: 'sw.ts',
-    registerType: 'autoUpdate',
+    registerType: 'autoUpdate', //plugin option with autoUpdate or prompt (default strategy) value.
     injectRegister: false,
 
     pwaAssets: {
@@ -29,8 +29,8 @@ export default defineConfig({
       globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
     },
 
-    devOptions: {
-      enabled: false,
+    devOptions: { 
+      enabled: true, //The service worker on development will be only available if the enable development option is true.
       navigateFallback: 'index.html',
       suppressWarnings: true,
       type: 'module',

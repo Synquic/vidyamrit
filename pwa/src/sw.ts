@@ -19,7 +19,7 @@ if (import.meta.env.DEV)
 // to allow work offline
 registerRoute(new NavigationRoute(
   createHandlerBoundToURL('index.html'),
-  { allowlist },
+  { allowlist, denylist: [/^\/api\//] }
 ))
 
 self.skipWaiting()
