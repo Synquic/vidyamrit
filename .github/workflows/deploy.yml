@@ -1,0 +1,115 @@
+name: Deploy Full Stack App to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  # Frontend ENV
+  VITE_BACKEND_HOST: ${{ secrets.VITE_BACKEND_HOST }}
+  VITE_BACKEND_PORT: ${{ secrets.VITE_BACKEND_PORT }}
+  VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+  VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+  VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+  VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+  VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+  VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+
+  # Backend ENV
+  PORT: ${{ secrets.PORT }}
+  MONGO_URI: ${{ secrets.MONGO_URI }}
+  FIREBASE_SERVICE_ACCOUNT_KEY_PATH: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY_PATH }}
+  MAIL_USER: ${{ secrets.MAIL_USER }}
+  MAIL_PASS: ${{ secrets.MAIL_PASS }}
+  CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  LOGGER_PATH: ${{ secrets.LOGGER_PATH }}
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install frontend dependencies
+        working-directory: ./pwa
+        run: npm ci
+
+      - name: Create frontend .env
+        working-directory: ./pwa
+        run: |
+          cat <<EOF > .env
+          VITE_BACKEND_HOST=${VITE_BACKEND_HOST}
+          VITE_BACKEND_PORT=${VITE_BACKEND_PORT}
+          VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
+          VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
+          VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
+          VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
+          VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
+          VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
+          EOF
+
+      - name: Build frontend
+        working-directory: ./pwa
+        run: npm run build
+
+      - name: Upload full project to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "./*"
+          target: "/home/ubuntu/prod-deployment"
+          port: 22
+          overwrite: true
+
+      - name: SSH into EC2 and deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+
+          script: |
+            cd /home/ubuntu/prod-deployment
+
+            echo "📄 Writing backend .env"
+            cat <<EOF > backend/.env
+            PORT=${{ secrets.PORT }}
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            FIREBASE_SERVICE_ACCOUNT_KEY_PATH=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY_PATH }}
+            MAIL_USER=${{ secrets.MAIL_USER }}
+            MAIL_PASS=${{ secrets.MAIL_PASS }}
+            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
+            EOF
+
+            echo "🔧 Setting up NVM"
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            echo "📦 Installing backend dependencies"
+            cd backend
+            npm install
+
+            echo "🔑 Linking Firebase key"
+            ln -sf /home/ubuntu/secrets/firebaseServiceAccountKey.json ./firebaseServiceAccountKey.json
+
+            echo "🚀 Restarting backend with PM2"
+            pm2 restart backend-app || pm2 start src/index.js --name backend-app
+
+            echo "🌐 Deploying frontend to Nginx"
+            sudo rm -rf /var/www/html/*
+            sudo cp -r /home/ubuntu/prod-deployment/pwa/dist/* /var/www/html/
+
+            echo "✅ Deployment complete"
