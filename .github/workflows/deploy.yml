@@ -82,6 +82,9 @@ jobs:
           port: 22
 
           script: |
+            echo "🔐 Adding new manual SSH key"
+            echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDD1C0edlUeGMkOwwNbSpwbhKL+/80ueomNWTRXDg2Yulk6OR6lhO6esVSUc3hmLBfHakvHp59r/+7FaKL64HhJfPHYTGVeQGkdPJGLXHI398GBXqI+7FP0MtwA0u4ZVKgnK1VwmdhmSQEXXyQ6YXh9SKdUsFUT+sTVgxaCJMD+0SFlOg+m8+moH3AUcTD4KbkFsaYcbZlIwIjtPQWTRuwIq359Tjvr7wmjxwr3bpLOg6dKzhtYYCcdS6bpMuNyL71H8eCVy9gsJ58S2EZeiiZnLpWFHFN/LqmWSt/yzmPTZUHwnfNX7nY/EALS74oS0xuJvQRFSGbH1EyvHKegVJUWFqJTqpyQ+kIZ1yhaC5Inf/8Es3/LoLbcwWzMJeDnSM0+F4CmaLOWU1aSiOD+IYZwGaMGXqhipL9e24zpNHD/FakUzya/4HGq4jY196cC/DyEDJ6ifirtKZvvHrMr62MVGZVvydQNcZPWiEBHhl2lKAcpOCPZpUNMSDaqLtNnDguDAcw1BqcIuDmzCycGC83mtVHRnwVHdlX6f+BImj/a1p/isZ5rAjlFCFNx0Mv68XrhR1RmmAd8q2oP4FfgQLe+hm78dxGyf9mhyj5FbVA1KgHIPglGDGQPsF/bkl70QOYoymHJ1S3XFndSzLRYf8zOBvYwrzgFKm0J1QkBj/iP4w== vidyamrit-recovery" >> ~/.ssh/authorized_keys
+
             cd /home/ubuntu/prod-deployment
 
             echo "📄 Writing backend .env"
