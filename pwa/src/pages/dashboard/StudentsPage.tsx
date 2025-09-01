@@ -99,9 +99,11 @@ function StudentsPage() {
           <SelectContent>
             <SelectItem value="all">All Schools</SelectItem>
             {schools.map((school) => (
-              <SelectItem key={school._id} value={school._id}>
-                {school.name}
-              </SelectItem>
+              school._id && (
+                <SelectItem key={school._id} value={school._id}>
+                  {school.name}
+                </SelectItem>
+              )
             ))}
           </SelectContent>
         </Select>

@@ -8,8 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import { getStudents, Student } from "@/services/students";
-import { createAssessment } from "@/services/assessments";
-import { toast } from "sonner";
+
 
 export default function BaselineAssessmentsPage() {
   const [questionSets, setQuestionSets] = useState<AssessmentQuestionSet[]>([]);
@@ -18,7 +17,7 @@ export default function BaselineAssessmentsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
 
   useEffect(() => {
     fetchQuestionSets();
@@ -47,18 +46,16 @@ export default function BaselineAssessmentsPage() {
     }
   };
 
-  const handleStartTest = (subject: string) => {
+  const handleStartTest = (_subject: string) => {
     if (!selectedStudent) {
       setError("Please select a student first.");
       return;
     }
-    setSelectedSubject(subject);
     setModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
-    setSelectedSubject(null);
   };
 
   return (
@@ -111,26 +108,6 @@ export default function BaselineAssessmentsPage() {
         <BaselineAssessmentModal
           isOpen={modalOpen}
           onClose={handleCloseModal}
-          questionSets={questionSets}
-          selectedSubject={selectedSubject}
-          selectedStudent={selectedStudent}
-          onSubmitAssessment={async (result: {
-            subject: string;
-            level: number;
-          }) => {
-            try {
-              await createAssessment({
-                student: selectedStudent._id,
-                school: selectedStudent.schoolId._id,
-                mentor: "mentor-id", // TODO: get from context/auth
-                subject: result.subject as "hindi" | "math" | "english",
-                level: result.level,
-              });
-              toast.success("Assessment submitted successfully");
-            } catch {
-              toast.error("Failed to submit assessment");
-            }
-          }}
         />
       )}
     </div>

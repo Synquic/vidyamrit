@@ -127,7 +127,7 @@ export function BaselineAssessmentModal({
     }
   };
 
-  const detectOscillation = (newLevel: number, history: number[]) => {
+  const detectOscillation = (_newLevel: number, history: number[]) => {
     if (history.length < 4) return false;
 
     const recent = history.slice(-6);
@@ -183,7 +183,7 @@ export function BaselineAssessmentModal({
     let correct = false;
 
     if (currentSubject === "math") {
-      correct = answer === question.correct_answer;
+      correct = answer === (question as any).correct_answer;
     } else {
       correct = answer === true;
     }
@@ -462,12 +462,12 @@ export function BaselineAssessmentModal({
                       {currentSubject === "math" ? (
                         <>
                           <div className="text-xl font-semibold text-center py-4 bg-muted/50 rounded-lg">
-                            {getCurrentQuestion()?.question}
+                            {(getCurrentQuestion() as any)?.question}
                           </div>
 
                           {!showFeedback ? (
                             <div className="grid grid-cols-2 gap-3">
-                              {getCurrentQuestion()?.options.map(
+                              {(getCurrentQuestion() as any)?.options.map(
                                 (option: string, index: number) => (
                                   <Button
                                     key={index}
@@ -510,7 +510,7 @@ export function BaselineAssessmentModal({
                               {!isCorrect && (
                                 <p className="text-sm text-muted-foreground">
                                   Correct answer:{" "}
-                                  {getCurrentQuestion()?.correct_answer}
+                                  {(getCurrentQuestion() as any)?.correct_answer}
                                 </p>
                               )}
                             </div>
@@ -519,7 +519,7 @@ export function BaselineAssessmentModal({
                       ) : (
                         <>
                           <div className="text-2xl font-bold text-center py-8 bg-muted/50 rounded-lg">
-                            {getCurrentQuestion()?.question}
+                            {(getCurrentQuestion() as any)?.question}
                           </div>
 
                           {!showFeedback ? (

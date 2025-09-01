@@ -6,7 +6,11 @@ import { AuthProvider } from "./providers/AuthProvider";
 import "./lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
 //
-import { AUTH_ROUTE_PATHS, DASHBOARD_ROUTE_PATHS } from "@/routes";
+import {
+  PUBLIC_ROUTE_PATHS,
+  AUTH_ROUTE_PATHS,
+  DASHBOARD_ROUTE_PATHS,
+} from "@/routes";
 //
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFoundComponent from "./components/NotFound";
@@ -27,11 +31,16 @@ import ManageCohorts from "./pages/dashboard/ManageCohorts";
 import BaselineAssessmentsPage from "./pages/dashboard/BaselineAssessmentsPage";
 import StudentsPage from "./pages/dashboard/StudentsPage";
 import ManageAssessmentQuestionSetsPage from "./pages/dashboard/ManageAssessmentQuestionSets";
+import SupportPage from "./pages/public/SupportPage.tsx";
 
 const router = createBrowserRouter([
   {
     path: "/",
     Component: () => <LandingPage />,
+  },
+  {
+    path: PUBLIC_ROUTE_PATHS.support,
+    Component: () => <SupportPage />,
   },
   // 404 not found
   {

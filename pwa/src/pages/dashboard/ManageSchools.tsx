@@ -251,14 +251,35 @@ function ManageSchools() {
                     Delete
                   </Button>
                 </div>
-                <SchoolAdminCards
-                  school={{
-                    ...school,
-                    _id: school._id,
-                    createdAt: school.createdAt || new Date(),
-                    updatedAt: school.updatedAt || new Date(),
-                  }}
-                />
+                {school._id && (
+                  <SchoolAdminCards
+                    school={{
+                      ...school,
+                      _id: school._id,
+                      createdAt: school.createdAt || new Date(),
+                      updatedAt: school.updatedAt || new Date(),
+                      contact_details: school.contact_details?.map(contact => ({
+                        ...contact,
+                        _id: Math.random().toString(36).substr(2, 9)
+                      })) || [],
+                      evaluationChecklist: school.evaluationChecklist ? {
+                        ...school.evaluationChecklist,
+                        ngoHistory: school.evaluationChecklist.ngoHistory?.map(item => ({
+                          ...item,
+                          date: item.date ? new Date(item.date) : undefined
+                        })) || []
+                      } : {
+                        minEligibleStudents: {},
+                        dedicatedRoom: {},
+                        supportDocuments: {},
+                        ngoHistory: [],
+                        infrastructureAdequacy: {},
+                        systemOutput: 'followup' as const,
+                        status: 'followup' as const
+                      }
+                    }}
+                  />
+                )}
               </div>
             ))
         )}

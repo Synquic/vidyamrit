@@ -81,14 +81,8 @@ function ManageMentors() {
       if (user?.role === UserRole.SCHOOL_ADMIN && user.schoolId) {
         // Type guard for user.schoolId
         let schoolId: string = "";
-        if (
-          typeof user.schoolId === "object" &&
-          user.schoolId !== null &&
-          "_id" in user.schoolId
-        ) {
+        if (user.schoolId && typeof user.schoolId === "object") {
           schoolId = user.schoolId._id;
-        } else if (typeof user.schoolId === "string") {
-          schoolId = user.schoolId;
         }
         return data.filter((mentor) => {
           let mentorSchoolId: string = "";
