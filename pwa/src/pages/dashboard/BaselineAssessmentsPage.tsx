@@ -5,10 +5,9 @@ import {
   getAssessmentQuestionSets,
   AssessmentQuestionSet,
 } from "@/services/assessmentQuestionSets";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import { getStudents, Student } from "@/services/students";
-
 
 export default function BaselineAssessmentsPage() {
   const [questionSets, setQuestionSets] = useState<AssessmentQuestionSet[]>([]);
@@ -17,7 +16,6 @@ export default function BaselineAssessmentsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-
 
   useEffect(() => {
     fetchQuestionSets();
@@ -46,13 +44,13 @@ export default function BaselineAssessmentsPage() {
     }
   };
 
-  const handleStartTest = (_subject: string) => {
-    if (!selectedStudent) {
-      setError("Please select a student first.");
-      return;
-    }
-    setModalOpen(true);
-  };
+  // const handleStartTest = (_subject: string) => {
+  //   if (!selectedStudent) {
+  //     setError("Please select a student first.");
+  //     return;
+  //   }
+  //   setModalOpen(true);
+  // };
 
   const handleCloseModal = () => {
     setModalOpen(false);
@@ -71,6 +69,7 @@ export default function BaselineAssessmentsPage() {
           onChange={(e) => {
             const student = students.find((s) => s._id === e.target.value);
             setSelectedStudent(student || null);
+            if (student) setModalOpen(true);
           }}
         >
           <option value="">-- Select --</option>
@@ -81,6 +80,7 @@ export default function BaselineAssessmentsPage() {
           ))}
         </select>
       </div>
+      {/* Optionally, you can keep the question set list for info, but remove the start button since test starts on student select */}
       <div className="space-y-4">
         {questionSets.map((set) => (
           <div
@@ -95,12 +95,6 @@ export default function BaselineAssessmentsPage() {
                 Levels: {set.levels.length}
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => handleStartTest(set.subject)}
-            >
-              Start {set.subject} Test
-            </Button>
           </div>
         ))}
       </div>
