@@ -1,8 +1,8 @@
 import axios from "axios";
 import { auth } from "../../firebaseConfig";
 
-const backendHost = import.meta.env.VITE_BACKEND_HOST || "http://localhost";
-const backendPort = import.meta.env.VITE_BACKEND_PORT || "5000";
+// const backendHost = import.meta.env.VITE_BACKEND_HOST || "http://localhost";
+// const backendPort = import.meta.env.VITE_BACKEND_PORT || "5000";
 
 if (!import.meta.env.VITE_BACKEND_HOST || !import.meta.env.VITE_BACKEND_PORT) {
     console.warn(
@@ -10,7 +10,8 @@ if (!import.meta.env.VITE_BACKEND_HOST || !import.meta.env.VITE_BACKEND_PORT) {
     );
 }
 
-export const apiUrl = `${backendHost}:${backendPort}/api`;
+// export const apiUrl = `${backendHost}:${backendPort}/api`;
+export const apiUrl = "https://demo.vidyamrit.in/api"
 
 // Helper to get token
 export const getToken = async () => {
