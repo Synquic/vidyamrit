@@ -7,8 +7,7 @@ on:
 
 env:
   # Frontend ENV
-  VITE_BACKEND_HOST: ${{ secrets.VITE_BACKEND_HOST }}
-  VITE_BACKEND_PORT: ${{ secrets.VITE_BACKEND_PORT }}
+  VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
   VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
   VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
   VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
@@ -48,8 +47,7 @@ jobs:
         working-directory: ./pwa
         run: |
           cat <<EOF > .env
-          VITE_BACKEND_HOST=${VITE_BACKEND_HOST}
-          VITE_BACKEND_PORT=${VITE_BACKEND_PORT}
+          VITE_BACKEND_URL=${VITE_BACKEND_URL}
           VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
           VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
           VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
@@ -68,7 +66,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "./*,!./.git"
+          source: "./**,!./.git/**"
           target: "/home/ubuntu/prod-deployment"
           port: 22
           overwrite: true
