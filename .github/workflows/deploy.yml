@@ -70,6 +70,7 @@ jobs:
           target: "/home/ubuntu/prod-deployment"
           port: 22
           overwrite: true
+          rm: true
 
       - name: SSH into EC2 and deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -80,6 +81,13 @@ jobs:
           port: 22
 
           script: |
+            echo "🧹 Cleaning up previous deployment"
+            cd /home/ubuntu
+            rm -rf prod-deployment-backup
+            if [ -d "prod-deployment" ]; then
+              mv prod-deployment prod-deployment-backup
+            fi
+            
             cd /home/ubuntu/prod-deployment
 
             echo "📄 Writing backend .env"
