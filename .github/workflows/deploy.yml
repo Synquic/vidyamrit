@@ -87,7 +87,7 @@ jobs:
             if [ -d "prod-deployment" ]; then
               mv prod-deployment prod-deployment-backup
             fi
-            
+
             cd /home/ubuntu/prod-deployment
 
             echo "📄 Writing backend .env"
