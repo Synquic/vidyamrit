@@ -178,8 +178,12 @@ export const updateProgram = async (
     // Check if user has permission to update
     if (
       (program.createdBy as mongoose.Types.ObjectId).toString() !==
-        req.user!._id.toString() &&
-      req.user!.role !== UserRole.SUPER_ADMIN
+        (typeof req.user === "object" && req.user !== null && "_id" in req.user
+          ? (req.user as { _id: mongoose.Types.ObjectId })._id.toString()
+          : "") &&
+      (typeof req.user === "object" && req.user !== null && "role" in req.user
+        ? (req.user as { role: UserRole }).role
+        : undefined) !== UserRole.SUPER_ADMIN
     ) {
       res
         .status(403)
@@ -247,7 +251,7 @@ export const deleteProgram = async (
     // Check if user has permission to delete
     if (
       (program.createdBy as mongoose.Types.ObjectId).toString() !==
-        req.user!._id.toString() &&
+        (req.user as { _id: mongoose.Types.ObjectId })._id.toString() &&
       req.user!.role !== UserRole.SUPER_ADMIN
     ) {
       res
@@ -286,7 +290,7 @@ export const toggleProgramStatus = async (
     // Check if user has permission to update
     if (
       (program.createdBy as mongoose.Types.ObjectId).toString() !==
-        req.user!._id.toString() &&
+        (req.user as { _id: mongoose.Types.ObjectId })._id.toString() &&
       req.user!.role !== UserRole.SUPER_ADMIN
     ) {
       res

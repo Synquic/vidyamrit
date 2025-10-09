@@ -3,7 +3,7 @@ import mongoose, { Document } from "mongoose";
 export interface ICohort extends Document {
   name: string;
   schoolId: mongoose.Types.ObjectId;
-  mentorId: mongoose.Types.ObjectId;
+  tutorId: mongoose.Types.ObjectId;
   students: Array<{
     _id: string;
   }>;
@@ -18,7 +18,7 @@ const CohortSchema = new mongoose.Schema({
     ref: "School",
     required: true,
   },
-  mentorId: {
+  tutorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
@@ -26,12 +26,9 @@ const CohortSchema = new mongoose.Schema({
       validator: async function (value: mongoose.Types.ObjectId) {
         const User = mongoose.model("User");
         const user = await User.findById(value);
-        return (
-          user && ["mentor", "school_admin", "super_admin"].includes(user.role)
-        );
+        return user && ["tutor", "super_admin"].includes(user.role);
       },
-      message:
-        "mentorId must reference a user with role MENTOR, SCHOOL_ADMIN, or SUPER_ADMIN",
+      message: "tutorId must reference a user with role TUTOR or SUPER_ADMIN",
     },
   },
   students: [

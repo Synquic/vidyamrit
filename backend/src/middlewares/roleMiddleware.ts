@@ -4,12 +4,6 @@ import { UserRole } from "../configs/roles";
 
 export const roleMiddleware = (...allowedRoles: UserRole[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
-    console.log("=== ROLE MIDDLEWARE DEBUG ===");
-    console.log("User in request:", req.user);
-    console.log("User role:", req.user?.role);
-    console.log("Allowed roles:", allowedRoles);
-    console.log("============================");
-
     const user = req.user;
 
     if (!user) {

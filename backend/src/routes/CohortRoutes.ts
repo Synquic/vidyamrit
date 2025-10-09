@@ -7,6 +7,7 @@ import {
   deleteCohort,
   addStudentToCohort,
   addStudentToDefaultCohort,
+  generateOptimalCohorts,
 } from "../controllers/cohortController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
@@ -19,50 +20,45 @@ cohortRouter.use(authMiddleware);
 // Get all cohorts
 cohortRouter.get(
   "/",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   getCohorts
 );
 
 // Get single cohort
 cohortRouter.get(
   "/:id",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   getCohort
 );
 
 // Create cohort
-cohortRouter.post(
-  "/",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN),
-  createCohort
-);
+cohortRouter.post("/", roleMiddleware(UserRole.SUPER_ADMIN), createCohort);
 
 // Update cohort
-cohortRouter.put(
-  "/:id",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN),
-  updateCohort
-);
+cohortRouter.put("/:id", roleMiddleware(UserRole.SUPER_ADMIN), updateCohort);
 
 // Delete cohort
-cohortRouter.delete(
-  "/:id",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN),
-  deleteCohort
-);
+cohortRouter.delete("/:id", roleMiddleware(UserRole.SUPER_ADMIN), deleteCohort);
 
-// Mentor can add students to cohort
+// Tutor can add students to cohort
 cohortRouter.post(
   "/:id/add-student",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   addStudentToCohort
 );
 
 // Add student to default cohort (used after assessment)
 cohortRouter.post(
   "/add-to-default",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.MENTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   addStudentToDefaultCohort
+);
+
+// Generate optimal cohorts using algorithm
+cohortRouter.post(
+  "/generate-optimal",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  generateOptimalCohorts
 );
 
 export default cohortRouter;

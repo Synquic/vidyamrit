@@ -1,9 +1,8 @@
 export enum UserRole {
   SUPER_ADMIN = "super_admin",
-  SCHOOL_ADMIN = "school_admin",
-  MENTOR = "mentor",
+  TUTOR = "tutor",
 }
-export type UserRoleType = "super_admin" | "school_admin" | "mentor";
+export type UserRoleType = "super_admin" | "tutor";
 
 // Base user interface that matches the API response
 export interface BaseUser {
@@ -24,11 +23,8 @@ export interface BaseUser {
 export const isSuperAdmin = (user: BaseUser): user is SuperAdmin =>
   user.role === UserRole.SUPER_ADMIN;
 
-export const isSchoolAdmin = (user: BaseUser): user is SchoolAdmin =>
-  user.role === UserRole.SCHOOL_ADMIN;
-
-export const isMentor = (user: BaseUser): user is Mentor =>
-  user.role === UserRole.MENTOR;
+export const isTutor = (user: BaseUser): user is Tutor =>
+  user.role === UserRole.TUTOR;
 
 // Role-specific interfaces extending BaseUser
 export interface SuperAdmin extends BaseUser {
@@ -36,19 +32,10 @@ export interface SuperAdmin extends BaseUser {
   schoolId?: never; // Super admin doesn't have a school
 }
 
-export interface SchoolAdmin extends BaseUser {
-  role: UserRole.SCHOOL_ADMIN;
+export interface Tutor extends BaseUser {
+  role: UserRole.TUTOR;
   schoolId: {
-    // School admin must have a school
-    _id: string;
-    name: string;
-  };
-}
-
-export interface Mentor extends BaseUser {
-  role: UserRole.MENTOR;
-  schoolId: {
-    // Mentor must have a school
+    // Tutor must have a school
     _id: string;
     name: string;
   };
@@ -61,26 +48,26 @@ export interface CreateUserDTO {
   password: string;
   role: UserRole;
   schoolId?: string;
+  phoneNo?: string;
 }
 
 export interface UpdateUserDTO {
   name?: string;
   email?: string;
   schoolId?: string;
+  phoneNo?: string;
 }
 
 // Type for API responses
-export type User = SuperAdmin | SchoolAdmin | Mentor;
+export type User = SuperAdmin | Tutor;
 
 // Helper to narrow user type based on role
 export function getUserByRole(user: BaseUser): User {
   switch (user.role) {
     case UserRole.SUPER_ADMIN:
       return user as SuperAdmin;
-    case UserRole.SCHOOL_ADMIN:
-      return user as SchoolAdmin;
-    case UserRole.MENTOR:
-      return user as Mentor;
+    case UserRole.TUTOR:
+      return user as Tutor;
     default:
       throw new Error(`Unknown user role: ${user.role}`);
   }

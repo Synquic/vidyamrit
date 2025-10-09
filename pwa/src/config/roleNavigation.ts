@@ -1,90 +1,80 @@
 import { UserRole } from "@/types/user";
 import { DASHBOARD_ROUTE_PATHS } from "@/routes";
-import { School, UserPen, UserStar } from "lucide-react";
-import { RoleNavigation } from "@/types/navigation";
+import {
+  School,
+  Users,
+  UserPen,
+  BookOpen,
+  GraduationCap,
+  ClipboardList,
+  Calendar,
+  // BarChart3, // Temporarily hidden - Reports & Analytics
+  // Settings   // Temporarily hidden - School Admin Management
+} from "lucide-react";
 
-export const universalNavigationItem = {
-  title: "Questions",
-  url: DASHBOARD_ROUTE_PATHS.assessmentQuestionSets,
-  icon: UserStar,
-};
+// Define navigation items with role-based access
+export interface NavigationItem {
+  title: string;
+  url: string;
+  icon: any;
+  allowedRoles: UserRole[];
+  description?: string;
+}
 
-export const roleNavigation: RoleNavigation = {
-  [UserRole.SUPER_ADMIN]: {
-    title: "Super Admin",
-    url: "#",
-    icon: UserStar,
-    items: [
-      {
-        title: "Manage Schools",
-        url: DASHBOARD_ROUTE_PATHS.schools,
-      },
-      {
-        title: "Manage School Admins",
-        url: DASHBOARD_ROUTE_PATHS.schoolAdmin,
-      },
-      {
-        title: "Manage Programs",
-        url: DASHBOARD_ROUTE_PATHS.managePrograms,
-      },
-    ],
+// Flat navigation structure with role-based access control
+export const navigationItems: NavigationItem[] = [
+  {
+    title: "Student Management",
+    url: DASHBOARD_ROUTE_PATHS.students,
+    icon: GraduationCap,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "Manage student records and information",
   },
-  [UserRole.SCHOOL_ADMIN]: {
-    title: "School Admin",
-    url: "#",
-    icon: School,
-    items: [
-      {
-        title: "Manage Mentors",
-        url: DASHBOARD_ROUTE_PATHS.mentors,
-      },
-      {
-        title: "Tutor Management",
-        url: DASHBOARD_ROUTE_PATHS.mentorManagement,
-      },
-      {
-        title: "Manage Students",
-        url: DASHBOARD_ROUTE_PATHS.students,
-      },
-      {
-        title: "Manage Cohorts",
-        url: DASHBOARD_ROUTE_PATHS.cohorts,
-      },
-      {
-        title: "Daily Attendance",
-        url: DASHBOARD_ROUTE_PATHS.attendanceManagement,
-      },
-      {
-        title: "Learning Groups",
-        url: DASHBOARD_ROUTE_PATHS.learningGroups,
-      },
-    ],
-  },
-  [UserRole.MENTOR]: {
-    title: "Mentor",
-    url: "#",
+  {
+    title: "Tutor Management",
+    url: DASHBOARD_ROUTE_PATHS.mentors,
     icon: UserPen,
-    items: [
-      {
-        title: "Baseline Assessments",
-        url: DASHBOARD_ROUTE_PATHS.baselineAssessments,
-      },
-      {
-        title: "Student Reports",
-        url: DASHBOARD_ROUTE_PATHS.studentReports,
-      },
-      {
-        title: "Daily Attendance",
-        url: DASHBOARD_ROUTE_PATHS.attendanceManagement,
-      },
-      {
-        title: "Learning Groups",
-        url: DASHBOARD_ROUTE_PATHS.learningGroups,
-      },
-      {
-        title: "Progress Monitoring",
-        url: DASHBOARD_ROUTE_PATHS.progressMonitoring,
-      },
-    ],
+    allowedRoles: [UserRole.SUPER_ADMIN],
+    description: "Manage tutors and assign them to schools",
   },
+  {
+    title: "Programme Management",
+    url: DASHBOARD_ROUTE_PATHS.managePrograms,
+    icon: BookOpen,
+    allowedRoles: [UserRole.SUPER_ADMIN],
+    description: "Create and manage learning programs",
+  },
+  {
+    title: "Cohort Management",
+    url: DASHBOARD_ROUTE_PATHS.cohorts,
+    icon: Users,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "Organize students into learning groups",
+  },
+  {
+    title: "Baseline Assessments",
+    url: DASHBOARD_ROUTE_PATHS.baselineAssessments,
+    icon: ClipboardList,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "Conduct student assessments",
+  },
+  {
+    title: "Daily Attendance",
+    url: DASHBOARD_ROUTE_PATHS.attendanceManagement,
+    icon: Calendar,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "Track daily student attendance",
+  },
+  {
+    title: "School Management",
+    url: DASHBOARD_ROUTE_PATHS.schools,
+    icon: School,
+    allowedRoles: [UserRole.SUPER_ADMIN],
+    description: "Manage schools and their configurations",
+  },
+];
+
+// Helper function to get navigation items for a specific role
+export const getNavigationForRole = (userRole: UserRole): NavigationItem[] => {
+  return navigationItems.filter((item) => item.allowedRoles.includes(userRole));
 };

@@ -20,8 +20,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
-import { School, UserRole } from "@/lib/types";
+import { UserRole } from "@/types/user";
 import { getSchools } from "@/services/schools";
+import { useSchoolContext } from "@/contexts/SchoolContext";
 
 const SchoolIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 16 16" fill="currentColor">
@@ -32,53 +33,45 @@ const SchoolIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export function SchoolSwitcher() {
   const { isMobile } = useSidebar();
   const { user } = useAuth();
+  const { selectedSchool, setSelectedSchool } = useSchoolContext();
   const { data: schools = [], isLoading } = useQuery({
     queryKey: ["schools"],
     queryFn: getSchools,
   });
 
-  const [activeSchool, setActiveSchool] = React.useState<School | null>(null);
-
-  // For non-super-admin users, find and set their assigned school
+  // Initialize selected school for super admin if none selected
   React.useEffect(() => {
     if (
-      user &&
-      user.role !== UserRole.SUPER_ADMIN &&
-      user.schoolId &&
-      typeof user.schoolId === "object"
+      user?.role === UserRole.SUPER_ADMIN &&
+      schools.length > 0 &&
+      !selectedSchool
     ) {
-      const assignedSchool = schools.find((s) => s._id === user.schoolId._id);
-      if (assignedSchool && assignedSchool._id) {
-        setActiveSchool({
-          ...assignedSchool,
-          _id: assignedSchool._id || "",
-        });
-      }
-    } else if (schools.length > 0 && !activeSchool) {
       const firstSchool = schools[0];
-      setActiveSchool({
+      setSelectedSchool({
         ...firstSchool,
         _id: firstSchool._id || "",
       });
     }
-  }, [user, schools, activeSchool]);
+  }, [user, schools, selectedSchool, setSelectedSchool]);
 
-  if (isLoading || !activeSchool) {
+  if (isLoading || !selectedSchool) {
     return null;
   }
 
-  // For non-super-admin users or if there's only one school, just show it without dropdown
-  if (user?.role !== UserRole.SUPER_ADMIN || schools.length === 1) {
+  // For non-super-admin users, just show their assigned school (non-clickable)
+  if (user?.role !== UserRole.SUPER_ADMIN) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg">
+          <SidebarMenuButton size="lg" className="cursor-default">
             <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
               <SchoolIcon className="size-4" />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{activeSchool.name}</span>
-              <span className="truncate text-xs">{activeSchool.type}</span>
+              <span className="truncate font-medium">
+                {selectedSchool.name}
+              </span>
+              <span className="truncate text-xs">{selectedSchool.type}</span>
             </div>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -86,7 +79,7 @@ export function SchoolSwitcher() {
     );
   }
 
-  // Super admin with multiple schools: show dropdown
+  // Super admin: show clickable dropdown to switch schools
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -101,9 +94,9 @@ export function SchoolSwitcher() {
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
-                  {activeSchool.name}
+                  {selectedSchool.name}
                 </span>
-                <span className="truncate text-xs">{activeSchool.type}</span>
+                <span className="truncate text-xs">{selectedSchool.type}</span>
               </div>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
@@ -121,7 +114,7 @@ export function SchoolSwitcher() {
               <DropdownMenuItem
                 key={school._id}
                 onClick={() =>
-                  setActiveSchool({ ...school, _id: school._id || "" })
+                  setSelectedSchool({ ...school, _id: school._id || "" })
                 }
                 className="gap-2 p-2"
               >
@@ -133,16 +126,14 @@ export function SchoolSwitcher() {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            {user?.role === UserRole.SUPER_ADMIN && (
-              <DropdownMenuItem className="gap-2 p-2">
-                <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                  <Plus className="size-4" />
-                </div>
-                <div className="text-muted-foreground font-medium">
-                  Add school
-                </div>
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem className="gap-2 p-2">
+              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                <Plus className="size-4" />
+              </div>
+              <div className="text-muted-foreground font-medium">
+                Add school
+              </div>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

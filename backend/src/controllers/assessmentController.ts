@@ -94,68 +94,16 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
     await student.save();
     console.log("Updated student knowledge level:", studentId, "Level:", level);
 
-    // Find or create default cohort for the student's school and add student to it
-    let cohort = await Cohort.findOne({
-      schoolId: schoolId,
-      name: /^default/i, // Find cohort with name starting with "default" (case insensitive)
-    });
-
-    // If no default cohort exists, create one
-    if (!cohort) {
-      console.log("No default cohort found, creating new one");
-      cohort = new Cohort({
-        name: `Default Cohort - ${new Date().getFullYear()}`,
-        schoolId: schoolId,
-        mentorId: mentorId,
-        students: [],
-      });
-      await cohort.save();
-      console.log("Created new default cohort:", cohort._id);
-    }
-
-    // Check if student is already in the cohort
-    const isStudentInCohort = cohort.students.some(
-      (id) => id.toString() === studentId
-    );
-
-    if (!isStudentInCohort) {
-      // Add student to the cohort
-      cohort.students.push(studentId);
-      cohort.updatedAt = new Date();
-      await cohort.save();
-      console.log("Added student to cohort:", studentId, "Cohort:", cohort._id);
-
-      // Add cohort reference to student if not already present
-      const isCohortInStudent = student.cohort.some(
-        (c) =>
-          c.cohortId.toString() ===
-          (cohort._id as mongoose.Types.ObjectId).toString()
-      );
-      if (!isCohortInStudent) {
-        student.cohort.push({
-          cohortId: cohort._id as mongoose.Types.ObjectId,
-          dateJoined: new Date(),
-        });
-        await student.save();
-        console.log("Updated student cohort membership:", studentId);
-      }
-    } else {
-      console.log("Student already in cohort:", studentId);
-    }
+    // No longer automatically creating cohorts - students will await cohort assignment
 
     // Populate the assessment before returning
     const populatedAssessment = await Assessment.findById(assessment._id);
-    // .populate("student", "name roll_no")
-    // .populate("school", "name")
-    // .populate("mentor", "name");
 
     console.log("Assessment creation completed successfully");
     res.status(201).json({
       assessment: populatedAssessment,
       studentLevel: level,
-      cohortId: cohort._id,
-      message:
-        "Assessment created, student level updated, and student added to cohort successfully",
+      message: "Assessment created and student level updated successfully",
     });
   } catch (error: any) {
     console.error("Error creating assessment:", error);

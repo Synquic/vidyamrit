@@ -1,10 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  getAssessmentQuestionSets,
-  AssessmentQuestionSet,
-} from "@/services/assessmentQuestionSets";
 import { Button } from "@/components/ui/button";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import {
@@ -14,7 +10,10 @@ import {
   CreateStudentDTO,
 } from "@/services/students";
 import { getAssessments, Assessment } from "@/services/assessments";
+import { programsService, IProgram } from "@/services/programs";
 import { useAuth } from "@/hooks/useAuth";
+import { isSuperAdmin } from "@/types/user";
+import { useSchoolContext } from "@/contexts/SchoolContext";
 import {
   Dialog,
   DialogContent,
@@ -40,17 +39,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Clock } from "lucide-react";
+import { Plus, Users, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 export default function BaselineAssessmentsPage() {
   const { user } = useAuth();
-  const [questionSets, setQuestionSets] = useState<AssessmentQuestionSet[]>([]);
+  const { selectedSchool } = useSchoolContext();
   const [students, setStudents] = useState<Student[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [todaysAssessments, setTodaysAssessments] = useState<Assessment[]>([]);
+  const [programs, setPrograms] = useState<IProgram[]>([]);
+  const [selectedProgram, setSelectedProgram] = useState<IProgram | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [createStudentOpen, setCreateStudentOpen] = useState(false);
@@ -61,38 +60,64 @@ export default function BaselineAssessmentsPage() {
     gender: "",
     class: "",
     caste: "",
-    schoolId: user?.schoolId?._id || "",
+    schoolId: "",
     contactInfo: [],
     knowledgeLevel: [],
     cohort: [],
   });
 
   useEffect(() => {
-    fetchQuestionSets();
-    fetchStudents();
-    fetchTodaysAssessments();
+    fetchPrograms();
   }, []);
 
   useEffect(() => {
-    filterStudents();
-  }, [students, todaysAssessments]);
+    // Only fetch students if we have a selected school from context
+    if (selectedSchool && selectedSchool._id) {
+      fetchStudents();
+      fetchTodaysAssessments();
+    }
+  }, [selectedSchool]);
 
-  const fetchQuestionSets = async () => {
-    setLoading(true);
-    setError(null);
+  // Function to check if a student was assessed today
+  const isStudentAssessedToday = (student: Student) => {
+    // Check by todaysAssessments first
+    const assessedInTodaysAssessments = todaysAssessments.some(
+      (assessment) => assessment.student === student._id
+    );
+
+    if (assessedInTodaysAssessments) return true;
+
+    // Also check by knowledgeLevel with today's date
+    if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const latestAssessment =
+        student.knowledgeLevel[student.knowledgeLevel.length - 1];
+      const assessmentDate = new Date(latestAssessment.date);
+
+      return assessmentDate >= today && assessmentDate < tomorrow;
+    }
+
+    return false;
+  };
+
+  const fetchPrograms = async () => {
     try {
-      const data = await getAssessmentQuestionSets();
-      setQuestionSets(data);
+      const response = await programsService.getPrograms({ isActive: "true" });
+      setPrograms(response.programs);
     } catch {
-      setError("Failed to fetch question sets");
-    } finally {
-      setLoading(false);
+      setError("Failed to fetch programs");
     }
   };
 
   const fetchStudents = async () => {
+    if (!selectedSchool?._id) return;
+
     try {
-      const data = await getStudents(user?.schoolId?._id);
+      const data = await getStudents(selectedSchool._id);
       setStudents(data);
     } catch {
       setError("Failed to fetch students");
@@ -119,21 +144,9 @@ export default function BaselineAssessmentsPage() {
     }
   };
 
-  const filterStudents = () => {
-    const assessedStudentIds = new Set(
-      todaysAssessments.map((assessment) => assessment.student)
-    );
-
-    const availableStudents = students.filter(
-      (student) => !assessedStudentIds.has(student._id)
-    );
-
-    setFilteredStudents(availableStudents);
-  };
-
   const handleCreateStudent = async () => {
-    if (!user?.schoolId?._id) {
-      toast.error("School information not found");
+    if (!selectedSchool?._id) {
+      toast.error("No school selected");
       return;
     }
 
@@ -151,7 +164,7 @@ export default function BaselineAssessmentsPage() {
     try {
       const studentData: CreateStudentDTO = {
         ...(newStudent as CreateStudentDTO),
-        schoolId: user.schoolId._id,
+        schoolId: selectedSchool._id,
       };
 
       await createStudent(studentData);
@@ -165,7 +178,7 @@ export default function BaselineAssessmentsPage() {
         gender: "",
         class: "",
         caste: "",
-        schoolId: user.schoolId._id,
+        schoolId: selectedSchool._id,
         contactInfo: [],
         knowledgeLevel: [],
         cohort: [],
@@ -174,8 +187,17 @@ export default function BaselineAssessmentsPage() {
 
       // Refresh students list
       fetchStudents();
-    } catch (error) {
-      toast.error("Failed to create student");
+    } catch (error: any) {
+      // Extract the error message from the server response
+      let errorMessage = "Failed to create student";
+
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
       console.error("Error creating student:", error);
     }
   };
@@ -303,7 +325,7 @@ export default function BaselineAssessmentsPage() {
                       onChange={(e) =>
                         setNewStudent({ ...newStudent, caste: e.target.value })
                       }
-                      placeholder="Optional"
+                      required
                     />
                   </div>
                 </div>
@@ -321,17 +343,6 @@ export default function BaselineAssessmentsPage() {
           </Dialog>
         </div>
 
-        {loading && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-center">
-                <Clock className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {error && (
           <Card className="border-destructive">
             <CardContent className="pt-6">
@@ -341,211 +352,393 @@ export default function BaselineAssessmentsPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Student Selection */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="mr-2 h-5 w-5" />
-                  Select Student for Assessment
-                </CardTitle>
-                <CardDescription>
-                  Choose a student who hasn't been assessed today
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {filteredStudents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">
-                      No students available
-                    </h3>
-                    <p className="text-muted-foreground mt-2">
-                      {students.length === 0
-                        ? "Create your first student to start assessments"
-                        : "All students have been assessed today"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label>
-                      Available Students ({filteredStudents.length})
-                    </Label>
-                    <Select
-                      value={selectedStudent?._id || ""}
-                      onValueChange={(value) => {
-                        const student = filteredStudents.find(
-                          (s) => s._id === value
-                        );
-                        setSelectedStudent(student || null);
-                        if (student) setModalOpen(true);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="-- Select a student to assess --" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredStudents.map((student) => {
-                          const latestLevel =
-                            student.knowledgeLevel &&
-                            student.knowledgeLevel.length > 0
-                              ? student.knowledgeLevel[
-                                  student.knowledgeLevel.length - 1
-                                ].level
-                              : null;
+          {/* School Selection - Only show for Super Admin */}
+          {user && isSuperAdmin(user) && (
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Select School
+                  </CardTitle>
+                  <CardDescription>
+                    Choose the school to manage assessments for
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {selectedSchool ? (
+                    <div className="p-3 border rounded-lg bg-muted/30">
+                      <div className="flex items-center gap-2 mb-1">
+                        <BookOpen className="h-4 w-4" />
+                        <span className="font-medium text-sm">
+                          Current School
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">
+                          {selectedSchool.name}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {selectedSchool.type}
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <BookOpen className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <h3 className="mt-2 text-base font-semibold">
+                        No school selected
+                      </h3>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        Please select a school from the sidebar
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-                          return (
-                            <SelectItem key={student._id} value={student._id}>
+          {/* Program Selection - Only show if school is selected */}
+          {selectedSchool?._id && (
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Select Assessment Program
+                  </CardTitle>
+                  <CardDescription>
+                    Choose the program/subject for baseline assessment
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {programs.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <h3 className="mt-4 text-lg font-semibold">
+                        No programs available
+                      </h3>
+                      <p className="text-muted-foreground mt-2">
+                        Create a program first to conduct assessments
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>Available Programs ({programs.length})</Label>
+                      <Select
+                        value={selectedProgram?._id || ""}
+                        onValueChange={(value) => {
+                          const program = programs.find((p) => p._id === value);
+                          console.log("=== PROGRAM SELECTION DEBUG ===");
+                          console.log("Selected program ID:", value);
+                          console.log("Found program:", program);
+                          console.log(
+                            "Program object:",
+                            JSON.stringify(program, null, 2)
+                          );
+                          console.log("Program _id:", program?._id);
+                          console.log("================================");
+
+                          setSelectedProgram(program || null);
+                          // Clear student selection when program changes
+                          setSelectedStudent(null);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="-- Select a program --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {programs.map((program) => (
+                            <SelectItem key={program._id} value={program._id}>
                               <div className="flex items-center justify-between w-full">
                                 <span>
-                                  {student.name} (Roll: {student.roll_no})
+                                  {program.name} ({program.subject})
                                 </span>
-                                {latestLevel && (
-                                  <Badge variant="secondary" className="ml-2">
-                                    Level {latestLevel}
-                                  </Badge>
-                                )}
+                                <Badge variant="secondary" className="ml-2">
+                                  {program.totalLevels} levels
+                                </Badge>
                               </div>
                             </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedProgram && (
+                    <div className="p-3 border rounded-lg bg-green-50 border-green-200 mt-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <BookOpen className="h-4 w-4 text-green-600" />
+                        <span className="font-medium text-sm text-green-800">
+                          Selected Program
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold">
+                          {selectedProgram.name}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {selectedProgram.subject}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>Levels: {selectedProgram.totalLevels}</span>
+                        <Badge variant="default" className="text-xs">
+                          Active
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Student Selection - Only show if program is selected */}
+          {selectedProgram && selectedSchool?._id && (
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Users className="mr-2 h-5 w-5" />
+                    Select Student for Assessment
+                  </CardTitle>
+                  <CardDescription>
+                    Choose a student who hasn't been assessed today
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {students.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <h3 className="mt-4 text-lg font-semibold">
+                        No students available
+                      </h3>
+                      <p className="text-muted-foreground mt-2">
+                        Create your first student to start assessments
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label>
+                        All Students ({students.length}) - Green: Already
+                        assessed today
+                      </Label>
+                      <Select
+                        value={selectedStudent?._id || ""}
+                        onValueChange={(value) => {
+                          const student = students.find((s) => s._id === value);
+                          console.log("=== STUDENT SELECTION DEBUG ===");
+                          console.log("Selected student ID:", value);
+                          console.log("Found student:", student);
+                          console.log(
+                            "Student object:",
+                            JSON.stringify(student, null, 2)
                           );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                          console.log("Student schoolId:", student?.schoolId);
+                          console.log(
+                            "Student schoolId._id:",
+                            student?.schoolId?._id
+                          );
+                          console.log("================================");
 
-                {selectedStudent && (
-                  <Card className="mt-4">
-                    <CardHeader>
-                      <CardTitle className="text-lg">
-                        Selected Student
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div>
-                          <strong>{selectedStudent.name}</strong>
-                          <Badge variant="outline" className="ml-2">
-                            Roll: {selectedStudent.roll_no}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          School: {selectedStudent.schoolId.name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Class: {selectedStudent.class} | Age:{" "}
-                          {selectedStudent.age}
-                        </p>
+                          setSelectedStudent(student || null);
+                          if (student) setModalOpen(true);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="-- Select a student to assess --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {students.map((student) => {
+                            const isAssessedToday =
+                              isStudentAssessedToday(student);
+                            const latestLevel =
+                              student.knowledgeLevel &&
+                              student.knowledgeLevel.length > 0
+                                ? student.knowledgeLevel[
+                                    student.knowledgeLevel.length - 1
+                                  ].level
+                                : null;
 
-                        {selectedStudent.knowledgeLevel &&
-                        selectedStudent.knowledgeLevel.length > 0 ? (
-                          <div className="mt-4">
-                            <Label className="text-sm font-medium">
-                              Assessment History
-                            </Label>
-                            <div className="mt-2 space-y-1">
-                              <div className="flex items-center justify-between text-sm">
-                                <span>Total Assessments:</span>
-                                <Badge>
-                                  {selectedStudent.knowledgeLevel.length}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center justify-between text-sm">
-                                <span>Latest Level:</span>
-                                <Badge variant="default">
-                                  Level{" "}
-                                  {
-                                    selectedStudent.knowledgeLevel[
-                                      selectedStudent.knowledgeLevel.length - 1
-                                    ].level
-                                  }
-                                </Badge>
-                              </div>
-                              <div className="flex items-center justify-between text-sm">
-                                <span>Last Assessment:</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(
-                                    selectedStudent.knowledgeLevel[
-                                      selectedStudent.knowledgeLevel.length - 1
-                                    ].date
-                                  ).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mt-4">
-                            <Badge variant="outline">
-                              No assessments completed yet
+                            return (
+                              <SelectItem
+                                key={student._id}
+                                value={student._id}
+                                className={
+                                  isAssessedToday
+                                    ? "bg-green-100 hover:bg-green-200"
+                                    : ""
+                                }
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span
+                                    className={
+                                      isAssessedToday ? "text-green-800" : ""
+                                    }
+                                  >
+                                    {student.name} (Roll: {student.roll_no})
+                                    {isAssessedToday && " ✓"}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {latestLevel && (
+                                      <Badge
+                                        variant={
+                                          isAssessedToday
+                                            ? "default"
+                                            : "secondary"
+                                        }
+                                        className="ml-2"
+                                      >
+                                        Level {latestLevel}
+                                      </Badge>
+                                    )}
+                                    {isAssessedToday && (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-green-200 text-green-800 border-green-300"
+                                      >
+                                        Assessed Today
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {selectedStudent && (
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle className="text-lg">
+                          Selected Student
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div>
+                            <strong>{selectedStudent.name}</strong>
+                            <Badge variant="outline" className="ml-2">
+                              Roll: {selectedStudent.roll_no}
                             </Badge>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                          <p className="text-sm text-muted-foreground">
+                            School: {selectedStudent.schoolId.name}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Class: {selectedStudent.class} | Age:{" "}
+                            {selectedStudent.age}
+                          </p>
 
-          {/* Assessment Info */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Assessment Overview</CardTitle>
-                <CardDescription>Today's assessment statistics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Total Students:</span>
-                    <Badge variant="outline">{students.length}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Assessed Today:</span>
-                    <Badge variant="default">{todaysAssessments.length}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Available:</span>
-                    <Badge variant="secondary">{filteredStudents.length}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                          {selectedStudent.knowledgeLevel &&
+                          selectedStudent.knowledgeLevel.length > 0 ? (
+                            <div className="mt-4">
+                              <Label className="text-sm font-medium">
+                                Assessment History
+                              </Label>
+                              <div className="mt-2 space-y-1">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span>Total Assessments:</span>
+                                  <Badge>
+                                    {selectedStudent.knowledgeLevel.length}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span>Latest Level:</span>
+                                  <Badge variant="default">
+                                    Level{" "}
+                                    {
+                                      selectedStudent.knowledgeLevel[
+                                        selectedStudent.knowledgeLevel.length -
+                                          1
+                                      ].level
+                                    }
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span>Last Assessment:</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(
+                                      selectedStudent.knowledgeLevel[
+                                        selectedStudent.knowledgeLevel.length -
+                                          1
+                                      ].date
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mt-4">
+                              <Badge variant="outline">
+                                No assessments completed yet
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-            {/* Question Sets Info */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Assessment Subjects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {questionSets.map((set) => (
-                    <div
-                      key={set._id}
-                      className="flex items-center justify-between p-2 border rounded"
-                    >
-                      <div>
-                        <p className="font-medium">{set.subject}</p>
-                        <p className="text-xs text-muted-foreground">
-                          v{set.version} • {set.levels.length} levels
-                        </p>
-                      </div>
-                      <Badge variant="outline">Active</Badge>
+          {/* Assessment Info - Only show if program and school are selected */}
+          {selectedProgram && selectedSchool?._id && (
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assessment Overview</CardTitle>
+                  <CardDescription>
+                    Today's assessment statistics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Total Students:</span>
+                      <Badge variant="outline">{students.length}</Badge>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Assessed Today:</span>
+                      <Badge variant="default">
+                        {
+                          students.filter((student) =>
+                            isStudentAssessedToday(student)
+                          ).length
+                        }
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Available:</span>
+                      <Badge variant="secondary">
+                        {
+                          students.filter(
+                            (student) => !isStudentAssessedToday(student)
+                          ).length
+                        }
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
 
-      {modalOpen && selectedStudent && (
+      {modalOpen && selectedStudent && selectedProgram && (
         <BaselineAssessmentModal
           isOpen={modalOpen}
           onClose={handleCloseModal}
           student={selectedStudent}
+          program={selectedProgram}
           onAssessmentComplete={handleAssessmentComplete}
           oscillationTolerance={0.5}
           minQuestionsBeforeOscillationStop={3}

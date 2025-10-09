@@ -9,7 +9,7 @@ export interface Cohort {
     _id: string;
     name: string;
   };
-  mentorId: {
+  tutorId: {
     _id: string;
     name: string;
   };
@@ -21,13 +21,13 @@ export interface Cohort {
 export interface CreateCohortDTO {
   name: string;
   schoolId: string;
-  mentorId: string;
+  tutorId: string;
   students: string[];
 }
 
 export interface UpdateCohortDTO {
   name?: string;
-  mentorId?: string;
+  tutorId?: string;
   students?: string[];
 }
 
@@ -36,8 +36,10 @@ export const createCohort = async (data: CreateCohortDTO): Promise<Cohort> => {
   return response.data;
 };
 
-export const getCohorts = async (): Promise<Cohort[]> => {
-  const response = await authAxios.get(baseUrl);
+export const getCohorts = async (schoolId?: string): Promise<Cohort[]> => {
+  const response = await authAxios.get(baseUrl, {
+    params: schoolId ? { schoolId } : {},
+  });
   return response.data;
 };
 
@@ -61,8 +63,25 @@ export const deleteCohort = async (id: string): Promise<void> => {
 export const addStudentToDefaultCohort = async (data: {
   studentId: string;
   schoolId: string;
-  mentorId: string;
+  tutorId: string;
 }): Promise<Cohort> => {
   const response = await authAxios.post(`${baseUrl}/add-to-default`, data);
+  return response.data;
+};
+
+export interface GenerateCohortsResponse {
+  message: string;
+  cohorts: Cohort[];
+  studentsAssigned: number;
+  levelDistribution: Array<{
+    level: number | string;
+    students: number;
+  }>;
+}
+
+export const generateOptimalCohorts = async (data: {
+  schoolId: string;
+}): Promise<GenerateCohortsResponse> => {
+  const response = await authAxios.post(`${baseUrl}/generate-optimal`, data);
   return response.data;
 };

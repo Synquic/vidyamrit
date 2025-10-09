@@ -1,10 +1,52 @@
 import { Request, Response } from "express";
 import Cohort from "../models/CohortModel";
+import Student from "../models/StudentModel";
+import { AuthRequest } from "../types/auth";
+import { UserRole } from "../configs/roles";
+import { generateCohortPlan, LevelInput } from "../lib/CohortGenerationAlgo";
 
 // Get all cohorts
-export const getCohorts = async (req: Request, res: Response) => {
+export const getCohorts = async (req: AuthRequest, res: Response) => {
   try {
-    const cohorts = await Cohort.find().sort({ createdAt: -1 });
+    const { schoolId } = req.query;
+    let cohorts;
+
+    // Super admin can see all cohorts or filter by school
+    if (req.user?.role === UserRole.SUPER_ADMIN) {
+      const filter: any = {};
+      
+      // If schoolId is provided, filter by that school
+      if (schoolId) {
+        filter.schoolId = schoolId;
+      }
+      
+      cohorts = await Cohort.find(filter)
+        .populate("schoolId", "name")
+        .populate("tutorId", "name email")
+        .sort({ createdAt: -1 });
+    }
+    // Tutors can only see cohorts they're assigned to or from their school
+    else if (req.user?.role === UserRole.TUTOR) {
+      const filter: any = {};
+
+      // Filter by tutor ID or school ID
+      if (req.user.schoolId) {
+        filter.$or = [
+          { tutorId: req.user._id },
+          { schoolId: req.user.schoolId },
+        ];
+      } else {
+        filter.tutorId = req.user._id;
+      }
+
+      cohorts = await Cohort.find(filter)
+        .populate("schoolId", "name")
+        .populate("tutorId", "name email")
+        .sort({ createdAt: -1 });
+    } else {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
     res.json(cohorts);
   } catch (error) {
     res.status(500).json({ error: "Error fetching cohorts" });
@@ -12,12 +54,39 @@ export const getCohorts = async (req: Request, res: Response) => {
 };
 
 // Get single cohort
-export const getCohort = async (req: Request, res: Response) => {
+export const getCohort = async (req: AuthRequest, res: Response) => {
   try {
-    const cohort = await Cohort.findById(req.params.id);
+    let cohort;
+
+    // Super admin can see any cohort
+    if (req.user?.role === UserRole.SUPER_ADMIN) {
+      cohort = await Cohort.findById(req.params.id)
+        .populate("schoolId", "name")
+        .populate("tutorId", "name email");
+    }
+    // Tutors can only see cohorts they're assigned to or from their school
+    else if (req.user?.role === UserRole.TUTOR) {
+      const filter: any = { _id: req.params.id };
+
+      // Add access control filter
+      if (req.user.schoolId) {
+        filter.$or = [
+          { tutorId: req.user._id },
+          { schoolId: req.user.schoolId },
+        ];
+      } else {
+        filter.tutorId = req.user._id;
+      }
+
+      cohort = await Cohort.findOne(filter)
+        .populate("schoolId", "name")
+        .populate("tutorId", "name email");
+    }
+
     if (!cohort) {
       return res.status(404).json({ error: "Cohort not found" });
     }
+
     res.json(cohort);
   } catch (error) {
     res.status(500).json({ error: "Error fetching cohort" });
@@ -136,5 +205,132 @@ export const addStudentToDefaultCohort = async (
   } catch (error: any) {
     console.error("Error adding student to default cohort:", error);
     res.status(500).json({ error: "Error adding student to default cohort" });
+  }
+};
+
+// Generate optimal cohorts using the algorithm
+export const generateOptimalCohorts = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { schoolId } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: "School ID is required" });
+    }
+
+    // Check if user has permission to generate cohorts for this school
+    if (req.user?.role === UserRole.TUTOR && req.user.schoolId !== schoolId) {
+      return res.status(403).json({
+        error: "You can only generate cohorts for your assigned school",
+      });
+    }
+
+    console.log("Generating optimal cohorts for school:", schoolId);
+
+    // Get all students from the school who have completed assessments
+    const students: Array<{ _id: any; knowledgeLevel: Array<{ level: number }> }> = await Student.find({
+      school: schoolId,
+      knowledgeLevel: { $exists: true, $not: { $size: 0 } },
+    });
+
+    if (students.length === 0) {
+      return res.status(400).json({
+        error: "No students with assessment data found for this school",
+      });
+    }
+
+    // Group students by their latest knowledge level
+    const levelGroups: { [key: number]: string[] } = {};
+
+    students.forEach((student) => {
+      if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
+        const latestLevel =
+          student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
+        if (!levelGroups[latestLevel]) {
+          levelGroups[latestLevel] = [];
+        }
+        levelGroups[latestLevel].push(student._id.toString());
+      }
+    });
+
+    // Convert to format expected by algorithm
+    const levelInputs: LevelInput[] = Object.entries(levelGroups).map(
+      ([level, studentIds]) => ({
+        level: parseInt(level),
+        students: studentIds.length,
+      })
+    );
+
+    console.log("Level distribution:", levelInputs);
+
+    // Generate optimal cohort plan
+    const cohortPlans = generateCohortPlan(levelInputs);
+    console.log("Generated cohort plans:", cohortPlans);
+
+    // Delete existing cohorts for this school (optional - you might want to keep them)
+    await Cohort.deleteMany({ schoolId: schoolId });
+
+    // Create cohorts based on the plan
+    const createdCohorts = [];
+
+    for (const plan of cohortPlans) {
+      const levelStudents = levelGroups[plan.level as number];
+      let studentIndex = 0;
+
+      for (let i = 0; i < plan.cohorts.length; i++) {
+        const cohortSize = plan.cohorts[i];
+        const cohortStudents = levelStudents.slice(
+          studentIndex,
+          studentIndex + cohortSize
+        );
+        studentIndex += cohortSize;
+
+        const cohort = new Cohort({
+          name: `Level ${plan.level} - Cohort ${i + 1}`,
+          schoolId: schoolId,
+          tutorId: req.user?._id, // Assign to the user generating the cohorts
+          students: cohortStudents,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const savedCohort = await cohort.save();
+
+        // Update students with cohort information
+        await Student.updateMany(
+          { _id: { $in: cohortStudents } },
+          {
+            $push: {
+              cohort: {
+                cohortId: savedCohort._id,
+                dateJoined: new Date(),
+              },
+            },
+          }
+        );
+
+        createdCohorts.push(savedCohort);
+      }
+    }
+
+    console.log(`Successfully created ${createdCohorts.length} cohorts`);
+
+    // Return the created cohorts with populated data
+    const populatedCohorts = await Cohort.find({ schoolId: schoolId })
+      .populate("schoolId", "name")
+      .populate("tutorId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(201).json({
+      message: `Successfully generated ${createdCohorts.length} optimal cohorts`,
+      cohorts: populatedCohorts,
+      studentsAssigned: students.length,
+      levelDistribution: levelInputs,
+    });
+  } catch (error: any) {
+    console.error("Error generating optimal cohorts:", error);
+    res.status(500).json({ error: "Error generating optimal cohorts" });
   }
 };

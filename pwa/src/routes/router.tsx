@@ -13,12 +13,9 @@ import LogoutPage from "@/pages/auth/LogoutPage";
 // Dashboard Pages
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import ManageSchools from "@/pages/dashboard/ManageSchools";
-import ManageSchoolAdmins from "@/pages/dashboard/ManageSchoolAdmins";
-import ManageMentors from "@/pages/dashboard/ManageMentors";
 import ManageStudents from "@/pages/dashboard/ManageStudents";
 import ManageCohorts from "@/pages/dashboard/ManageCohorts";
 import BaselineAssessmentsPage from "@/pages/dashboard/BaselineAssessmentsPage";
-import StudentsPage from "@/pages/dashboard/StudentsPage";
 
 export const router = createBrowserRouter([
   {
@@ -58,26 +55,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: DASHBOARD_ROUTE_PATHS.schoolAdmin,
-        element: (
-          <ProtectedRoute
-            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.schoolAdmin]}
-          >
-            <ManageSchoolAdmins />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: DASHBOARD_ROUTE_PATHS.mentors,
-        element: (
-          <ProtectedRoute
-            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.mentors]}
-          >
-            <ManageMentors />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: DASHBOARD_ROUTE_PATHS.students,
         element: (
           <ProtectedRoute
@@ -106,18 +83,6 @@ export const router = createBrowserRouter([
             }
           >
             <BaselineAssessmentsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: DASHBOARD_ROUTE_PATHS.studentReports,
-        element: (
-          <ProtectedRoute
-            requiredRole={
-              routePermissions[DASHBOARD_ROUTE_PATHS.studentReports]
-            }
-          >
-            <StudentsPage />
           </ProtectedRoute>
         ),
       },

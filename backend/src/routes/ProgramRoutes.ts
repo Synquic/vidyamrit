@@ -82,22 +82,18 @@ router.get("/:id/levels/:levelNumber", getLevelDetails);
  */
 router.post("/:id/validate-progression", validateLevelProgression);
 
-// Admin routes (SCHOOL_ADMIN, SUPER_ADMIN)
+// Admin routes (SUPER_ADMIN)
 /**
  * @route   POST /api/programs
  * @desc    Create a new program
- * @access  Private (SCHOOL_ADMIN, SUPER_ADMIN)
+ * @access  Private (SUPER_ADMIN)
  * @body    {string} name - Program name
  * @body    {string} subject - Program subject (any string value)
  * @body    {string} description - Program description [optional]
  * @body    {number} totalLevels - Total number of levels
  * @body    {Array} levels - Array of level objects
  */
-router.post(
-  "/",
-  roleMiddleware(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN),
-  createProgram
-);
+router.post("/", roleMiddleware(UserRole.SUPER_ADMIN), createProgram);
 
 /**
  * @route   PUT /api/programs/:id
@@ -106,11 +102,7 @@ router.post(
  * @param   {string} id - Program ObjectId
  * @body    Updates to apply
  */
-router.put(
-  "/:id",
-  roleMiddleware(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN),
-  updateProgram
-);
+router.put("/:id", roleMiddleware(UserRole.SUPER_ADMIN), updateProgram);
 
 /**
  * @route   DELETE /api/programs/:id
@@ -118,11 +110,7 @@ router.put(
  * @access  Private (Program creator or SUPER_ADMIN)
  * @param   {string} id - Program ObjectId
  */
-router.delete(
-  "/:id",
-  roleMiddleware(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN),
-  deleteProgram
-);
+router.delete("/:id", roleMiddleware(UserRole.SUPER_ADMIN), deleteProgram);
 
 /**
  * @route   PATCH /api/programs/:id/toggle-status
@@ -132,7 +120,7 @@ router.delete(
  */
 router.patch(
   "/:id/toggle-status",
-  roleMiddleware(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN),
+  roleMiddleware(UserRole.SUPER_ADMIN),
   toggleProgramStatus
 );
 
@@ -151,12 +139,8 @@ router.post(
 /**
  * @route   POST /api/programs/import
  * @desc    Import program from JSON file
- * @access  Private (SCHOOL_ADMIN, SUPER_ADMIN)
+ * @access  Private (SUPER_ADMIN)
  */
-router.post(
-  "/import",
-  roleMiddleware(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN),
-  importProgram
-);
+router.post("/import", roleMiddleware(UserRole.SUPER_ADMIN), importProgram);
 
 export default router;

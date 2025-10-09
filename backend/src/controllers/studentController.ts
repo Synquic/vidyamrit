@@ -33,7 +33,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     // Check if student already exists in this school
     const existingStudent = await Student.findOne({
       roll_no,
-      schoolId: finalSchoolId,
+      school: finalSchoolId, // Use 'school' field as expected by the model
     });
     if (existingStudent) {
       return res.status(400).json({
@@ -48,14 +48,20 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       gender,
       class: className,
       caste,
-      schoolId: finalSchoolId,
+      school: finalSchoolId, // Use 'school' field as expected by the model
       contactInfo,
       knowledgeLevel,
       cohort,
     });
     await student.save();
-    const populatedStudent = await student.populate("schoolId", "name");
-    res.status(201).json(populatedStudent);
+    const populatedStudent = await student.populate("school", "name");
+
+    // Transform the response to match frontend expectations (schoolId instead of school)
+    const response = populatedStudent.toObject() as any;
+    response.schoolId = response.school;
+    delete response.school;
+
+    res.status(201).json(response);
   } catch (error) {
     console.error("Error in student creation:", error);
     res.status(500).json({ error: "Failed to create student" });
@@ -71,13 +77,13 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     // Determine which students to fetch based on user role and query params
     if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
       // If the user is not a super admin, restrict to their school
-      filter.schoolId = req.user.schoolId;
+      filter.school = req.user.schoolId; // Use 'school' field as expected by the model
       console.log(
         `User ${req.user._id} (${req.user.role}) requesting students from school ${req.user.schoolId}`
       );
     } else if (schoolId) {
       // If super admin and schoolId is provided in query, filter by that school
-      filter.schoolId = schoolId;
+      filter.school = schoolId; // Use 'school' field as expected by the model
       console.log(`Super admin requesting students from school ${schoolId}`);
     } else {
       // Super admin requesting all students (no school filter)
@@ -87,7 +93,15 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     // Fetch students from database with applied filters
     const students = await Student.find(filter)
       .select("-__v") // Exclude __v field
-      // .populate("schoolId", "name"); // Populate school name
+      .populate("school", "name"); // Populate school name
+
+    // Transform the response to match frontend expectations (schoolId instead of school)
+    const transformedStudents = students.map((student) => {
+      const studentObj = student.toObject() as any;
+      studentObj.schoolId = studentObj.school;
+      delete studentObj.school;
+      return studentObj;
+    });
 
     // Log the number of students found
     console.log(
@@ -96,7 +110,7 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     );
 
     // Respond with the list of students
-    res.json(students);
+    res.json(transformedStudents);
   } catch (error) {
     // Log error details for debugging
     console.error("Error fetching students:", error);
@@ -110,15 +124,21 @@ export const getStudent = async (req: AuthRequest, res: Response) => {
     const query: any = { _id: id };
     // If not super admin, only allow fetching students from same school
     if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-      query.schoolId = req.user.schoolId;
+      query.school = req.user.schoolId; // Use 'school' field as expected by the model
     }
     const student = await Student.findOne(query)
       .select("-__v")
-      .populate("schoolId", "name");
+      .populate("school", "name"); // Populate school name
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
-    res.json(student);
+
+    // Transform the response to match frontend expectations (schoolId instead of school)
+    const response = student.toObject() as any;
+    response.schoolId = response.school;
+    delete response.school;
+
+    res.json(response);
   } catch (error) {
     console.error("Error fetching student:", error);
     res.status(500).json({ error: "Failed to fetch student" });
@@ -131,7 +151,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     const updateFields = req.body;
     const query: any = { _id: id };
     if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-      query.schoolId = req.user.schoolId;
+      query.school = req.user.schoolId; // Use 'school' field as expected by the model
     }
     // Only allow updating fields that exist in StudentModel
     const allowedFields = [
@@ -141,7 +161,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       "gender",
       "class",
       "caste",
-      "schoolId",
+      "school", // Use 'school' field as expected by the model
       "contactInfo",
       "knowledgeLevel",
       "cohort",
@@ -149,7 +169,12 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     const filteredUpdate: any = {};
     for (const key of allowedFields) {
       if (updateFields[key] !== undefined) {
-        filteredUpdate[key] = updateFields[key];
+        // If frontend sends schoolId, map it to school field
+        if (key === "school" && updateFields.schoolId !== undefined) {
+          filteredUpdate[key] = updateFields.schoolId;
+        } else if (updateFields[key] !== undefined) {
+          filteredUpdate[key] = updateFields[key];
+        }
       }
     }
     // Update the student record
@@ -157,11 +182,17 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       query,
       { ...filteredUpdate },
       { new: true }
-    ).populate("schoolId", "name");
+    ).populate("school", "name"); // Populate school name
     if (!updatedStudent) {
       return res.status(404).json({ error: "Student not found" });
     }
-    res.json(updatedStudent);
+
+    // Transform the response to match frontend expectations (schoolId instead of school)
+    const response = updatedStudent.toObject() as any;
+    response.schoolId = response.school;
+    delete response.school;
+
+    res.json(response);
   } catch (error) {
     console.error("Error updating student:", error);
     res.status(500).json({ error: "Failed to update student" });
@@ -173,7 +204,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const query: any = { _id: id };
     if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
-      query.schoolId = req.user.schoolId;
+      query.school = req.user.schoolId; // Use 'school' field as expected by the model
     }
     const deletedStudent = await Student.findOneAndDelete(query);
     if (!deletedStudent) {
@@ -219,5 +250,72 @@ export const getStudentLevel = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error fetching student level:", error);
     res.status(500).json({ error: "Failed to fetch student level" });
+  }
+};
+
+// Get cohort assignment status for students in a school
+export const getStudentCohortStatus = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { schoolId } = req.params;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: "School ID is required" });
+    }
+
+    // Check if user has permission to view this school's data
+    if (
+      req.user?.role === UserRole.TUTOR &&
+      String(req.user.schoolId) !== String(schoolId)
+    ) {
+      return res
+        .status(403)
+        .json({ error: "You can only view data for your assigned school" });
+    }
+
+    // Get all students from the school
+    const allStudents = await Student.find({ school: schoolId });
+
+    // Filter students who have completed assessments
+    const studentsWithAssessments = allStudents.filter(
+      (student) => student.knowledgeLevel && student.knowledgeLevel.length > 0
+    );
+
+    // Filter students who are in cohorts (have active cohort membership)
+    const studentsInCohorts = studentsWithAssessments.filter(
+      (student) =>
+        student.cohort &&
+        student.cohort.length > 0 &&
+        student.cohort.some((c) => !c.dateLeaved) // Has active cohort membership
+    );
+
+    // Students awaiting assignment (have assessments but not in cohorts)
+    const studentsAwaitingAssignment = studentsWithAssessments.filter(
+      (student) =>
+        !student.cohort ||
+        student.cohort.length === 0 ||
+        !student.cohort.some((c) => !c.dateLeaved) // No active cohort membership
+    );
+
+    res.json({
+      totalStudents: allStudents.length,
+      studentsWithAssessments: studentsWithAssessments.length,
+      studentsInCohorts: studentsInCohorts.length,
+      studentsAwaitingAssignment: studentsAwaitingAssignment.length,
+      unassignedStudents: studentsAwaitingAssignment.map((student) => ({
+        _id: student._id,
+        name: student.name,
+        roll_no: student.roll_no,
+        currentLevel:
+          student.knowledgeLevel && student.knowledgeLevel.length > 0
+            ? student.knowledgeLevel[student.knowledgeLevel.length - 1].level
+            : 0,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching student cohort status:", error);
+    res.status(500).json({ error: "Failed to fetch student cohort status" });
   }
 };

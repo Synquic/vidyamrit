@@ -31,6 +31,7 @@ export interface IAssessmentQuestion {
 
   points?: number; // Points awarded for correct answer (default: 1)
   isRequired?: boolean; // Whether this question is mandatory (default: true)
+  levelNumber?: number; // Level number for baseline assessment (added dynamically)
 }
 
 // Interface for Program Level

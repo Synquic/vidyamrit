@@ -1,15 +1,26 @@
 export enum UserRole {
-  SUPER_ADMIN = 'super_admin',
-  SCHOOL_ADMIN = 'school_admin',
-  MENTOR = 'mentor',
-  STUDENT = 'student'
+  SUPER_ADMIN = "super_admin",
+  SCHOOL_ADMIN = "school_admin",
+  MENTOR = "mentor",
+  STUDENT = "student",
 }
 
 export interface School {
   _id: string;
   name: string;
-  type: string;
-  logo?: string;
+  type: "government" | "private";
+  udise_code: string;
+  address: string;
+  level: "primary" | "middle";
+  city: string;
+  state: string;
+  establishedYear: number;
+  pinCode: string;
+  principalName: string;
+  phone: string;
+  email: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface User {

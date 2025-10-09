@@ -188,7 +188,7 @@ export interface ExtracurricularActivity {
   _id: string;
   activityName: string;
   category: string;
-  mentor?: User;
+  tutor?: User;
   startDate: Date;
   endDate?: Date;
   participationLevel: "member" | "leader" | "captain" | "organizer";

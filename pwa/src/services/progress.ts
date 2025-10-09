@@ -13,7 +13,7 @@ export interface ProgressHistory {
   subject: Subject;
   reason: string;
   date: string;
-  mentorId?: {
+  tutorId?: {
     _id: string;
     name: string;
     email: string;

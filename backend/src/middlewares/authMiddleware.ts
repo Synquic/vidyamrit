@@ -16,9 +16,13 @@ export const authMiddleware = async (
     const decoded = await auth.verifyIdToken(token);
     console.log("Token decoded successfully. UID:", decoded.uid);
 
-    const user = await User.findOne({ uid: decoded.uid });
+    const user = await User.findOne({ uid: decoded.uid }).populate(
+      "schoolId",
+      "name type"
+    );
     console.log("User found in DB:", !!user);
     console.log("User role:", user?.role);
+    console.log("User school:", user?.schoolId);
     console.log("============================");
 
     if (!user)

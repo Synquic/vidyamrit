@@ -52,7 +52,7 @@ export interface CreateStudentDTO {
   age: number;
   gender: string;
   class: string;
-  caste: string;
+  caste?: string;
   schoolId: string;
   contactInfo: Array<object>;
   knowledgeLevel: Array<object>;
@@ -65,7 +65,7 @@ export interface UpdateStudentDTO {
   age: number;
   gender: string;
   class: string;
-  caste: string;
+  caste?: string;
   schoolId: string;
 }
 
@@ -98,6 +98,22 @@ export const updateStudent = async (
 
 export const deleteStudent = async (id: string): Promise<void> => {
   await authAxios.delete(`${baseUrl}/${id}`);
+};
+
+// Check student cohort assignment status for a school
+export interface StudentCohortStatus {
+  totalStudents: number;
+  studentsWithAssessments: number;
+  studentsInCohorts: number;
+  studentsAwaitingAssignment: number;
+  unassignedStudents: Student[];
+}
+
+export const getStudentCohortStatus = async (
+  schoolId: string
+): Promise<StudentCohortStatus> => {
+  const response = await authAxios.get(`${baseUrl}/cohort-status/${schoolId}`);
+  return response.data;
 };
 
 export const getStudentLevel = async (id: string): Promise<StudentLevel> => {

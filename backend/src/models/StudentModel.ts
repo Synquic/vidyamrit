@@ -203,15 +203,5 @@ StudentSchema.pre("save", function (next) {
   next();
 });
 
-// Virtual for overall progress flag
-StudentSchema.virtual("overallProgressFlag").get(function () {
-  const flags = Object.values(this.currentProgressFlags).filter((flag) => flag);
-  if (flags.includes("struggling") || flags.includes("needs_attention"))
-    return "needs_attention";
-  if (flags.includes("excelling")) return "excelling";
-  if (flags.includes("improving")) return "improving";
-  return "average";
-});
-
 const Student = mongoose.model<IStudent>("Student", StudentSchema);
 export default Student;

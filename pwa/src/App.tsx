@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Outlet } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 //
 import { AuthProvider } from "./providers/AuthProvider";
+import { SchoolProvider } from "./contexts/SchoolContext";
 import "./lib/i18n";
 import { Toaster } from "@/components/ui/sonner";
 //
@@ -23,18 +24,14 @@ import DashboardLayout from "./components/DashboardLayout";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 //
 import LandingPage from "./pages/public/LandingPage";
-import ManageSchoolAdmins from "./pages/dashboard/ManageSchoolAdmins";
-import ManageMentors from "./pages/dashboard/ManageMentors";
+import ManageTutors from "./pages/dashboard/ManageTutors";
 import ManageStudents from "./pages/dashboard/ManageStudents";
 import ManageSchools from "./pages/dashboard/ManageSchools";
 import ManageCohorts from "./pages/dashboard/ManageCohorts";
 import BaselineAssessmentsPage from "./pages/dashboard/BaselineAssessmentsPage";
-import StudentsPage from "./pages/dashboard/StudentsPage";
-import ManageAssessmentQuestionSetsPage from "./pages/dashboard/ManageAssessmentQuestionSets";
 import SupportPage from "./pages/public/SupportPage.tsx";
 import ManagePrograms from "./pages/dashboard/ManagePrograms.tsx";
 import AttendanceManagementPage from "./pages/dashboard/AttendanceManagementPage.tsx";
-import ProgressMonitoringPage from "./pages/dashboard/ProgressMonitoringPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -67,9 +64,11 @@ const router = createBrowserRouter([
   {
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <Outlet />
-        </DashboardLayout>
+        <SchoolProvider>
+          <DashboardLayout>
+            <Outlet />
+          </DashboardLayout>
+        </SchoolProvider>
       </ProtectedRoute>
     ),
     children: [
@@ -82,12 +81,8 @@ const router = createBrowserRouter([
         element: <ManageSchools />,
       },
       {
-        path: DASHBOARD_ROUTE_PATHS.schoolAdmin,
-        element: <ManageSchoolAdmins />,
-      },
-      {
         path: DASHBOARD_ROUTE_PATHS.mentors,
-        element: <ManageMentors />,
+        element: <ManageTutors />,
       },
       {
         path: DASHBOARD_ROUTE_PATHS.students,
@@ -102,20 +97,8 @@ const router = createBrowserRouter([
         element: <BaselineAssessmentsPage />,
       },
       {
-        path: DASHBOARD_ROUTE_PATHS.studentReports,
-        element: <StudentsPage />,
-      },
-      {
-        path: DASHBOARD_ROUTE_PATHS.assessmentQuestionSets,
-        element: <ManageAssessmentQuestionSetsPage />,
-      },
-      {
         path: DASHBOARD_ROUTE_PATHS.attendanceManagement,
         element: <AttendanceManagementPage />,
-      },
-      {
-        path: DASHBOARD_ROUTE_PATHS.progressMonitoring,
-        element: <ProgressMonitoringPage />,
       },
       {
         path: DASHBOARD_ROUTE_PATHS.managePrograms,

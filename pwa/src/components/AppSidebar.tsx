@@ -1,17 +1,11 @@
-// manage role based ui from here
-// manage open assessments from here
+// Role-based unified sidebar - shows all relevant features based on user permissions
 
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useRoleAccess } from "@/hooks/useRoleAccess";
-import {
-  roleNavigation,
-  universalNavigationItem,
-} from "@/config/roleNavigation";
+import { getNavigationForRole } from "@/config/roleNavigation";
 import { LogOut, User, EllipsisVertical, Info } from "lucide-react";
 import { SidebarItems } from "@/components/SidebarItems";
-import { OpenAssessments } from "@/components/OpenAssessments";
 import { SchoolSwitcher } from "@/components/SchoolSwitcher";
 import {
   Sidebar,
@@ -38,44 +32,24 @@ import { LanguageToggleButton } from "./LanguageToggleButton";
 import { logout } from "@/services/auth";
 import { AUTH_ROUTE_PATHS } from "@/routes";
 
-const data = {
-  openAssessments: [
-    {
-      name: "assessment001",
-      assessment_id: "1234",
-    },
-    {
-      name: "assessment002",
-      assessment_id: "5678",
-    },
-    {
-      name: "assessment003",
-      assessment_id: "91011",
-    },
-  ],
-};
-
 import { useMemo } from "react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { canAccessRoles } = useRoleAccess();
   const { isMobile } = useSidebar();
-  const accessibleRoles = canAccessRoles();
 
-  const navigationItems = useMemo(
-    () => [
-      ...accessibleRoles.map((role) => roleNavigation[role]).filter(Boolean),
-      universalNavigationItem,
-    ],
-    [accessibleRoles]
-  );
+  // Get navigation items based on user's role
+  const navigationItems = useMemo(() => {
+    if (!user?.role) return [];
+    return getNavigationForRole(user.role);
+  }, [user?.role]);
 
   const handleLogout = async () => {
     await logout();
     window.location.href = AUTH_ROUTE_PATHS.logout;
   };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -83,7 +57,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarItems items={navigationItems} />
-        <OpenAssessments openAssessments={data.openAssessments} />
       </SidebarContent>
       <SidebarFooter>
         <DropdownMenu>

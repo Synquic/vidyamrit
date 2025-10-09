@@ -28,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CheckCircle2, Users, Building2, Info, Mail } from "lucide-react";
+import { CheckCircle2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Simple math captcha component
@@ -121,375 +121,375 @@ function SuccessMessage({
   );
 }
 
-const mentorSchema = z.object({
-  firstName: z.string().min(2, "First name required"),
-  lastName: z.string().min(2, "Last name required"),
-  email: z.string().email("Invalid email"),
-  phone: z.string().min(8, "Phone required"),
-  city: z.string().min(2, "City required"),
-  state: z.string().min(2, "State required"),
-  pincode: z.string().min(4, "Pincode required"),
-  education: z.string().min(2, "Education required"),
-  experience: z.string().optional(),
-});
+// const mentorSchema = z.object({
+//   firstName: z.string().min(2, "First name required"),
+//   lastName: z.string().min(2, "Last name required"),
+//   email: z.string().email("Invalid email"),
+//   phone: z.string().min(8, "Phone required"),
+//   city: z.string().min(2, "City required"),
+//   state: z.string().min(2, "State required"),
+//   pincode: z.string().min(4, "Pincode required"),
+//   education: z.string().min(2, "Education required"),
+//   experience: z.string().optional(),
+// });
 
-function MentorForm() {
-  const [captchaOk, setCaptchaOk] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const form = useForm<z.infer<typeof mentorSchema>>({
-    resolver: zodResolver(mentorSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      city: "",
-      state: "",
-      pincode: "",
-      education: "",
-      experience: "",
-    },
-  });
-  if (submitted)
-    return (
-      <SuccessMessage
-        title="Mentor request received!"
-        email={form.getValues("email")}
-        onClose={() => setSubmitted(false)}
-      />
-    );
-  function onSubmit(_values: z.infer<typeof mentorSchema>) {
-    if (!captchaOk) return;
-    setSubmitted(true);
-  }
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input inputMode="tel" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>City/Town</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="pincode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pincode</FormLabel>
-                <FormControl>
-                  <Input inputMode="numeric" pattern="[0-9]*" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="education"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Education qualification</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="experience"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prior experience (optional)</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Teaching, volunteering, facilitation, etc."
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="pt-2">
-          <Captcha onValidChange={setCaptchaOk} />
-        </div>
-        <Button
-          type="submit"
-          disabled={!captchaOk}
-          className={cn(
-            "w-full sm:w-auto",
-            !captchaOk && "opacity-70 cursor-not-allowed"
-          )}
-        >
-          Submit mentor request
-        </Button>
-        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-          <Mail className="h-3.5 w-3.5" /> You’ll receive review updates by
-          email.
-        </p>
-      </form>
-    </Form>
-  );
-}
+// function MentorForm() {
+//   const [captchaOk, setCaptchaOk] = useState(false);
+//   const [submitted, setSubmitted] = useState(false);
+//   const form = useForm<z.infer<typeof mentorSchema>>({
+//     resolver: zodResolver(mentorSchema),
+//     defaultValues: {
+//       firstName: "",
+//       lastName: "",
+//       email: "",
+//       phone: "",
+//       city: "",
+//       state: "",
+//       pincode: "",
+//       education: "",
+//       experience: "",
+//     },
+//   });
+//   if (submitted)
+//     return (
+//       <SuccessMessage
+//         title="Mentor request received!"
+//         email={form.getValues("email")}
+//         onClose={() => setSubmitted(false)}
+//       />
+//     );
+//   function onSubmit(_values: z.infer<typeof mentorSchema>) {
+//     if (!captchaOk) return;
+//     setSubmitted(true);
+//   }
+//   return (
+//     <Form {...form}>
+//       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+//         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="firstName"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>First name</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="lastName"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Last name</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
+//         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="email"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Email</FormLabel>
+//                 <FormControl>
+//                   <Input type="email" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="phone"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Phone</FormLabel>
+//                 <FormControl>
+//                   <Input inputMode="tel" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
+//         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="city"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>City/Town</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="state"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>State</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="pincode"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Pincode</FormLabel>
+//                 <FormControl>
+//                   <Input inputMode="numeric" pattern="[0-9]*" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
+//         <FormField
+//           control={form.control}
+//           name="education"
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Education qualification</FormLabel>
+//               <FormControl>
+//                 <Input {...field} />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <FormField
+//           control={form.control}
+//           name="experience"
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>Prior experience (optional)</FormLabel>
+//               <FormControl>
+//                 <Textarea
+//                   placeholder="Teaching, volunteering, facilitation, etc."
+//                   {...field}
+//                 />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <div className="pt-2">
+//           <Captcha onValidChange={setCaptchaOk} />
+//         </div>
+//         <Button
+//           type="submit"
+//           disabled={!captchaOk}
+//           className={cn(
+//             "w-full sm:w-auto",
+//             !captchaOk && "opacity-70 cursor-not-allowed"
+//           )}
+//         >
+//           Submit mentor request
+//         </Button>
+//         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
+//           <Mail className="h-3.5 w-3.5" /> You’ll receive review updates by
+//           email.
+//         </p>
+//       </form>
+//     </Form>
+//   );
+// }
 
-const schoolSchema = z.object({
-  schoolName: z.string().min(2, "School name required"),
-  adminName: z.string().min(2, "Admin name required"),
-  email: z.string().email("Invalid email"),
-  phone: z.string().min(8, "Phone required"),
-  city: z.string().min(2, "City required"),
-  state: z.string().min(2, "State required"),
-  pincode: z.string().min(4, "Pincode required"),
-  qualification: z.string().min(2, "Qualification required"),
-});
+// const schoolSchema = z.object({
+//   schoolName: z.string().min(2, "School name required"),
+//   adminName: z.string().min(2, "Admin name required"),
+//   email: z.string().email("Invalid email"),
+//   phone: z.string().min(8, "Phone required"),
+//   city: z.string().min(2, "City required"),
+//   state: z.string().min(2, "State required"),
+//   pincode: z.string().min(4, "Pincode required"),
+//   qualification: z.string().min(2, "Qualification required"),
+// });
 
-function SchoolForm() {
-  const [captchaOk, setCaptchaOk] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const form = useForm<z.infer<typeof schoolSchema>>({
-    resolver: zodResolver(schoolSchema),
-    defaultValues: {
-      schoolName: "",
-      adminName: "",
-      email: "",
-      phone: "",
-      city: "",
-      state: "",
-      pincode: "",
-      qualification: "",
-    },
-  });
-  if (submitted)
-    return (
-      <SuccessMessage
-        title="School registration received!"
-        email={form.getValues("email")}
-        onClose={() => setSubmitted(false)}
-      />
-    );
-  function onSubmit(_values: z.infer<typeof schoolSchema>) {
-    if (!captchaOk) return;
-    setSubmitted(true);
-  }
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="schoolName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>School name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="adminName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Your name (principal/admin)</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input inputMode="tel" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>City/Town</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="pincode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pincode</FormLabel>
-                <FormControl>
-                  <Input inputMode="numeric" pattern="[0-9]*" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="qualification"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>School qualification details</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Student count, grades, needs, facilities, etc."
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <p className="text-xs text-muted-foreground">
-          Process: 1) Register school 2) Submit qualification data 3) If
-          qualified, a mentor will conduct baseline assessments 4) Upon approval
-          cohorts are formed and mentors begin sessions.
-        </p>
-        <div className="pt-2">
-          <Captcha onValidChange={setCaptchaOk} />
-        </div>
-        <Button
-          type="submit"
-          disabled={!captchaOk}
-          className={cn(
-            "w-full sm:w-auto",
-            !captchaOk && "opacity-70 cursor-not-allowed"
-          )}
-        >
-          Submit school registration
-        </Button>
-      </form>
-    </Form>
-  );
-}
+// function SchoolForm() {
+//   const [captchaOk, setCaptchaOk] = useState(false);
+//   const [submitted, setSubmitted] = useState(false);
+//   const form = useForm<z.infer<typeof schoolSchema>>({
+//     resolver: zodResolver(schoolSchema),
+//     defaultValues: {
+//       schoolName: "",
+//       adminName: "",
+//       email: "",
+//       phone: "",
+//       city: "",
+//       state: "",
+//       pincode: "",
+//       qualification: "",
+//     },
+//   });
+//   if (submitted)
+//     return (
+//       <SuccessMessage
+//         title="School registration received!"
+//         email={form.getValues("email")}
+//         onClose={() => setSubmitted(false)}
+//       />
+//     );
+//   function onSubmit(_values: z.infer<typeof schoolSchema>) {
+//     if (!captchaOk) return;
+//     setSubmitted(true);
+//   }
+//   return (
+//     <Form {...form}>
+//       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+//         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="schoolName"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>School name</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="adminName"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Your name (principal/admin)</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
+//         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="email"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Email</FormLabel>
+//                 <FormControl>
+//                   <Input type="email" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="phone"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Phone</FormLabel>
+//                 <FormControl>
+//                   <Input inputMode="tel" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
+//         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+//           <FormField
+//             control={form.control}
+//             name="city"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>City/Town</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="state"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>State</FormLabel>
+//                 <FormControl>
+//                   <Input {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//           <FormField
+//             control={form.control}
+//             name="pincode"
+//             render={({ field }) => (
+//               <FormItem>
+//                 <FormLabel>Pincode</FormLabel>
+//                 <FormControl>
+//                   <Input inputMode="numeric" pattern="[0-9]*" {...field} />
+//                 </FormControl>
+//                 <FormMessage />
+//               </FormItem>
+//             )}
+//           />
+//         </div>
+//         <FormField
+//           control={form.control}
+//           name="qualification"
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>School qualification details</FormLabel>
+//               <FormControl>
+//                 <Textarea
+//                   placeholder="Student count, grades, needs, facilities, etc."
+//                   {...field}
+//                 />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//         <p className="text-xs text-muted-foreground">
+//           Process: 1) Register school 2) Submit qualification data 3) If
+//           qualified, a mentor will conduct baseline assessments 4) Upon approval
+//           cohorts are formed and mentors begin sessions.
+//         </p>
+//         <div className="pt-2">
+//           <Captcha onValidChange={setCaptchaOk} />
+//         </div>
+//         <Button
+//           type="submit"
+//           disabled={!captchaOk}
+//           className={cn(
+//             "w-full sm:w-auto",
+//             !captchaOk && "opacity-70 cursor-not-allowed"
+//           )}
+//         >
+//           Submit school registration
+//         </Button>
+//       </form>
+//     </Form>
+//   );
+// }
 
 const inquirySchema = z.object({
   name: z.string().min(2, "Name required"),
@@ -585,8 +585,8 @@ function InquiryForm() {
 }
 
 export default function SupportPage() {
-  const [mentorOpen, setMentorOpen] = useState(false);
-  const [schoolOpen, setSchoolOpen] = useState(false);
+  // const [mentorOpen, setMentorOpen] = useState(false);
+  // const [schoolOpen, setSchoolOpen] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
 
   return (
