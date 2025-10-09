@@ -46,12 +46,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Trash2, Edit } from "lucide-react";
+import { Plus, Loader2, Trash2, Edit, Target } from "lucide-react";
+import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 
 function ManageStudents() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState<CreateStudentDTO>({
@@ -180,6 +184,18 @@ function ManageStudents() {
     await deleteMutation.mutateAsync(deletingStudent._id);
   };
 
+  const getCurrentLevel = (student: Student): number => {
+    if (!student.knowledgeLevel || student.knowledgeLevel.length === 0) {
+      return 0;
+    }
+    return student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
+  };
+
+  const handleStartAssessment = (student: Student) => {
+    setSelectedStudent(student);
+    setIsAssessmentOpen(true);
+  };
+
   if (isLoadingStudents) {
     return (
       <div className="flex h-[200px] items-center justify-center">
@@ -214,6 +230,7 @@ function ManageStudents() {
               <TableHead>Class</TableHead>
               <TableHead>Caste</TableHead>
               <TableHead>School</TableHead>
+              <TableHead>Current Level</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -228,7 +245,32 @@ function ManageStudents() {
                 <TableCell>{student.caste}</TableCell>
                 <TableCell>{student.schoolId?.name}</TableCell>
                 <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant={
+                        getCurrentLevel(student) > 0 ? "default" : "secondary"
+                      }
+                    >
+                      Level {getCurrentLevel(student)}
+                    </Badge>
+                    {student.knowledgeLevel?.length > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        ({student.knowledgeLevel.length} assessments)
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStartAssessment(student)}
+                      className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
+                    >
+                      <Target className="h-4 w-4 mr-1" />
+                      Assess
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -391,6 +433,23 @@ function ManageStudents() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Baseline Assessment Modal */}
+      <BaselineAssessmentModal
+        isOpen={isAssessmentOpen}
+        onClose={() => {
+          setIsAssessmentOpen(false);
+          setSelectedStudent(null);
+        }}
+        student={selectedStudent}
+        onAssessmentComplete={() => {
+          // Refresh students data to show updated levels
+          queryClient.invalidateQueries({ queryKey: ["students"] });
+          setIsAssessmentOpen(false);
+          setSelectedStudent(null);
+          toast.success("Assessment completed and student level updated!");
+        }}
+      />
     </div>
   );
 }

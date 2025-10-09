@@ -41,7 +41,7 @@ export default function LandingPage() {
               size="lg"
               className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105"
               onClick={() => {
-                window.location.replace("/support");
+                window.location.pathname = "/support";
               }}
             >
               Join the Movement
@@ -52,7 +52,7 @@ export default function LandingPage() {
               size="lg"
               className="border-amber-500 text-amber-700 hover:bg-amber-50 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 bg-transparent"
               onClick={() => {
-                window.location.replace("/support");
+                window.location.pathname = "/support";
               }}
             >
               Support a School

@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
-//   FormDescription,
+  //   FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -605,7 +605,7 @@ export default function SupportPage() {
 
         <div className="max-w-5xl mx-auto mt-8 grid grid-cols-1 gap-6 md:gap-8">
           {/* Mentor card */}
-          <Card className="border-0 shadow-lg">
+          {/* <Card className="border-0 shadow-lg">
             <CardContent className="p-6 md:p-8">
               <div className="md:grid md:grid-cols-5 md:gap-6 md:items-center">
                 <div className="md:col-span-3">
@@ -658,10 +658,10 @@ export default function SupportPage() {
                 </DialogContent>
               </Dialog>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* School card */}
-          <Card className="border-0 shadow-lg">
+          {/* <Card className="border-0 shadow-lg">
             <CardContent className="p-6 md:p-8">
               <div className="md:grid md:grid-cols-5 md:gap-6 md:items-center">
                 <div className="md:col-span-3">
@@ -730,7 +730,7 @@ export default function SupportPage() {
                 </DialogContent>
               </Dialog>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Inquiry card */}
           <Card className="border-0 shadow-lg">

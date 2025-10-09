@@ -1,0 +1,86 @@
+{
+  "programName": "Hindi Reading Program",
+  "subject": "Hindi",
+  "description": "Progressive Hindi reading program with assessment questions",
+  "levels": [
+    {
+      "levelNumber": 1,
+      "title": "Basic Letters and Sounds",
+      "description": "Introduction to basic Hindi letters and vowels",
+      "timeframe": 2,
+      "timeframeUnit": "weeks",
+      "prerequisites": [],
+      "objectives": [
+        "Recognize basic Hindi vowels",
+        "Understand letter sounds",
+        "Basic reading comprehension"
+      ],
+      "resources": ["Hindi letter charts", "Audio pronunciation guides"],
+      "assessmentCriteria": "Student can read and recognize basic letters",
+      "assessmentQuestions": [
+        {
+          "questionText": "अ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "इ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Choose the correct pronunciation of 'अ'",
+          "questionType": "multiple_choice",
+          "options": ["a", "aa", "i", "u"],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "levelNumber": 2,
+      "title": "Two-Letter Words",
+      "description": "Reading and understanding simple two-letter Hindi words",
+      "timeframe": 3,
+      "timeframeUnit": "weeks",
+      "prerequisites": [1],
+      "objectives": [
+        "Read two-letter Hindi words",
+        "Understand word meaning",
+        "Improve reading fluency"
+      ],
+      "resources": ["Two-letter word cards", "Practice worksheets"],
+      "assessmentCriteria": "Student can read and understand two-letter words",
+      "assessmentQuestions": [
+        {
+          "questionText": "अज",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आम",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "What does 'आम' mean?",
+          "questionType": "one_word_answer",
+          "acceptedAnswers": ["mango", "आम", "fruit", "फल"],
+          "points": 2,
+          "isRequired": true
+        }
+      ]
+    }
+  ]
+}

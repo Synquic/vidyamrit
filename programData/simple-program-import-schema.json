@@ -1,0 +1,99 @@
+{
+  "type": "object",
+  "required": ["programName", "subject", "description", "questionSets"],
+  "properties": {
+    "programName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Name of the program"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Subject area (e.g., Hindi, English, Math)"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "description": "Program description"
+    },
+    "questionSets": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Array of question sets for different levels",
+      "items": {
+        "type": "object",
+        "required": ["level", "type", "questions"],
+        "properties": {
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Level number (1-50)"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["verbal", "multiple_choice", "one_word_answer"],
+            "description": "Type of questions in this set"
+          },
+          "questions": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Array of questions for this level and type",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Simple question text (for verbal or one_word_answer)"
+                },
+                {
+                  "type": "object",
+                  "required": ["questionText", "options", "correctAnswer"],
+                  "properties": {
+                    "questionText": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Question text for multiple choice"
+                    },
+                    "options": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 4,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": "Array of answer options"
+                    },
+                    "correctAnswer": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Index of correct answer (0-based)"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "timeframe": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 2,
+            "description": "Time to complete this level (in weeks)"
+          },
+          "levelTitle": {
+            "type": "string",
+            "description": "Custom title for this level (optional)"
+          },
+          "levelDescription": {
+            "type": "string",
+            "description": "Custom description for this level (optional)"
+          }
+        }
+      }
+    }
+  }
+}

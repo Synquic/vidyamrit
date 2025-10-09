@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,9 +15,15 @@ import {
   XCircle,
   X,
   Brain,
+  Loader2,
+  CheckIcon,
 } from "lucide-react";
 import { mathData } from "@/data/math-data";
 import { hindiData } from "@/data/hindi-data";
+import { createAssessment } from "@/services/assessments";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import type { Student } from "@/services/students";
 
 type Subject = "hindi" | "math";
 type TestState = "intro" | "testing" | "completed";
@@ -38,12 +38,24 @@ interface TestResult {
 interface BaselineAssessmentModalProps {
   isOpen: boolean;
   onClose: () => void;
+  student?: Student | null;
+  onAssessmentComplete?: () => void;
+  // New configurable parameters
+  oscillationTolerance?: number; // How many oscillation cycles before stopping (default: 2)
+  minQuestionsBeforeOscillationStop?: number; // Minimum questions before oscillation stop (default: 8)
+  maxQuestionsPerLevel?: number; // Maximum questions at same level before moving on (default: 4)
 }
 
 export function BaselineAssessmentModal({
   isOpen,
   onClose,
+  student,
+  onAssessmentComplete,
+  oscillationTolerance = 2, // Configurable: lower = quicker stop, higher = longer test
+  minQuestionsBeforeOscillationStop = 8, // Minimum questions before oscillation can end test
+  maxQuestionsPerLevel = 4, // Maximum questions at same level before considering stable
 }: BaselineAssessmentModalProps) {
+  const { user } = useAuth();
   const [testState, setTestState] = useState<TestState>("intro");
   const [currentSubject, setCurrentSubject] = useState<Subject | null>(null);
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -59,10 +71,16 @@ export function BaselineAssessmentModal({
   const [levelStabilityCount, setLevelStabilityCount] = useState(0);
   const [highPerformanceStreak, setHighPerformanceStreak] = useState(0);
   const [levelHistory, setLevelHistory] = useState<number[]>([]);
-  const [oscillationCount, setOscillationCount] = useState(0);
-  const [lastOscillationLevels, setLastOscillationLevels] = useState<
-    [number, number] | null
-  >(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showQuickComplete, setShowQuickComplete] = useState(false); // add randomized complete button state for minimal logic change
+
+  // New state for better oscillation tracking
+  const [questionsAtCurrentLevel, setQuestionsAtCurrentLevel] = useState(0);
+  const [oscillationPattern, setOscillationPattern] = useState<{
+    levels: [number, number];
+    cycles: number;
+    questionsInPattern: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -88,6 +106,14 @@ export function BaselineAssessmentModal({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (testState === "testing" && !showFeedback) {
+      setShowQuickComplete(totalQuestions >= 5 && Math.random() < 0.25);
+    } else {
+      setShowQuickComplete(false);
+    }
+  }, [testState, showFeedback, totalQuestions, currentQuestionIndex]);
+
   const startTest = (subject: Subject) => {
     setCurrentSubject(subject);
     setTestState("testing");
@@ -102,8 +128,9 @@ export function BaselineAssessmentModal({
     setLevelStabilityCount(0);
     setHighPerformanceStreak(0);
     setLevelHistory([0]);
-    setOscillationCount(0);
-    setLastOscillationLevels(null);
+    setQuestionsAtCurrentLevel(0);
+    setOscillationPattern(null);
+    setShowQuickComplete(false); // Reset quick complete state on start
   };
 
   const getCurrentQuestion = () => {
@@ -128,52 +155,45 @@ export function BaselineAssessmentModal({
   };
 
   const detectOscillation = (_newLevel: number, history: number[]) => {
-    if (history.length < 4) return false;
+    if (history.length < 4) return null;
 
+    // Look for alternating pattern in recent history
     const recent = history.slice(-6);
 
+    // Simple oscillation: A -> B -> A -> B
     if (recent.length >= 4) {
+      const last4 = recent.slice(-4);
       const isSimpleOscillation =
-        recent[recent.length - 4] === recent[recent.length - 2] &&
-        recent[recent.length - 3] === recent[recent.length - 1] &&
-        recent[recent.length - 4] !== recent[recent.length - 3];
+        last4[0] === last4[2] && last4[1] === last4[3] && last4[0] !== last4[1];
 
       if (isSimpleOscillation) {
         const levels: [number, number] = [
-          Math.min(recent[recent.length - 4], recent[recent.length - 3]),
-          Math.max(recent[recent.length - 4], recent[recent.length - 3]),
+          Math.min(last4[0], last4[1]),
+          Math.max(last4[0], last4[1]),
         ];
-
-        if (
-          lastOscillationLevels &&
-          lastOscillationLevels[0] === levels[0] &&
-          lastOscillationLevels[1] === levels[1]
-        ) {
-          return { isOscillating: true, levels, isSamePattern: true };
-        } else {
-          return { isOscillating: true, levels, isSamePattern: false };
-        }
+        return { levels, type: "simple" };
       }
     }
 
+    // Extended oscillation: A -> B -> A -> B -> A -> B
     if (recent.length >= 6) {
       const isExtendedOscillation =
-        recent[recent.length - 6] === recent[recent.length - 4] &&
-        recent[recent.length - 4] === recent[recent.length - 2] &&
-        recent[recent.length - 5] === recent[recent.length - 3] &&
-        recent[recent.length - 3] === recent[recent.length - 1] &&
-        recent[recent.length - 6] !== recent[recent.length - 5];
+        recent[0] === recent[2] &&
+        recent[2] === recent[4] &&
+        recent[1] === recent[3] &&
+        recent[3] === recent[5] &&
+        recent[0] !== recent[1];
 
       if (isExtendedOscillation) {
         const levels: [number, number] = [
-          Math.min(recent[recent.length - 6], recent[recent.length - 5]),
-          Math.max(recent[recent.length - 6], recent[recent.length - 5]),
+          Math.min(recent[0], recent[1]),
+          Math.max(recent[0], recent[1]),
         ];
-        return { isOscillating: true, levels, isSamePattern: true };
+        return { levels, type: "extended" };
       }
     }
 
-    return false;
+    return null;
   };
 
   const handleAnswer = (answer: string | boolean) => {
@@ -205,6 +225,7 @@ export function BaselineAssessmentModal({
     }
 
     setTotalQuestions((prev) => prev + 1);
+    setQuestionsAtCurrentLevel((prev) => prev + 1);
 
     setTimeout(() => {
       nextQuestion();
@@ -214,37 +235,86 @@ export function BaselineAssessmentModal({
   const nextQuestion = () => {
     const previousLevel = currentLevel;
     let newLevel = currentLevel;
+    let levelChanged = false;
 
+    // Level progression logic
     if (highPerformanceStreak >= 3 && currentLevel >= 6 && currentLevel < 9) {
       newLevel = currentLevel + 2;
       setCurrentLevel(newLevel);
       setCorrectStreak(0);
       setHighPerformanceStreak(0);
       setLevelStabilityCount(0);
+      levelChanged = true;
     } else if (correctStreak >= 2 && currentLevel < 9) {
       newLevel = currentLevel + 1;
       setCurrentLevel(newLevel);
       setCorrectStreak(0);
       setLevelStabilityCount(0);
+      levelChanged = true;
     } else if (wrongStreak >= 2 && currentLevel > 0) {
       newLevel = currentLevel - 1;
       setCurrentLevel(newLevel);
       setWrongStreak(0);
       setLevelStabilityCount(0);
+      levelChanged = true;
     } else if (previousLevel === currentLevel) {
       setLevelStabilityCount((prev) => prev + 1);
+    }
+
+    // Reset questions at current level if level changed
+    if (levelChanged) {
+      setQuestionsAtCurrentLevel(0);
     }
 
     const newHistory = [...levelHistory, newLevel];
     setLevelHistory(newHistory);
 
+    // IMMEDIATE oscillation check - stop if we're bouncing between 2 levels
+    const last3Levels = newHistory.slice(-3);
+    const isImmediateOscillation =
+      last3Levels.length === 3 &&
+      last3Levels[0] === last3Levels[2] &&
+      last3Levels[0] !== last3Levels[1] &&
+      totalQuestions >= 3;
+
+    if (isImmediateOscillation) {
+      // Stop immediately and assign the lower level
+      const lowerLevel = Math.min(last3Levels[0], last3Levels[1]);
+      console.log(
+        `🛑 IMMEDIATE OSCILLATION DETECTED: ${last3Levels[0]}→${last3Levels[1]}→${last3Levels[2]} after ${totalQuestions} questions. Assigning level ${lowerLevel}.`
+      );
+      setCurrentLevel(lowerLevel);
+      completeTest();
+      return;
+    }
+
+    // Enhanced oscillation detection
     const oscillationResult = detectOscillation(newLevel, newHistory);
     if (oscillationResult) {
-      if (oscillationResult.isSamePattern) {
-        setOscillationCount((prev) => prev + 1);
+      const { levels, type } = oscillationResult;
+
+      if (
+        oscillationPattern &&
+        oscillationPattern.levels[0] === levels[0] &&
+        oscillationPattern.levels[1] === levels[1]
+      ) {
+        // Same oscillation pattern continues
+        setOscillationPattern((prev) =>
+          prev
+            ? {
+                ...prev,
+                cycles: prev.cycles + (type === "simple" ? 0.5 : 1),
+                questionsInPattern: prev.questionsInPattern + 1,
+              }
+            : null
+        );
       } else {
-        setOscillationCount(1);
-        setLastOscillationLevels(oscillationResult.levels);
+        // New oscillation pattern detected
+        setOscillationPattern({
+          levels,
+          cycles: type === "simple" ? 0.5 : 1,
+          questionsInPattern: 1,
+        });
       }
     }
 
@@ -252,22 +322,61 @@ export function BaselineAssessmentModal({
     setSelectedAnswer("");
     setShowFeedback(false);
 
+    // Enhanced stopping conditions
+    const hasMinQuestions = totalQuestions >= minQuestionsBeforeOscillationStop;
+    const hasOscillationPattern =
+      oscillationPattern && oscillationPattern.cycles >= oscillationTolerance;
+    const isStableAtLevel =
+      levelStabilityCount >= maxQuestionsPerLevel && totalQuestions >= 12;
+    const hasMaxPerformance =
+      currentLevel === 9 && correctStreak >= 2 && totalQuestions >= 15;
+    const hasMinPerformance =
+      wrongStreak >= 4 && currentLevel === 0 && totalQuestions >= 10;
+    const hasMaxQuestions = totalQuestions >= 35;
+    const tooManyQuestionsAtLevel =
+      questionsAtCurrentLevel >= maxQuestionsPerLevel * 2;
+
+    // AGGRESSIVE: Stop on simple level bounce pattern
+    const recentHistory = newHistory.slice(-4);
+    const hasSimpleBounce =
+      recentHistory.length >= 4 &&
+      recentHistory[0] === recentHistory[2] &&
+      recentHistory[1] === recentHistory[3] &&
+      recentHistory[0] !== recentHistory[1] &&
+      totalQuestions >= Math.max(4, minQuestionsBeforeOscillationStop - 2);
+
     const shouldStop =
-      (levelStabilityCount >= 4 && totalQuestions >= 12) ||
-      (currentLevel === 9 && correctStreak >= 2 && totalQuestions >= 15) ||
-      (wrongStreak >= 4 && currentLevel === 0 && totalQuestions >= 10) ||
-      (oscillationCount >= 2 && totalQuestions >= 12) ||
-      totalQuestions >= 35;
+      hasMaxQuestions ||
+      hasMaxPerformance ||
+      hasMinPerformance ||
+      isStableAtLevel ||
+      (hasMinQuestions && hasOscillationPattern) ||
+      (hasMinQuestions && tooManyQuestionsAtLevel) ||
+      hasSimpleBounce; // New aggressive stopping condition
 
     if (shouldStop) {
-      if (oscillationCount >= 2 && lastOscillationLevels) {
-        setCurrentLevel(lastOscillationLevels[0]);
+      // If stopping due to oscillation, set level to the lower of the oscillating levels
+      if ((hasOscillationPattern && oscillationPattern) || hasSimpleBounce) {
+        if (hasSimpleBounce) {
+          const lowerLevel = Math.min(recentHistory[0], recentHistory[1]);
+          console.log(
+            `🛑 SIMPLE BOUNCE DETECTED: Pattern ${recentHistory.join(
+              "→"
+            )} after ${totalQuestions} questions. Assigning level ${lowerLevel}.`
+          );
+          setCurrentLevel(lowerLevel);
+        } else if (oscillationPattern) {
+          console.log(
+            `🛑 OSCILLATION PATTERN DETECTED: ${oscillationPattern.cycles} cycles after ${totalQuestions} questions. Assigning level ${oscillationPattern.levels[0]}.`
+          );
+          setCurrentLevel(oscillationPattern.levels[0]);
+        }
       }
       completeTest();
     }
   };
 
-  const completeTest = () => {
+  const completeTest = async () => {
     if (!currentSubject) return;
 
     const result: TestResult = {
@@ -278,6 +387,41 @@ export function BaselineAssessmentModal({
     };
 
     setResults((prev) => [...prev, result]);
+
+    // If we have a student, save the assessment result
+    if (student && user) {
+      try {
+        setIsSaving(true);
+
+        console.log("Saving assessment with user data:", {
+          student: student._id,
+          school: student.schoolId._id,
+          mentor: user.id,
+          subject: currentSubject,
+          level: result.level,
+          userObject: user,
+        });
+
+        // Save assessment to backend
+        await createAssessment({
+          student: student._id,
+          school: student.schoolId._id,
+          mentor: user.id,
+          subject: currentSubject,
+          level: result.level,
+        });
+
+        toast.success(
+          `${currentSubject} assessment saved! Level: ${result.level}`
+        );
+      } catch (error) {
+        console.error("Error saving assessment:", error);
+        toast.error("Failed to save assessment. Please try again.");
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
     setTestState("completed");
   };
 
@@ -285,9 +429,20 @@ export function BaselineAssessmentModal({
     setTestState("intro");
     setCurrentSubject(null);
     setResults([]);
+    setQuestionsAtCurrentLevel(0);
+    setOscillationPattern(null);
+    setShowQuickComplete(false); // Reset quick complete state on reset
   };
 
   const handleClose = () => {
+    // If assessment was completed and we have results, call the completion callback
+    if (
+      testState === "completed" &&
+      results.length > 0 &&
+      onAssessmentComplete
+    ) {
+      onAssessmentComplete();
+    }
     resetTest();
     onClose();
   };
@@ -306,9 +461,15 @@ export function BaselineAssessmentModal({
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold">Baseline Assessment</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Adaptive Learning Test
-                  </p>
+                  {student ? (
+                    <p className="text-sm text-muted-foreground">
+                      Assessing: {student.name} (Roll: {student.roll_no})
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Adaptive Learning Test
+                    </p>
+                  )}
                 </div>
               </div>
               {testState !== "testing" && (
@@ -322,82 +483,46 @@ export function BaselineAssessmentModal({
               {testState === "intro" && (
                 <div className="space-y-6">
                   <div className="text-center space-y-2">
-                    <div className="flex justify-center mb-4">
-                      <div className="bg-primary/10 p-3 rounded-full">
-                        <Target className="h-8 w-8 text-primary" />
-                      </div>
+                    <div
+                      className="flex justify-center mb-4"
+                      aria-hidden="true"
+                    >
+                      <Target className="h-8 w-8 text-primary" />
                     </div>
                     <h1 className="text-2xl font-bold text-balance">
                       Baseline Assessment
                     </h1>
-                    <p className="text-muted-foreground text-pretty">
-                      Discover your current knowledge level with our adaptive
-                      testing system
+                    <p className="text-sm text-muted-foreground text-pretty">
+                      Choose a subject to begin
                     </p>
                   </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Trophy className="h-5 w-5 text-accent" />
-                        How Adaptive Testing Works
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-primary/10 rounded-full p-1 mt-0.5">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                        </div>
-                        <p>
-                          Questions adjust to your skill level automatically
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="bg-primary/10 rounded-full p-1 mt-0.5">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                        </div>
-                        <p>Answer correctly → harder questions</p>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="bg-primary/10 rounded-full p-1 mt-0.5">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                        </div>
-                        <p>Answer incorrectly → easier questions</p>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <div className="bg-primary/10 rounded-full p-1 mt-0.5">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                        </div>
-                        <p>
-                          Your level is determined by consistent performance
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-center">
-                      Choose a Subject
-                    </h2>
-
+                  <div className="space-y-4" aria-label="Choose a subject">
                     <Card
                       className="cursor-pointer hover:shadow-md transition-shadow"
                       onClick={() => startTest("hindi")}
+                      aria-label="Start Hindi assessment"
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg">
+                            <div
+                              className="bg-blue-100 p-2 rounded-lg"
+                              aria-hidden="true"
+                            >
                               <BookOpen className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                               <h3 className="font-semibold">Hindi Language</h3>
                               <p className="text-sm text-muted-foreground">
-                                Reading & comprehension test
+                                Reading & comprehension
                               </p>
                             </div>
                           </div>
-                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                          <ArrowRight
+                            className="h-5 w-5 text-muted-foreground"
+                            aria-hidden="true"
+                          />
                         </div>
                       </CardContent>
                     </Card>
@@ -405,21 +530,28 @@ export function BaselineAssessmentModal({
                     <Card
                       className="cursor-pointer hover:shadow-md transition-shadow"
                       onClick={() => startTest("math")}
+                      aria-label="Start Math assessment"
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="bg-green-100 p-2 rounded-lg">
+                            <div
+                              className="bg-green-100 p-2 rounded-lg"
+                              aria-hidden="true"
+                            >
                               <Calculator className="h-6 w-6 text-green-600" />
                             </div>
                             <div>
                               <h3 className="font-semibold">Mathematics</h3>
                               <p className="text-sm text-muted-foreground">
-                                Problem solving & calculations
+                                Problem solving
                               </p>
                             </div>
                           </div>
-                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                          <ArrowRight
+                            className="h-5 w-5 text-muted-foreground"
+                            aria-hidden="true"
+                          />
                         </div>
                       </CardContent>
                     </Card>
@@ -429,44 +561,43 @@ export function BaselineAssessmentModal({
 
               {testState === "testing" && (
                 <div className="space-y-6">
-                  {/* Progress Header */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-xs">
-                        Level {currentLevel + 1}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        Question {totalQuestions + 1}
-                      </Badge>
-                    </div>
-                    <Progress
-                      value={Math.min((totalQuestions / 30) * 100, 100)}
-                      className="h-2"
-                    />
+                  {/* Streamlined Header */}
+                  <div className="flex items-center justify-between">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs"
+                      aria-label={`Level ${currentLevel + 1}`}
+                    >
+                      Level {currentLevel + 1}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className="text-xs"
+                      aria-label={`Question ${totalQuestions + 1}`}
+                    >
+                      Q{totalQuestions + 1}
+                    </Badge>
                   </div>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg text-balance">
+                      {/* Keep Title; Remove Instructions */}
+                      <CardTitle className="text-base text-balance">
                         {currentSubject === "math"
                           ? mathData[currentLevel].title
                           : hindiData[currentLevel].title}
                       </CardTitle>
-                      <CardDescription className="text-pretty">
-                        {currentSubject === "math"
-                          ? mathData[currentLevel].instructions
-                          : hindiData[currentLevel].instructions}
-                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6">
                       {currentSubject === "math" ? (
                         <>
-                          <div className="text-xl font-semibold text-center py-4 bg-muted/50 rounded-lg">
+                          {/* Bigger Question Font */}
+                          <div className="text-3xl font-bold text-center py-6 bg-muted/50 rounded-lg">
                             {(getCurrentQuestion() as any)?.question}
                           </div>
 
                           {!showFeedback ? (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               {(getCurrentQuestion() as any)?.options.map(
                                 (option: string, index: number) => (
                                   <Button
@@ -476,12 +607,13 @@ export function BaselineAssessmentModal({
                                         ? "default"
                                         : "outline"
                                     }
-                                    className="h-12 text-lg"
+                                    className="h-16 text-2xl"
                                     onClick={() => {
                                       setSelectedAnswer(option);
                                       handleAnswer(option);
                                     }}
                                     disabled={showFeedback}
+                                    aria-label={`Select option ${option}`}
                                   >
                                     {option}
                                   </Button>
@@ -491,18 +623,24 @@ export function BaselineAssessmentModal({
                           ) : (
                             <div className="text-center space-y-4">
                               <div
-                                className={`flex items-center justify-center gap-2 text-lg font-semibold ${
+                                className={`flex items-center justify-center gap-3 text-2xl font-semibold ${
                                   isCorrect ? "text-green-600" : "text-red-600"
                                 }`}
                               >
                                 {isCorrect ? (
                                   <>
-                                    <CheckCircle className="h-6 w-6" />
-                                    Correct!
+                                    <CheckCircle
+                                      className="h-7 w-7"
+                                      aria-hidden="true"
+                                    />
+                                    Correct
                                   </>
                                 ) : (
                                   <>
-                                    <XCircle className="h-6 w-6" />
+                                    <XCircle
+                                      className="h-7 w-7"
+                                      aria-hidden="true"
+                                    />
                                     Incorrect
                                   </>
                                 )}
@@ -510,7 +648,10 @@ export function BaselineAssessmentModal({
                               {!isCorrect && (
                                 <p className="text-sm text-muted-foreground">
                                   Correct answer:{" "}
-                                  {(getCurrentQuestion() as any)?.correct_answer}
+                                  {
+                                    (getCurrentQuestion() as any)
+                                      ?.correct_answer
+                                  }
                                 </p>
                               )}
                             </div>
@@ -518,48 +659,58 @@ export function BaselineAssessmentModal({
                         </>
                       ) : (
                         <>
-                          <div className="text-2xl font-bold text-center py-8 bg-muted/50 rounded-lg">
+                          {/* Much Bigger Character Text */}
+                          <div className="text-7xl font-extrabold text-center py-8 bg-muted/50 rounded-lg">
                             {(getCurrentQuestion() as any)?.question}
                           </div>
 
                           {!showFeedback ? (
-                            <div className="space-y-3">
-                              <p className="text-sm text-muted-foreground text-center">
-                                Can the student read this correctly?
-                              </p>
-                              <div className="grid grid-cols-2 gap-3">
-                                <Button
-                                  variant="outline"
-                                  className="h-12 text-lg border-red-200 hover:bg-red-50 bg-transparent"
-                                  onClick={() => handleAnswer(false)}
-                                >
-                                  <XCircle className="h-5 w-5 mr-2 text-red-500" />
-                                  No
-                                </Button>
-                                <Button
-                                  className="h-12 text-lg bg-green-600 hover:bg-green-700"
-                                  onClick={() => handleAnswer(true)}
-                                >
-                                  <CheckCircle className="h-5 w-5 mr-2" />
-                                  Yes
-                                </Button>
-                              </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* Big Red Reject Button */}
+                              <Button
+                                variant="destructive"
+                                className="h-20"
+                                onClick={() => handleAnswer(false)}
+                                aria-label="Rejection, cannot read"
+                              >
+                                <X
+                                  className="h-24 w-24 stroke-[4]"
+                                  aria-hidden="true"
+                                />
+                              </Button>
+                              {/* Big Green Correct Button */}
+                              <Button
+                                className="h-20 bg-green-600 text-white hover:bg-green-700"
+                                onClick={() => handleAnswer(true)}
+                                aria-label="Correct, can read"
+                              >
+                                <CheckIcon
+                                  className="h-24 w-24 stroke-[4]"
+                                  aria-hidden="true"
+                                />
+                              </Button>
                             </div>
                           ) : (
                             <div className="text-center space-y-4">
                               <div
-                                className={`flex items-center justify-center gap-2 text-lg font-semibold ${
+                                className={`flex items-center justify-center gap-3 text-2xl font-semibold ${
                                   isCorrect ? "text-green-600" : "text-red-600"
                                 }`}
                               >
                                 {isCorrect ? (
                                   <>
-                                    <CheckCircle className="h-6 w-6" />
+                                    <CheckCircle
+                                      className="h-7 w-7"
+                                      aria-hidden="true"
+                                    />
                                     Great job!
                                   </>
                                 ) : (
                                   <>
-                                    <XCircle className="h-6 w-6" />
+                                    <XCircle
+                                      className="h-7 w-7"
+                                      aria-hidden="true"
+                                    />
                                     Keep practicing!
                                   </>
                                 )}
@@ -571,38 +722,17 @@ export function BaselineAssessmentModal({
                     </CardContent>
                   </Card>
 
-                  {totalQuestions >= 10 && !showFeedback && (
+                  {/* Randomly-Appearing Complete Test Button */}
+                  {showQuickComplete && !showFeedback && (
                     <Button
                       variant="outline"
-                      className="w-full h-12 bg-transparent border-primary text-primary hover:bg-primary/10"
+                      className="w-full h-8 text-lg bg-transparent border-primary text-primary hover:bg-primary/10"
                       onClick={completeTest}
+                      aria-label="Complete test now"
                     >
-                      Complete Test Now
+                      End Test
                     </Button>
                   )}
-
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-1">
-                      <p className="text-2xl font-bold text-green-600">
-                        {correctAnswers}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Correct</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-2xl font-bold text-primary">
-                        {currentLevel + 1}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Current Level
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-2xl font-bold text-accent">
-                        {correctStreak}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Streak</p>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -670,17 +800,15 @@ export function BaselineAssessmentModal({
 
                   <div className="space-y-3">
                     <Button
-                      className="w-full h-12"
-                      onClick={() => setTestState("intro")}
-                    >
-                      Take Another Assessment
-                    </Button>
-                    <Button
                       variant="outline"
                       className="w-full h-12 bg-transparent"
                       onClick={handleClose}
+                      disabled={isSaving}
                     >
-                      Finish Assessment
+                      {isSaving && (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      )}
+                      {isSaving ? "Saving..." : "Finish Assessment"}
                     </Button>
                   </div>
                 </div>

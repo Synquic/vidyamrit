@@ -59,10 +59,10 @@ export default function PublicNavbar() {
             <Button
               className="bg-amber-500 hover:bg-amber-600 text-white"
               onClick={() => {
-                window.location.replace("/login");
+                window.location.pathname = "/login";
               }}
             >
-              Support Now
+              Login
             </Button>
           </div>
 

@@ -1,0 +1,1379 @@
+{
+  "programName": "Hindi Reading Assessment Program",
+  "subject": "Hindi",
+  "description": "Comprehensive Hindi reading program with progressive difficulty levels and verbal evaluation assessments",
+  "levels": [
+    {
+      "levelNumber": 1,
+      "title": "Level 1 - Basic Vowels",
+      "description": "Introduction to basic Hindi vowels and their pronunciation",
+      "timeframe": 2,
+      "timeframeUnit": "weeks",
+      "prerequisites": [],
+      "objectives": [
+        "Master Level 1 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Recognize letter combinations"
+      ],
+      "resources": [
+        "Level 1 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 1 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "अ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "इ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ई",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "उ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ऊ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ऋ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ए",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ऐ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ओ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "औ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अं",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अः",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "क",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ख",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ग",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "घ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "ङ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "च",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "छ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "levelNumber": 2,
+      "title": "Level 2 - Two-Letter Words",
+      "description": "Reading and understanding simple two-letter Hindi words",
+      "timeframe": 3,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        1
+      ],
+      "objectives": [
+        "Master Level 2 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Recognize letter combinations"
+      ],
+      "resources": [
+        "Level 2 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 2 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "अज",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अट",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अध",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अप",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अब",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आओ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आख",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आग",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आच",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आज",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आठ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आत",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आध",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आन",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आप",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आम",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आय",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आव",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "levelNumber": 3,
+      "title": "Level 3 - Three-Letter Words",
+      "description": "Progressing to three-letter words and basic word formation",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        2
+      ],
+      "objectives": [
+        "Master Level 3 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Recognize letter combinations"
+      ],
+      "resources": [
+        "Level 3 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 3 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "अकड़",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अकबर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अकरम",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अकसर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अगर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अचकन",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अचल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अजगर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अजय",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अदरक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अफजल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अफसर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अबकल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अबतक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अभय",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अमन",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अमर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अमरस",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अरनव",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अरब",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "levelNumber": 4,
+      "title": "Level 4 - Simple Consonants",
+      "description": "Learning simple consonant combinations and sounds",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        3
+      ],
+      "objectives": [
+        "Master Level 4 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Understand word meanings",
+        "Read with proper pace"
+      ],
+      "resources": [
+        "Level 4 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 4 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "उड़ गए तब भय सब ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "घर चल न ठहर अब ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "मदन रथ पर चढ़ ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "रथ पर चढ़ कर महल चल ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "महल चल कर उतर ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "बतख मत पकड़ ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "नटखट मत बन ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अनबन मत कर ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "बक बक मत कर ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "रमन अब वन चल ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "चल कर उधर रह ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सच डगर पर चल ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "भगवन रहमत कर हम सब पर ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "डर मत बस बढ़ चल ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अंबर बस गए घन ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "घन बरस तब धन ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "फसल भई कनक सम ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सफल भए सब सपन ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सब आज आए चढ़ कर टम टम ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अकबर अहमद और अनम ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Which word is correctly written? (बक बक मत कर ।)",
+          "questionType": "multiple_choice",
+          "options": [
+            "बक बक मत कर ।",
+            "तन मन एक कर ।",
+            "अब बरस हर तरफ ।",
+            "अमजद अचकन पहन चल ।"
+          ],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": false
+        }
+      ]
+    },
+    {
+      "levelNumber": 5,
+      "title": "Level 5 - Complex Consonants",
+      "description": "Mastering complex consonant combinations and conjunct letters",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        4
+      ],
+      "objectives": [
+        "Master Level 5 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Understand word meanings",
+        "Read with proper pace"
+      ],
+      "resources": [
+        "Level 5 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 5 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "शिक्षिका सलिल विशाल विषम विकास विरल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "दक्षिण सविता विवश शिमला किशन कविता निलय",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "बिटिया बिछाया परिचित अतिथि गिनकर दिनकर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "पानी मिनाक्षी मीठा मीरा मदारी रणवीर दीपिका",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "चालाकी अमीर शहीद कमीज पनीर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "चमकीली नीलामी सरकारी बिजली वकील",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "मछली शरीर भीषण शीतल नीरज अपनी",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सुख रघु युग जमुना दुकान सुपारी दुनिया",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "पुकार मधुर जामुन पुलाव पुजारी सुनार",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "गुलाब चुहिया कुटिया मधुवन अनुमान",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "मुसीबत नुकसान बुधवार कुमकुम गुपचुप",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "धूप नीतू रामू भूख नानू झाड़ू बालू पूजारी मारूति",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "कूलर सूरज जुगनू नूतन तूफान घूमना चूसना",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "पालतू शहतूत फूलदान जूनागढ़ आभूषण",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "मजदूर मशहूर मजबूत चबूतरा राजदूत",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Which word is correctly written? (मजदूर मशहूर मजबूत चबूतरा राजदूत)",
+          "questionType": "multiple_choice",
+          "options": [
+            "मजदूर मशहूर मजबूत चबूतरा राजदूत",
+            "मछली शरीर भीषण शीतल नीरज अपनी",
+            "बिटिया बिछाया परिचित अतिथि गिनकर दिनकर",
+            "गुलाब चुहिया कुटिया मधुवन अनुमान"
+          ],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": false
+        }
+      ]
+    },
+    {
+      "levelNumber": 6,
+      "title": "Level 6 - Short Sentences",
+      "description": "Reading short sentences and understanding context",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        5
+      ],
+      "objectives": [
+        "Master Level 6 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Understand word meanings",
+        "Read with proper pace"
+      ],
+      "resources": [
+        "Level 6 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 6 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "खेत देश पेन केला मेला देवता रेशमा मेजबान",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "जेलखाना केदारनाथ महादेव लेखक गणेश चेहरा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "कपड़े अपने अनेक सेहत पेपर टेबल अभिनेता बेवकूफ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "बेरोजगार रेलगाड़ी केवल चेतक बेचारा नेहा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "गैर बैटरी थैली गैलरी कैलाश फैलाव फैसला पैसा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "कैदी कैसे जैसा मैहर शैया थैला गैस पैदल ततैया",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "जैनी हैजा गैया चैत्र रैदास वैज्ञानिक गैरकानुनी",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "गैरसरकारी गैरहाजिर बैलगाड़ी बैचेन जैसे सदैव",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "बोतल कारोबार अखरोट गोरखपुर बोलकर रोजाना",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अनोखा टोपी भोपाल सोना जोड़ी पोशाक रोचक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "रोग मनोहर दोपहर चोर मोटर तोता मोबाईल रोहन",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "नोट गोला पोता मोदी मोती रोना लोहा मोदक सरोज",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "पौधा बिछौना मौका चौपाल चौदह कचौड़ी चौखट",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "हथौड़ा जौहरी तौलिया रौनक मनमौजी दौलत सौदागर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "कौआ शौक लौकी मौसी खिलौना कौन चौड़ा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "औसत भौतिक कौशल चौवन गौरैया गौतम",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "संत पतंग",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "पंख जंगल कंगन",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "शंकर पतंग शंख कंचन कंगन",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "संतरा अंगूर मंगल  जंगल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Which word is correctly written? (बेरोजगार रेलगाड़ी केवल चेतक बेचारा नेहा)",
+          "questionType": "multiple_choice",
+          "options": [
+            "बेरोजगार रेलगाड़ी केवल चेतक बेचारा नेहा",
+            "गैरसरकारी गैरहाजिर बैलगाड़ी बैचेन जैसे सदैव",
+            "बोतल कारोबार अखरोट गोरखपुर बोलकर रोजाना",
+            "गैर बैटरी थैली गैलरी कैलाश फैलाव फैसला पैसा"
+          ],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": false
+        }
+      ]
+    },
+    {
+      "levelNumber": 7,
+      "title": "Level 7 - Reading Comprehension",
+      "description": "Developing reading comprehension and meaning understanding",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        6
+      ],
+      "objectives": [
+        "Master Level 7 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Comprehend text meaning",
+        "Read with expression"
+      ],
+      "resources": [
+        "Level 7 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 7 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "चँंद्रबिन्दु",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "कुआँ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "दाँत",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "लहँगा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "लहेँगा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "दाँत",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "माँ आँच",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "चाँदी",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "काँप बाँस",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आँवला",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "वृक्ष                   नृूप              कृषक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "वृक्ष कृषक मातृ नृप घृत अमृत घृणा  गृह",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "गर्म   पार्क कार्ड",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सूर्य गर्म हर्ष पार्क",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "टॉर्च लेकर मार्ग",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आर्ट चार्ट कार्ड",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "फ्रॉक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "क्रिसमस ड्रेस",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "प्रिया  फ्रॉक पैट्रिक ट्रेन क्रिसमस",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "लड्डू",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Which word is correctly written? (लहँगा)",
+          "questionType": "multiple_choice",
+          "options": [
+            "लहँगा",
+            "दाँत",
+            "गर्म   पार्क कार्ड",
+            "चाँदी"
+          ],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": false
+        }
+      ]
+    },
+    {
+      "levelNumber": 8,
+      "title": "Level 8 - Advanced Words",
+      "description": "Advanced vocabulary and complex word structures",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        7
+      ],
+      "objectives": [
+        "Master Level 8 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Comprehend text meaning",
+        "Read with expression"
+      ],
+      "resources": [
+        "Level 8 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 8 words correctly",
+      "assessmentQuestions": []
+    },
+    {
+      "levelNumber": 9,
+      "title": "Level 9 - Complex Sentences",
+      "description": "Reading complex sentences with proper intonation",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        8
+      ],
+      "objectives": [
+        "Master Level 9 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Comprehend text meaning",
+        "Read with expression"
+      ],
+      "resources": [
+        "Level 9 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 9 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "मेरी नानी करें बुनाई ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सर्दी में यह काम है आता ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अपनी लम्बी जटा बढ़ाए।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "इससे अच्छी शिक्षा पाते ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "दादा जी के ऐनक पर हुई लड़ाई ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "चिन्कू बोला मैं पहनूँगा ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "दोनों की आ गयी शामत ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "अन्न कूटती जाती हैं।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "इस पर पड़ती मार बड़ी ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "औरत का हर गुण है न्यारा ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "सबको हैं प्यारे अंगूर ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "दीदी खाती काले अंगूर ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "पानी की यह करे सफाई ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "लगता कितना प्यारा प्यारा ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "इसकी बड़ी अनोखी शान ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "आओ विमला आओ कमला।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "तब महकेगी रात की रानी।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "करना काम सिखाती है।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "हमें काम की याद दिलाती ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "घुमा घुमा कर धागा बनता ।",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Which word is correctly written? (लगता कितना प्यारा प्यारा ।)",
+          "questionType": "multiple_choice",
+          "options": [
+            "लगता कितना प्यारा प्यारा ।",
+            "छत पर आई गुड़िया रानी ।",
+            "इससे अच्छी शिक्षा पाते ।",
+            "घुमा घुमा कर धागा बनता ।"
+          ],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": false
+        }
+      ]
+    },
+    {
+      "levelNumber": 10,
+      "title": "Level 10 - Fluent Reading",
+      "description": "Achieving fluent reading with full comprehension",
+      "timeframe": 4,
+      "timeframeUnit": "weeks",
+      "prerequisites": [
+        9
+      ],
+      "objectives": [
+        "Master Level 10 vocabulary",
+        "Improve reading fluency",
+        "Enhance pronunciation accuracy",
+        "Comprehend text meaning",
+        "Read with expression"
+      ],
+      "resources": [
+        "Level 10 word cards",
+        "Reading practice sheets",
+        "Audio pronunciation guide"
+      ],
+      "assessmentCriteria": "Student can read and pronounce Level 10 words correctly",
+      "assessmentQuestions": [
+        {
+          "questionText": "कला",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "घतसासखे गा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "रारहय",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "तचा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "छफ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "टदबसख",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "जल",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "नलटफ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "गरहक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "झ व",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "रईस",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "हझड़ाफा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "व नाकान",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "री श",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "कफ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "नबमर",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "तघजक",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "थ घ",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "थब",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "भम तल मा",
+          "questionType": "verbal_evaluation",
+          "points": 1,
+          "isRequired": true
+        },
+        {
+          "questionText": "Which word is correctly written? (य री)",
+          "questionType": "multiple_choice",
+          "options": [
+            "य री",
+            "छफ",
+            "जद",
+            "मी फ"
+          ],
+          "correctOptionIndex": 0,
+          "points": 2,
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

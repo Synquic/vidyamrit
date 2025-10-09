@@ -1,9 +1,9 @@
 export const PUBLIC_ROUTE_PATHS = {
-  support: "/support"
+  support: "/support",
 } as const;
 
 export type PublicRouteKey = keyof typeof PUBLIC_ROUTE_PATHS;
-export type PublicRoutePath = typeof PUBLIC_ROUTE_PATHS[PublicRouteKey];
+export type PublicRoutePath = (typeof PUBLIC_ROUTE_PATHS)[PublicRouteKey];
 
 export const AUTH_ROUTE_PATHS = {
   login: "/login",
@@ -12,7 +12,7 @@ export const AUTH_ROUTE_PATHS = {
 } as const;
 
 export type AuthRouteKey = keyof typeof AUTH_ROUTE_PATHS;
-export type AuthRoutePath = typeof AUTH_ROUTE_PATHS[AuthRouteKey];
+export type AuthRoutePath = (typeof AUTH_ROUTE_PATHS)[AuthRouteKey];
 
 export const DASHBOARD_ROUTE_PATHS = {
   dashboard: "/dashboard",
@@ -21,6 +21,7 @@ export const DASHBOARD_ROUTE_PATHS = {
   schoolAdmin: "/school-admins",
   //
   mentors: "/mentors",
+  mentorManagement: "/mentor-management",
   students: "/students",
   cohorts: "/cohorts",
   //
@@ -28,8 +29,13 @@ export const DASHBOARD_ROUTE_PATHS = {
   //
   studentReports: "/student-reports",
   assessmentQuestionSets: "/assessment-question-sets",
-
+  //
+  attendanceManagement: "/attendance",
+  learningGroups: "/groups",
+  progressMonitoring: "/progress",
+  managePrograms: "/programs",
 } as const;
 
 export type DashboardRouteKey = keyof typeof DASHBOARD_ROUTE_PATHS;
-export type DashboardRoutePath = typeof DASHBOARD_ROUTE_PATHS[DashboardRouteKey];
+export type DashboardRoutePath =
+  (typeof DASHBOARD_ROUTE_PATHS)[DashboardRouteKey];
