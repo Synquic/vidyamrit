@@ -56,9 +56,8 @@ export const SchoolProvider: React.FC<SchoolProviderProps> = ({ children }) => {
         state: "",
         establishedYear: new Date().getFullYear(),
         pinCode: "",
-        principalName: "",
-        phone: "",
-        email: "",
+        pointOfContact: "",
+        phone: ""
       });
     }
   }, [user]);
