@@ -66,9 +66,8 @@ function ManageSchools() {
     state: "",
     establishedYear: new Date().getFullYear(),
     pinCode: "",
-    principalName: "",
+    pointOfContact: "",
     phone: "",
-    email: "",
   });
 
   const {
@@ -130,9 +129,8 @@ function ManageSchools() {
       state: school.state,
       establishedYear: school.establishedYear,
       pinCode: school.pinCode,
-      principalName: school.principalName || "",
+      pointOfContact: school.pointOfContact || "",
       phone: school.phone || "",
-      email: school.email || "",
     });
     setIsDialogOpen(true);
   };
@@ -155,9 +153,8 @@ function ManageSchools() {
       state: "",
       establishedYear: new Date().getFullYear(),
       pinCode: "",
-      principalName: "",
+      pointOfContact: "",
       phone: "",
-      email: "",
     });
   };
 
@@ -240,13 +237,13 @@ function ManageSchools() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Principal:
+                    Point of Contact:
                   </span>
-                  <span className="text-sm">{school.principalName}</span>
+                  <span className="text-sm">{school.pointOfContact}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Contact:
+                    Mobile No:
                   </span>
                   <span className="text-sm">{school.phone}</span>
                 </div>
@@ -410,16 +407,16 @@ function ManageSchools() {
                 </div>
               </div>
 
-              {/* Principal Info */}
+              {/* Point of Contact Info */}
               <div className="space-y-2">
-                <Label htmlFor="principalName">Principal Name</Label>
+                <Label htmlFor="pointOfContact">Point of Contact</Label>
                 <Input
-                  id="principalName"
-                  value={formData.principalName}
+                  id="pointOfContact"
+                  value={formData.pointOfContact}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      principalName: e.target.value,
+                      pointOfContact: e.target.value,
                     }))
                   }
                 />
@@ -436,20 +433,6 @@ function ManageSchools() {
                       setFormData((prev) => ({
                         ...prev,
                         phone: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        email: e.target.value,
                       }))
                     }
                   />

@@ -13,9 +13,8 @@ export interface School {
   state: string;
   establishedYear: number;
   pinCode: string;
-  principalName: string;
+  pointOfContact: string;
   phone: string;
-  email: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

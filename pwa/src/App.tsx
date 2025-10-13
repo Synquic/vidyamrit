@@ -1,4 +1,4 @@
-import PWABadge from "./components/pwa/PWABadge.tsx";
+// import PWABadge from "./components/pwa/PWABadge.tsx";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 //
@@ -116,7 +116,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
         <Toaster richColors />
-        <PWABadge />
+        {/* <PWABadge /> */}
       </QueryClientProvider>
     </AuthProvider>
   );

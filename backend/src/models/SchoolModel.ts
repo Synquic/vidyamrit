@@ -10,9 +10,8 @@ export interface ISchool extends Document {
   state: string;
   establishedYear: number;
   pinCode: string;
-  principalName: string;
+  pointOfContact: string;
   phone: string;
-  email: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,9 +27,8 @@ const SchoolSchema = new mongoose.Schema(
     state: { type: String, required: true },
     establishedYear: { type: Number, required: true },
     pinCode: { type: String, required: true },
-    principalName: { type: String, required: true },
+    pointOfContact: { type: String, required: true },
     phone: { type: String, required: true },
-    email: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
