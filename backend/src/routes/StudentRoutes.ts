@@ -18,25 +18,25 @@ const studentRouter = Router();
 studentRouter.post(
   "/",
   authMiddleware,
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
   createStudent
 ); // Create a student record
 studentRouter.get(
   "/",
   authMiddleware,
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
   getStudents
 ); // Get all students (with optional schoolId filter)
 studentRouter.get(
   "/:id",
   authMiddleware,
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
   getStudent
 ); // Get a single student by MongoDB _id
 studentRouter.get(
   "/:id/level",
   authMiddleware,
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
   getStudentLevel
 ); // Get student's current level
 studentRouter.get(

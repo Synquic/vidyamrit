@@ -1,8 +1,9 @@
 export enum UserRole {
   SUPER_ADMIN = "super_admin",
   TUTOR = "tutor",
+  VOLUNTEER = "volunteer",
 }
-export type UserRoleType = "super_admin" | "tutor";
+export type UserRoleType = "super_admin" | "tutor" | "volunteer";
 
 // Base user interface that matches the API response
 export interface BaseUser {
@@ -26,6 +27,9 @@ export const isSuperAdmin = (user: BaseUser): user is SuperAdmin =>
 export const isTutor = (user: BaseUser): user is Tutor =>
   user.role === UserRole.TUTOR;
 
+export const isVolunteer = (user: BaseUser): user is Volunteer =>
+  user.role === UserRole.VOLUNTEER;
+
 // Role-specific interfaces extending BaseUser
 export interface SuperAdmin extends BaseUser {
   role: UserRole.SUPER_ADMIN;
@@ -39,6 +43,17 @@ export interface Tutor extends BaseUser {
     _id: string;
     name: string;
   };
+}
+
+export interface Volunteer extends BaseUser {
+  role: UserRole.VOLUNTEER;
+  schoolId: {
+    // Volunteer must have a school
+    _id: string;
+    name: string;
+  };
+  expiresAt?: string; // ISO date string when volunteer access expires
+  isActive?: boolean; // Whether volunteer account is active
 }
 
 // DTOs for creating/updating users
@@ -59,7 +74,7 @@ export interface UpdateUserDTO {
 }
 
 // Type for API responses
-export type User = SuperAdmin | Tutor;
+export type User = SuperAdmin | Tutor | Volunteer;
 
 // Helper to narrow user type based on role
 export function getUserByRole(user: BaseUser): User {
@@ -68,6 +83,8 @@ export function getUserByRole(user: BaseUser): User {
       return user as SuperAdmin;
     case UserRole.TUTOR:
       return user as Tutor;
+    case UserRole.VOLUNTEER:
+      return user as Volunteer;
     default:
       throw new Error(`Unknown user role: ${user.role}`);
   }

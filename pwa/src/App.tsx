@@ -32,6 +32,7 @@ import BaselineAssessmentsPage from "./pages/dashboard/BaselineAssessmentsPage";
 import SupportPage from "./pages/public/SupportPage.tsx";
 import ManagePrograms from "./pages/dashboard/ManagePrograms.tsx";
 import AttendanceManagementPage from "./pages/dashboard/AttendanceManagementPage.tsx";
+import ManageVolunteers from "./pages/dashboard/ManageVolunteers.tsx";
 
 const router = createBrowserRouter([
   {
@@ -103,6 +104,10 @@ const router = createBrowserRouter([
       {
         path: DASHBOARD_ROUTE_PATHS.managePrograms,
         element: <ManagePrograms />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.volunteers,
+        element: <ManageVolunteers />,
       },
     ],
   },

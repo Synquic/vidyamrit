@@ -15,6 +15,7 @@ import DashboardPage from "@/pages/dashboard/DashboardPage";
 import ManageSchools from "@/pages/dashboard/ManageSchools";
 import ManageStudents from "@/pages/dashboard/ManageStudents";
 import ManageCohorts from "@/pages/dashboard/ManageCohorts";
+import ManageVolunteers from "@/pages/dashboard/ManageVolunteers";
 import BaselineAssessmentsPage from "@/pages/dashboard/BaselineAssessmentsPage";
 
 export const router = createBrowserRouter([
@@ -71,6 +72,16 @@ export const router = createBrowserRouter([
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.cohorts]}
           >
             <ManageCohorts />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.volunteers,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.volunteers]}
+          >
+            <ManageVolunteers />
           </ProtectedRoute>
         ),
       },

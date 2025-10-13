@@ -22,6 +22,7 @@ export const DASHBOARD_ROUTE_PATHS = {
   //
   mentors: "/mentors",
   mentorManagement: "/mentor-management",
+  volunteers: "/volunteers",
   students: "/students",
   cohorts: "/cohorts",
   //

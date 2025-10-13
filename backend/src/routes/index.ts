@@ -9,6 +9,7 @@ import assessmentRouter from "./AssessmentRoutes";
 import attendanceRouter from "./AttendanceRoutes";
 import programRouter from "./ProgramRoutes";
 import programAssessmentRouter from "./ProgramAssessmentRoutes";
+import volunteerRouter from "./VolunteerRoutes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
@@ -29,5 +30,6 @@ router.use("/assessments", assessmentRouter);
 router.use("/attendance", attendanceRouter);
 router.use("/programs", programRouter);
 router.use("/program-assessments", programAssessmentRouter);
+router.use("/volunteers", volunteerRouter);
 
 export default router;

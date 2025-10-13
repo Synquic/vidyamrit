@@ -8,6 +8,9 @@ export interface IUser extends Document {
     phoneNo: string;
     role: UserRole;
     schoolId?: mongoose.Types.ObjectId | null;
+    // Volunteer-specific fields
+    expiresAt?: Date; // When volunteer access expires
+    isActive?: boolean; // To enable/disable volunteer access
     createdAt: Date;
     updatedAt: Date;
 }
@@ -19,6 +22,9 @@ const UserSchema = new mongoose.Schema({
     phoneNo: { type: String, required: true},
     role: { type: String, enum: Object.values(UserRole), required: true },
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false },
+    // Volunteer-specific fields
+    expiresAt: { type: Date, required: false }, // When volunteer access expires
+    isActive: { type: Boolean, default: true }, // To enable/disable volunteer access
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

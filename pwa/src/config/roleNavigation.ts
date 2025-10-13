@@ -27,7 +27,7 @@ export const navigationItems: NavigationItem[] = [
     title: "Student Management",
     url: DASHBOARD_ROUTE_PATHS.students,
     icon: GraduationCap,
-    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER],
     description: "Manage student records and information",
   },
   {
@@ -36,6 +36,13 @@ export const navigationItems: NavigationItem[] = [
     icon: UserPen,
     allowedRoles: [UserRole.SUPER_ADMIN],
     description: "Manage tutors and assign them to schools",
+  },
+  {
+    title: "Volunteer Management",
+    url: DASHBOARD_ROUTE_PATHS.volunteers,
+    icon: Users,
+    allowedRoles: [UserRole.SUPER_ADMIN],
+    description: "Create and manage volunteer accounts for schools",
   },
   {
     title: "Programme Management",
@@ -55,7 +62,7 @@ export const navigationItems: NavigationItem[] = [
     title: "Baseline Assessments",
     url: DASHBOARD_ROUTE_PATHS.baselineAssessments,
     icon: ClipboardList,
-    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER],
     description: "Conduct student assessments",
   },
   {
