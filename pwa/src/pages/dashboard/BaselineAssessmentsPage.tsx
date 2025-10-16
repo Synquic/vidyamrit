@@ -39,7 +39,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, BookOpen } from "lucide-react";
+import { Plus, Users, BookOpen, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function BaselineAssessmentsPage() {
@@ -65,6 +65,7 @@ export default function BaselineAssessmentsPage() {
     knowledgeLevel: [],
     cohort: [],
   });
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchPrograms();
@@ -162,12 +163,13 @@ export default function BaselineAssessmentsPage() {
     }
 
     try {
+      setIsCreating(true);
       const studentData: CreateStudentDTO = {
         ...(newStudent as CreateStudentDTO),
         schoolId: selectedSchool._id,
       };
 
-      await createStudent(studentData);
+      const created = await createStudent(studentData);
       toast.success("Student created successfully!");
 
       // Reset form and close dialog
@@ -185,11 +187,21 @@ export default function BaselineAssessmentsPage() {
       });
       setCreateStudentOpen(false);
 
-      // Refresh students list
+      // Prepend created student to local list for immediate UI feedback
+      setStudents((prev) => [created, ...(prev || [])]);
+
+      // Refresh students list in background to keep data in sync
       fetchStudents();
+
+      // If a program is already selected, immediately start baseline for the created student
+      if (selectedProgram) {
+        toast(`Starting baseline for ${created.name}...`, { duration: 1000 });
+        setSelectedStudent(created);
+        setModalOpen(true);
+      }
     } catch (error: any) {
       // Extract the error message from the server response
-      let errorMessage = "Failed to create student";
+      let errorMessage = "Failed to create student";b 
 
       if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
@@ -199,6 +211,8 @@ export default function BaselineAssessmentsPage() {
 
       toast.error(errorMessage);
       console.error("Error creating student:", error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -336,7 +350,12 @@ export default function BaselineAssessmentsPage() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateStudent}>Create Student</Button>
+                  <Button onClick={handleCreateStudent} disabled={isCreating}>
+                    {isCreating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Create Student
+                  </Button>
                 </div>
               </div>
             </DialogContent>

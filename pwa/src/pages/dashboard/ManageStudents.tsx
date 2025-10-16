@@ -270,7 +270,7 @@ function ManageStudents() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Roll Number</TableHead>
+              <TableHead>Aadhar Number</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
@@ -355,11 +355,11 @@ function ManageStudents() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="roll_no">Roll Number</Label>
+              <Label htmlFor="roll_no">Aadhar Number</Label>
               <Input
                 id="roll_no"
                 value={formData.roll_no}
-                placeholder="Enter student roll number"
+                placeholder="Enter student aadhar number"
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, roll_no: e.target.value }))
                 }
