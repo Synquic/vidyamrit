@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@types/multer": "^2.0.0",
+    "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "firebase": "^12.1.0",

@@ -104,6 +104,19 @@ function ManagePrograms() {
     levels: [],
   });
 
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Handle total levels change while preserving existing data
   const handleTotalLevelsChange = (
     newTotal: number,
@@ -406,302 +419,338 @@ function ManagePrograms() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manage Programs</h1>
-          <p className="text-muted-foreground">
-            Create and manage educational programs with structured learning
-            levels
-          </p>
+      {isMobile ? (
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="max-w-md w-full">
+            <CardContent className="text-center py-12">
+              <div className="mb-6">
+                <svg
+                  className="mx-auto h-16 w-16 text-muted-foreground"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Desktop Only Feature
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                The Program Management interface is optimized for desktop use only.
+                Please access this page from a desktop or tablet device with a larger screen.
+              </p>
+              <div className="text-sm text-muted-foreground">
+                <p>Recommended screen width: 768px or larger</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex gap-2">
-          <Dialog
-            open={isImportDialogOpen}
-            onOpenChange={setIsImportDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Upload className="mr-2 h-4 w-4" />
-                Import Program
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Import Program</DialogTitle>
-                <DialogDescription>
-                  Upload a JSON file to import a complete program with levels
-                  and questions
-                </DialogDescription>
-              </DialogHeader>
-              <ImportProgramDialog onImport={handleImportProgram} />
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Program
-              </Button>
-            </DialogTrigger>
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Manage Programs</h1>
+              <p className="text-muted-foreground">
+                Create and manage educational programs with structured learning
+                levels
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Dialog
+                open={isImportDialogOpen}
+                onOpenChange={setIsImportDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Program
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Import Program</DialogTitle>
+                    <DialogDescription>
+                      Upload a JSON file to import a complete program with levels
+                      and questions
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ImportProgramDialog onImport={handleImportProgram} />
+                </DialogContent>
+              </Dialog>
+              <Dialog
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Program
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Create New Program</DialogTitle>
+                    <DialogDescription>
+                      Create a structured educational program with multiple learning
+                      levels
+                    </DialogDescription>
+                  </DialogHeader>
+                  <CreateProgramForm
+                    formData={formData}
+                    setFormData={setFormData}
+                    updateLevel={updateLevel}
+                    onSubmit={handleCreateProgram}
+                    onCancel={() => {
+                      setIsCreateDialogOpen(false);
+                      resetForm();
+                    }}
+                    handleTotalLevelsChange={handleTotalLevelsChange}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>{" "}
+          {/* Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Filters</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1 min-w-[200px]">
+                  <Label htmlFor="search">Search</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="search"
+                      placeholder="Search programs..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                <div className="min-w-[150px]">
+                  <Label>Subject</Label>
+                  <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All subjects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Subjects</SelectItem>
+                      <SelectItem value="hindi">Hindi</SelectItem>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="math">Math</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="min-w-[150px]">
+                  <Label>Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Programs List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Programs ({pagination.total})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8">Loading programs...</div>
+              ) : filteredPrograms.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No programs found
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Levels</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPrograms.map((program) => (
+                      <TableRow key={program._id}>
+                        <TableCell className="font-medium">
+                          {program.name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{program.subject}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <BookOpen className="h-4 w-4" />
+                            {program.totalLevels}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {calculateDuration(program.levels)} weeks
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={program.isActive ? "default" : "secondary"}
+                          >
+                            {program.isActive ? (
+                              <>
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="mr-1 h-3 w-3" />
+                                Inactive
+                              </>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(program.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem
+                                onClick={() => openViewDialog(program)}
+                              >
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => openEditDialog(program)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleToggleStatus(program._id)}
+                              >
+                                {program.isActive ? "Deactivate" : "Activate"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteProgram(program._id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+
+              {/* Pagination */}
+              {pagination.pages > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasPrev}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        current: prev.current - 1,
+                      }))
+                    }
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-3 text-sm">
+                    Page {pagination.current} of {pagination.pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!pagination.hasNext}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        current: prev.current + 1,
+                      }))
+                    }
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          {/* Edit Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
             <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create New Program</DialogTitle>
+                <DialogTitle>Edit Program</DialogTitle>
                 <DialogDescription>
-                  Create a structured educational program with multiple learning
-                  levels
+                  Update program details and learning levels
                 </DialogDescription>
               </DialogHeader>
               <CreateProgramForm
                 formData={formData}
                 setFormData={setFormData}
                 updateLevel={updateLevel}
-                onSubmit={handleCreateProgram}
+                onSubmit={handleUpdateProgram}
                 onCancel={() => {
-                  setIsCreateDialogOpen(false);
+                  setIsEditDialogOpen(false);
                   resetForm();
+                  setSelectedProgram(null);
                 }}
+                isEdit={true}
                 handleTotalLevelsChange={handleTotalLevelsChange}
               />
             </DialogContent>
           </Dialog>
-        </div>
-      </div>{" "}
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="Search programs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-            <div className="min-w-[150px]">
-              <Label>Subject</Label>
-              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All subjects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Subjects</SelectItem>
-                  <SelectItem value="hindi">Hindi</SelectItem>
-                  <SelectItem value="english">English</SelectItem>
-                  <SelectItem value="math">Math</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="min-w-[150px]">
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      {/* Programs List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Programs ({pagination.total})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">Loading programs...</div>
-          ) : filteredPrograms.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No programs found
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Levels</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPrograms.map((program) => (
-                  <TableRow key={program._id}>
-                    <TableCell className="font-medium">
-                      {program.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{program.subject}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" />
-                        {program.totalLevels}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {calculateDuration(program.levels)} weeks
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={program.isActive ? "default" : "secondary"}
-                      >
-                        {program.isActive ? (
-                          <>
-                            <CheckCircle className="mr-1 h-3 w-3" />
-                            Active
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle className="mr-1 h-3 w-3" />
-                            Inactive
-                          </>
-                        )}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(program.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => openViewDialog(program)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => openEditDialog(program)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleToggleStatus(program._id)}
-                          >
-                            {program.isActive ? "Deactivate" : "Activate"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteProgram(program._id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="flex justify-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!pagination.hasPrev}
-                onClick={() =>
-                  setPagination((prev) => ({
-                    ...prev,
-                    current: prev.current - 1,
-                  }))
-                }
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-3 text-sm">
-                Page {pagination.current} of {pagination.pages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!pagination.hasNext}
-                onClick={() =>
-                  setPagination((prev) => ({
-                    ...prev,
-                    current: prev.current + 1,
-                  }))
-                }
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Program</DialogTitle>
-            <DialogDescription>
-              Update program details and learning levels
-            </DialogDescription>
-          </DialogHeader>
-          <CreateProgramForm
-            formData={formData}
-            setFormData={setFormData}
-            updateLevel={updateLevel}
-            onSubmit={handleUpdateProgram}
-            onCancel={() => {
-              setIsEditDialogOpen(false);
-              resetForm();
-              setSelectedProgram(null);
-            }}
-            isEdit={true}
-            handleTotalLevelsChange={handleTotalLevelsChange}
-          />
-        </DialogContent>
-      </Dialog>
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{selectedProgram?.name}</DialogTitle>
-            <DialogDescription>
-              Program details and level structure
-            </DialogDescription>
-          </DialogHeader>
-          {selectedProgram && <ViewProgramDetails program={selectedProgram} />}
-        </DialogContent>
-      </Dialog>
+          {/* View Dialog */}
+          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+            <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{selectedProgram?.name}</DialogTitle>
+                <DialogDescription>
+                  Program details and level structure
+                </DialogDescription>
+              </DialogHeader>
+              {selectedProgram && <ViewProgramDetails program={selectedProgram} />}
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   GraduationCap,
   ClipboardList,
   Calendar,
+  TrendingUp,
   // BarChart3, // Temporarily hidden - Reports & Analytics
   // Settings   // Temporarily hidden - School Admin Management
 } from "lucide-react";
@@ -67,10 +68,17 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     title: "Daily Attendance",
-    url: DASHBOARD_ROUTE_PATHS.attendanceManagement,
+    url: DASHBOARD_ROUTE_PATHS.tutorAttendance,
     icon: Calendar,
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
     description: "Track daily student attendance",
+  },
+  {
+    title: "Progress Monitoring",
+    url: DASHBOARD_ROUTE_PATHS.tutorProgress,
+    icon: TrendingUp,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "Monitor student learning progress",
   },
   {
     title: "School Management",

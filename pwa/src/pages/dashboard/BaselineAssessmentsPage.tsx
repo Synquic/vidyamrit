@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -201,7 +202,7 @@ export default function BaselineAssessmentsPage() {
       }
     } catch (error: any) {
       // Extract the error message from the server response
-      let errorMessage = "Failed to create student";b 
+      let errorMessage = "Failed to create student";
 
       if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
@@ -262,31 +263,30 @@ export default function BaselineAssessmentsPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Name *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
                     value={newStudent.name || ""}
                     onChange={(e) =>
                       setNewStudent({ ...newStudent, name: e.target.value })
                     }
-                    placeholder="Enter student name"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="roll_no">Roll Number *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="roll_no">Aadhar Number</Label>
                   <Input
                     id="roll_no"
                     value={newStudent.roll_no || ""}
+                    placeholder="Enter student aadhar number"
                     onChange={(e) =>
                       setNewStudent({ ...newStudent, roll_no: e.target.value })
                     }
-                    placeholder="Enter roll number"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="age">Age *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
                     <Input
                       id="age"
                       type="number"
@@ -294,14 +294,13 @@ export default function BaselineAssessmentsPage() {
                       onChange={(e) =>
                         setNewStudent({
                           ...newStudent,
-                          age: parseInt(e.target.value) || 0,
+                          age: Number(e.target.value),
                         })
                       }
-                      placeholder="Age"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="gender">Gender *</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
                     <Select
                       value={newStudent.gender || ""}
                       onValueChange={(value) =>
@@ -312,52 +311,67 @@ export default function BaselineAssessmentsPage() {
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="caste">Caste</Label>
+                    <Select
+                      value={newStudent.caste || ""}
+                      onValueChange={(value) =>
+                        setNewStudent({ ...newStudent, caste: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select caste" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="st">ST</SelectItem>
+                        <SelectItem value="gen">GEN</SelectItem>
+                        <SelectItem value="sc">SC</SelectItem>
+                        <SelectItem value="obc">OBC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="class">Class *</Label>
-                    <Input
-                      id="class"
-                      value={newStudent.class || ""}
-                      onChange={(e) =>
-                        setNewStudent({ ...newStudent, class: e.target.value })
-                      }
-                      placeholder="e.g., 5th, 6th"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="caste">Caste</Label>
-                    <Input
-                      id="caste"
-                      value={newStudent.caste || ""}
-                      onChange={(e) =>
-                        setNewStudent({ ...newStudent, caste: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="class">Class</Label>
+                  <Input
+                    id="class"
+                    value={newStudent.class || ""}
+                    onChange={(e) =>
+                      setNewStudent({ ...newStudent, class: e.target.value })
+                    }
+                  />
                 </div>
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCreateStudentOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateStudent} disabled={isCreating}>
-                    {isCreating ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Create Student
-                  </Button>
+                <div className="space-y-2">
+                  <Label>School</Label>
+                  <div className="p-3 border rounded-md bg-muted/50">
+                    <div className="font-medium">
+                      {selectedSchool?.name || "No school selected"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedSchool
+                        ? "Students will be created for this school"
+                        : "Please select a school from the sidebar"}
+                    </div>
+                  </div>
                 </div>
               </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateStudentOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleCreateStudent} disabled={isCreating}>
+                  {isCreating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Create Student
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>

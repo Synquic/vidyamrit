@@ -106,5 +106,25 @@
   "Inventory Items": "Inventory Items",
   "Enquiries": "Enquiries",
   "Customers": "Customers",
-  "Admin Users": "Admin Users"
+  "Admin Users": "Admin Users",
+  "attendance": {
+    "title": "Attendance Management",
+    "subtitle": "Track daily student attendance across all your cohorts",
+    "noCohorts": "No cohorts found",
+    "noCohortsDescription": "You don't have any assigned cohorts yet",
+    "markAttendance": "Mark Attendance",
+    "viewAttendance": "View Attendance", 
+    "todaySummary": "Today's Summary",
+    "totalCohorts": "Total Cohorts",
+    "totalStudents": "Total Students",
+    "totalPresent": "Total Present",
+    "totalUnmarked": "Total Unmarked"
+  },
+  "progress": {
+    "title": "Progress Monitoring",
+    "subtitle": "Track student learning progress across all your cohorts",
+    "noCohorts": "No cohorts found",
+    "noCohortsDescription": "You don't have any assigned cohorts yet",
+    "viewDetails": "View Details"
+  }
 }

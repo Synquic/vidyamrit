@@ -53,11 +53,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <SchoolSwitcher />
+        <div className="w-full px-4 py-6 flex flex-col items-center">
+          <div className="w-full max-w-[220px]">
+            <SchoolSwitcher />
+          </div>
+        </div>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarItems items={navigationItems} />
       </SidebarContent>
+
       <SidebarFooter>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -70,13 +76,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user?.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {user?.email}
-                </span>
+                <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
               </div>
               <EllipsisVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
             side={isMobile ? "bottom" : "right"}
@@ -90,13 +95,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user?.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user?.email}
-                  </span>
+                  <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <User />
@@ -111,7 +116,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <LanguageToggleButton />
               </DropdownMenuItem>
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
+
             <Button
               variant="ghost"
               size="sm"
@@ -124,6 +131,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
+
       <SidebarRail />
     </Sidebar>
   );

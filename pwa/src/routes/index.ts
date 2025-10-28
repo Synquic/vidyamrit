@@ -32,8 +32,12 @@ export const DASHBOARD_ROUTE_PATHS = {
   assessmentQuestionSets: "/assessment-question-sets",
   //
   attendanceManagement: "/attendance",
+  tutorAttendance: "/attendance/tutor",
+  cohortAttendance: "/attendance/cohort/:cohortId",
   learningGroups: "/groups",
   progressMonitoring: "/progress",
+  tutorProgress: "/progress/tutor", 
+  cohortProgress: "/progress/cohort/:cohortId",
   managePrograms: "/programs",
 } as const;
 

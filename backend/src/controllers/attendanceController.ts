@@ -352,3 +352,302 @@ export const getDailyAttendance = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: "Error fetching daily attendance" });
   }
 };
+
+// Record attendance for a cohort
+export const recordCohortAttendance = async (req: AuthRequest, res: Response) => {
+  try {
+    const { cohortId, attendanceRecords, date } = req.body; // attendanceRecords: [{ studentId, status }]
+    const tutorId = req.user?._id;
+
+    if (!cohortId || !attendanceRecords || !Array.isArray(attendanceRecords)) {
+      return res.status(400).json({ 
+        error: "Cohort ID and attendance records array are required" 
+      });
+    }
+
+    // Import Cohort model if not already imported
+    const Cohort = require("../models/CohortModel").default;
+    
+    const cohort = await Cohort.findById(cohortId).populate('students schoolId');
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Verify tutor has access to this cohort
+    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ error: "You are not authorized to mark attendance for this cohort" });
+    }
+
+    const attendanceDate = date ? new Date(date) : new Date();
+    const results = [];
+    const errors = [];
+
+    // Update cohort attendance embedded records
+    for (const record of attendanceRecords) {
+      try {
+        const { studentId, status } = record;
+
+        // Verify student is in this cohort
+        const studentInCohort = cohort.students.some((student: any) => 
+          student._id.toString() === studentId.toString()
+        );
+        
+        if (!studentInCohort) {
+          errors.push({
+            studentId,
+            error: "Student not found in this cohort"
+          });
+          continue;
+        }
+
+        // Remove existing attendance for today for this student
+        cohort.attendance = cohort.attendance.filter(
+          (att: any) => 
+            !(att.studentId.toString() === studentId.toString() && 
+              att.date.toDateString() === attendanceDate.toDateString())
+        );
+
+        // Add new attendance record
+        cohort.attendance.push({
+          date: attendanceDate,
+          studentId,
+          status
+        });
+
+        results.push({ studentId, status, date: attendanceDate });
+      } catch (recordError: any) {
+        errors.push({
+          studentId: record.studentId,
+          error: recordError.message,
+        });
+      }
+    }
+
+    // Update time tracking for progress bars (same logic from recordAttendanceProgress)
+    if ((cohort as any).programId) {
+      const programId = (cohort as any).programId._id || (cohort as any).programId;
+      
+      // Get the actual program document to access methods (populated documents lose methods)
+      const Program = require("../models/ProgramModel").default;
+      const program = await Program.findById(programId);
+      
+      if (program) {
+        const currentLevel = cohort.currentLevel || 1;
+        const currentLevelInfo = program.getLevelByNumber(currentLevel);
+        
+        if (currentLevelInfo) {
+          // Count students who attended
+          const presentStudents = attendanceRecords.filter((r: any) => r.status === 'present').length;
+          
+          if (presentStudents > 0) {
+            // Initialize time tracking if it doesn't exist
+            if (!cohort.timeTracking) {
+              const cohortStartDate = cohort.startDate || cohort.createdAt;
+              
+              // Convert current level timeframe to days
+              let expectedDaysForCurrentLevel = currentLevelInfo.timeframe || 14;
+              switch (currentLevelInfo.timeframeUnit) {
+                case 'weeks':
+                  expectedDaysForCurrentLevel *= 7;
+                  break;
+                case 'months':
+                  expectedDaysForCurrentLevel *= 30;
+                  break;
+              }
+
+              // Calculate total expected days for entire program
+              const totalExpectedDays = program.getTotalTimeToComplete(1, undefined, 'days') || 140;
+
+              cohort.timeTracking = {
+                cohortStartDate,
+                currentLevelStartDate: cohortStartDate,
+                attendanceDays: 0,
+                expectedDaysForCurrentLevel,
+                totalExpectedDays
+              };
+            }
+
+            // Check if this is a new day (avoid double counting if called multiple times same day)
+            const today = attendanceDate.toDateString();
+            const lastAttendanceDay = cohort.attendance
+              .filter((att: any) => att.status === 'present' && att.date.toDateString() !== today)
+              .map((att: any) => att.date.toDateString());
+            
+            const isNewTeachingDay = !lastAttendanceDay.includes(today);
+            
+            // Count actual unique teaching days (more accurate than incrementing)
+            const presentDays = new Set();
+            cohort.attendance.forEach((att: any) => {
+              if (att.status === 'present') {
+                presentDays.add(att.date.toDateString());
+              }
+            });
+            
+            const actualAttendanceDays = presentDays.size;
+            cohort.timeTracking.attendanceDays = actualAttendanceDays;
+            
+            // Mark timeTracking as modified so Mongoose saves nested object changes
+            cohort.markModified('timeTracking');
+            
+            // Check if current level is complete based on attendance
+            if (cohort.timeTracking.attendanceDays >= cohort.timeTracking.expectedDaysForCurrentLevel) {
+              // Level timeframe completed - students may be ready for assessment
+              logger.info(`Cohort ${cohortId} completed timeframe for level ${currentLevel}. Students may be ready for assessment.`);
+            }
+          }
+        }
+      }
+    }
+
+    await cohort.save();
+
+    logger.info(
+      `Cohort attendance recorded: ${results.length} success, ${errors.length} errors for cohort ${cohortId}`
+    );
+    
+    res.json({
+      message: "Cohort attendance recorded successfully",
+      success: results.length,
+      errorCount: errors.length,
+      results,
+      errors,
+      timeTracking: cohort.timeTracking // Include timeTracking in response for frontend
+    });
+  } catch (error: any) {
+    logger.error("Error recording cohort attendance:", error);
+    res.status(500).json({ error: "Error recording cohort attendance" });
+  }
+};
+
+// Get attendance for a specific cohort
+export const getCohortAttendance = async (req: AuthRequest, res: Response) => {
+  try {
+    const { cohortId } = req.params;
+    const { date, startDate, endDate } = req.query;
+    const tutorId = req.user?._id;
+
+    const Cohort = require("../models/CohortModel").default;
+    
+    const cohort = await Cohort.findById(cohortId)
+      .populate('students', 'name roll_no class')
+      .populate('schoolId', 'name')
+      .populate('tutorId', 'name');
+    
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Verify tutor has access to this cohort
+    if (cohort.tutorId._id.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ error: "You are not authorized to view attendance for this cohort" });
+    }
+
+    let attendanceFilter = cohort.attendance;
+
+    // Apply date filters
+    if (date) {
+      const queryDate = new Date(date as string);
+      attendanceFilter = cohort.attendance.filter((att: any) => 
+        att.date.toDateString() === queryDate.toDateString()
+      );
+    } else if (startDate && endDate) {
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      attendanceFilter = cohort.attendance.filter((att: any) => 
+        att.date >= start && att.date <= end
+      );
+    }
+
+    // Group attendance by date and student
+    const attendanceData = attendanceFilter.reduce((acc: any, record: any) => {
+      const dateKey = record.date.toISOString().split('T')[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      
+      const studentInfo = cohort.students.find((student: any) => 
+        student._id.toString() === record.studentId.toString()
+      );
+      
+      acc[dateKey].push({
+        student: studentInfo,
+        status: record.status,
+        date: record.date
+      });
+      return acc;
+    }, {});
+
+    res.json({
+      cohort: {
+        _id: cohort._id,
+        name: cohort.name,
+        school: cohort.schoolId,
+        tutor: cohort.tutorId,
+        students: cohort.students
+      },
+      attendance: attendanceData
+    });
+  } catch (error: any) {
+    logger.error("Error fetching cohort attendance:", error);
+    res.status(500).json({ error: "Error fetching cohort attendance" });
+  }
+};
+
+// Get attendance summary for tutor's cohorts
+export const getTutorAttendanceSummary = async (req: AuthRequest, res: Response) => {
+  try {
+    const tutorId = req.user?._id;
+    const { date } = req.query;
+
+    const Cohort = require("../models/CohortModel").default;
+    
+    const cohorts = await Cohort.find({ tutorId })
+      .populate('students', 'name roll_no')
+      .populate('schoolId', 'name');
+
+    const summaryData = [];
+
+    for (const cohort of cohorts) {
+      let attendanceForDate = [];
+      
+      if (date) {
+        const queryDate = new Date(date as string);
+        attendanceForDate = cohort.attendance.filter((att: any) => 
+          att.date.toDateString() === queryDate.toDateString()
+        );
+      } else {
+        // Get today's attendance
+        const today = new Date();
+        attendanceForDate = cohort.attendance.filter((att: any) => 
+          att.date.toDateString() === today.toDateString()
+        );
+      }
+
+      const totalStudents = cohort.students.length;
+      const presentCount = attendanceForDate.filter((att: any) => att.status === 'present').length;
+      const absentCount = attendanceForDate.filter((att: any) => att.status === 'absent').length;
+      const markedCount = attendanceForDate.length;
+
+      summaryData.push({
+        cohort: {
+          _id: cohort._id,
+          name: cohort.name,
+          school: cohort.schoolId
+        },
+        attendance: {
+          totalStudents,
+          presentCount,
+          absentCount,
+          markedCount,
+          unmarkedCount: totalStudents - markedCount,
+          attendanceRate: markedCount > 0 ? (presentCount / markedCount) * 100 : 0
+        }
+      });
+    }
+
+    res.json(summaryData);
+  } catch (error: any) {
+    logger.error("Error fetching tutor attendance summary:", error);
+    res.status(500).json({ error: "Error fetching tutor attendance summary" });
+  }
+};

@@ -1,208 +1,222 @@
-import { authAxios } from "./index";
+import { apiUrl, authAxios } from "./index";
 
-export type ProgressFlag =
-  | "improving"
-  | "struggling"
-  | "excelling"
-  | "average"
-  | "needs_attention";
-export type Subject = "hindi" | "math" | "english";
+const baseUrl = `${apiUrl}/progress`;
 
-export interface ProgressHistory {
-  flag: ProgressFlag;
-  subject: Subject;
-  reason: string;
-  date: string;
-  tutorId?: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-}
+export type ProgressStatus = "green" | "yellow" | "orange" | "red";
 
 export interface StudentProgress {
   studentId: string;
-  name: string;
-  class: string;
-  school: {
-    _id: string;
-    name: string;
-  };
-  currentProgressFlags: {
-    hindi?: ProgressFlag;
-    math?: ProgressFlag;
-    english?: ProgressFlag;
-  };
-  lastAssessmentDate?: string;
-  totalAssessments: number;
-  averagePerformance: number;
-  levels: {
-    hindi?: number;
-    math?: number;
-    english?: number;
-  };
-  progressHistory?: ProgressHistory[];
+  currentLevel: number;
+  status: ProgressStatus;
+  lastUpdated: string;
+  failureCount: number;
+  lastAssessmentDate: string;
+  assessmentHistory: Array<{
+    date: string;
+    level: number;
+    passed: boolean;
+    status: ProgressStatus;
+  }>;
 }
 
-export interface ProgressStatistics {
-  statistics: {
-    totalStudents: number;
-    bySubject: {
-      hindi: Record<ProgressFlag, number>;
-      math: Record<ProgressFlag, number>;
-      english: Record<ProgressFlag, number>;
-    };
-    overall: Record<ProgressFlag, number>;
-  };
-  students?: Array<{
+export interface StudentProgressData {
+  student: {
     _id: string;
     name: string;
+    roll_no: string;
     class: string;
-    school: string;
-    hindiFlag?: ProgressFlag;
-    mathFlag?: ProgressFlag;
-    englishFlag?: ProgressFlag;
-    levels: {
-      hindi?: number;
-      math?: number;
-      english?: number;
-    };
-  }>;
-}
-
-export interface UpdateProgressRequest {
-  subject: Subject;
-  flag: ProgressFlag;
-  reason: string;
-}
-
-export interface BulkUpdateRequest {
-  updates: Array<{
-    studentId: string;
-    subject: Subject;
-    flag: ProgressFlag;
-    reason: string;
-  }>;
-}
-
-export interface ProgressTrends {
-  studentId: string;
-  subject: string;
-  period: string;
-  currentFlags: {
-    hindi?: ProgressFlag;
-    math?: ProgressFlag;
-    english?: ProgressFlag;
   };
-  trends: ProgressHistory[];
+  progress: StudentProgress;
 }
 
-// Update progress flag for a single student
-export const updateProgressFlag = async (
-  studentId: string,
-  data: UpdateProgressRequest
-): Promise<{ message: string; student: StudentProgress }> => {
-  const response = await authAxios.put(`/progress/student/${studentId}`, data);
-  return response.data;
-};
+export interface CohortProgressData {
+  cohort: {
+    _id: string;
+    name: string;
+    school: {
+      _id: string;
+      name: string;
+    };
+    program: {
+      _id: string;
+      name: string;
+      subject: string;
+      totalLevels: number;
+      levels: Array<{
+        levelNumber: number;
+        title: string;
+        timeframe: number;
+        timeframeUnit: string;
+      }>;
+    };
+  };
+  studentsProgress: StudentProgressData[];
+  timeTracking: {
+    cohortStartDate: string;
+    estimatedCompletionDate: string;
+    totalDurationWeeks: number;
+    elapsedWeeks: number;
+    remainingWeeks: number;
+    nextAssessmentDue: string;
+    daysUntilNextAssessment: number;
+  };
+}
 
-// Get student progress information
-export const getStudentProgress = async (
-  studentId: string,
-  includeHistory: boolean = false
-): Promise<StudentProgress> => {
-  const searchParams = new URLSearchParams();
-  if (includeHistory) searchParams.append("includeHistory", "true");
+export interface TutorProgressSummary {
+  cohort: {
+    _id: string;
+    name: string;
+    school: {
+      _id: string;
+      name: string;
+    };
+    program: {
+      _id: string;
+      name: string;
+      subject: string;
+      totalLevels: number;
+    };
+  };
+  summary: {
+    totalStudents: number;
+    progressCounts: {
+      green: number;
+      yellow: number;
+      orange: number;
+      red: number;
+    };
+    levelDistribution: { [level: number]: number };
+    studentsNeedingAttention: number;
+  };
+  timeTracking: {
+    cohortStartDate: string;
+    estimatedCompletionDate: string;
+    totalDurationWeeks: number;
+    elapsedWeeks: number;
+    remainingWeeks: number;
+    nextAssessmentDue: string;
+    daysUntilNextAssessment: number;
+    currentLevelTimeframe: {
+      level: number;
+      durationWeeks: number;
+      startDate: string;
+      endDate: string;
+    };
+  };
+}
 
-  const queryString = searchParams.toString();
-  const url = `/progress/student/${studentId}${
-    queryString ? `?${queryString}` : ""
-  }`;
+export interface StudentReadyForAssessment {
+  student: {
+    _id: string;
+    name: string;
+    roll_no: string;
+    class: string;
+  };
+  progress: StudentProgress;
+  daysInCurrentLevel: number;
+  timeframeCompleted: boolean;
+  nextLevel: number;
+}
 
-  const response = await authAxios.get(url);
-  return response.data;
-};
+export interface StudentsReadyData {
+  cohort: {
+    _id: string;
+    name: string;
+  };
+  studentsReady: StudentReadyForAssessment[];
+  totalReady: number;
+}
 
-// Get progress statistics
-export const getProgressStatistics = async (
-  schoolId?: string,
-  subject?: Subject,
-  flag?: ProgressFlag
-): Promise<ProgressStatistics> => {
-  const searchParams = new URLSearchParams();
+export interface UpdateProgressDTO {
+  cohortId: string;
+  studentId: string;
+  currentLevel: number;
+  assessmentPassed: boolean;
+  failureCount?: number;
+}
 
-  if (schoolId) searchParams.append("schoolId", schoolId);
-  if (subject) searchParams.append("subject", subject);
-  if (flag) searchParams.append("flag", flag);
+export interface StudentProgressHistory {
+  student: {
+    _id: string;
+    name: string;
+    roll_no: string;
+    class: string;
+  };
+  currentProgress: {
+    currentLevel: number;
+    status: ProgressStatus;
+    failureCount: number;
+    lastUpdated: string;
+    lastAssessmentDate: string;
+  };
+  assessmentHistory: Array<{
+    date: string;
+    level: number;
+    passed: boolean;
+    status: ProgressStatus;
+  }>;
+}
 
-  const queryString = searchParams.toString();
-  const url = `/progress/statistics${queryString ? `?${queryString}` : ""}`;
-
-  const response = await authAxios.get(url);
-  return response.data;
-};
-
-// Bulk update progress flags
-export const bulkUpdateProgressFlags = async (
-  data: BulkUpdateRequest
+// Update student progress after assessment
+export const updateStudentProgress = async (
+  data: UpdateProgressDTO
 ): Promise<{
   message: string;
-  results: { successful: number; failed: number; errors: string[] };
+  progress: StudentProgress;
 }> => {
-  const response = await authAxios.post("/progress/bulk-update", data);
+  const response = await authAxios.post(`${baseUrl}/update`, data);
   return response.data;
 };
 
-// Get progress trends for a student
-export const getProgressTrends = async (
-  studentId: string,
-  subject?: Subject,
-  days: number = 30
-): Promise<ProgressTrends> => {
-  const searchParams = new URLSearchParams();
-  searchParams.append("studentId", studentId);
-  if (subject) searchParams.append("subject", subject);
-  searchParams.append("days", days.toString());
-
-  const queryString = searchParams.toString();
-  const url = `/progress/trends?${queryString}`;
-
-  const response = await authAxios.get(url);
+// Get progress for all students in a cohort
+export const getCohortProgress = async (
+  cohortId: string
+): Promise<CohortProgressData> => {
+  const response = await authAxios.get(`${baseUrl}/cohort/${cohortId}`);
   return response.data;
 };
 
-// Helper function to get flag color
-export const getProgressFlagColor = (flag: ProgressFlag): string => {
+// Get progress summary for tutor's cohorts
+export const getTutorProgressSummary = async (): Promise<TutorProgressSummary[]> => {
+  const response = await authAxios.get(`${baseUrl}/tutor/summary`);
+  return response.data;
+};
+
+// Get students ready for level transition assessment
+export const getStudentsReadyForAssessment = async (
+  cohortId: string
+): Promise<StudentsReadyData> => {
+  const response = await authAxios.get(`${baseUrl}/cohort/${cohortId}/ready-for-assessment`);
+  return response.data;
+};
+
+// Get detailed progress history for a student
+export const getStudentProgressHistory = async (
+  cohortId: string,
+  studentId: string
+): Promise<StudentProgressHistory> => {
+  const response = await authAxios.get(`${baseUrl}/cohort/${cohortId}/student/${studentId}/history`);
+  return response.data;
+};
+
+// Helper function to get status color
+export const getProgressStatusColor = (status: ProgressStatus): string => {
   const colors = {
-    excelling: "bg-green-100 text-green-800",
-    improving: "bg-blue-100 text-blue-800",
-    average: "bg-gray-100 text-gray-800",
-    struggling: "bg-yellow-100 text-yellow-800",
-    needs_attention: "bg-red-100 text-red-800",
+    green: "bg-green-100 text-green-800 border-green-200",
+    yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    orange: "bg-orange-100 text-orange-800 border-orange-200",
+    red: "bg-red-100 text-red-800 border-red-200",
   };
-  return colors[flag] || "bg-gray-100 text-gray-800";
+  return colors[status] || "bg-gray-100 text-gray-800";
 };
 
-// Helper function to get flag icon
-export const getProgressFlagIcon = (flag: ProgressFlag): string => {
-  const icons = {
-    excelling: "🌟",
-    improving: "📈",
-    average: "➖",
-    struggling: "⚠️",
-    needs_attention: "🚨",
-  };
-  return icons[flag] || "➖";
-};
-
-// Helper function to get flag description
-export const getProgressFlagDescription = (flag: ProgressFlag): string => {
+// Helper function to get status description
+export const getProgressStatusDescription = (status: ProgressStatus): string => {
   const descriptions = {
-    excelling: "Performing exceptionally well, exceeding expectations",
-    improving: "Showing consistent improvement and progress",
-    average: "Meeting expected performance standards",
-    struggling: "Facing challenges but can improve with support",
-    needs_attention: "Requires immediate attention and intervention",
+    green: "On track - progressing well",
+    yellow: "First assessment failure - needs support",
+    orange: "Second assessment failure - requires attention",
+    red: "Third assessment failure - urgent intervention needed",
   };
-  return descriptions[flag] || "No description available";
+  return descriptions[status] || "Unknown status";
 };

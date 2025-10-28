@@ -81,6 +81,7 @@ export interface GenerateCohortsResponse {
 
 export const generateOptimalCohorts = async (data: {
   schoolId: string;
+  programId: string;
 }): Promise<GenerateCohortsResponse> => {
   const response = await authAxios.post(`${baseUrl}/generate-optimal`, data);
   return response.data;

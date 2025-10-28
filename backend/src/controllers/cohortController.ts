@@ -214,10 +214,14 @@ export const generateOptimalCohorts = async (
   res: Response
 ) => {
   try {
-    const { schoolId } = req.body;
+    const { schoolId, programId } = req.body;
 
     if (!schoolId) {
       return res.status(400).json({ error: "School ID is required" });
+    }
+
+    if (!programId) {
+      return res.status(400).json({ error: "Program ID is required" });
     }
 
     // Check if user has permission to generate cohorts for this school
@@ -227,7 +231,14 @@ export const generateOptimalCohorts = async (
       });
     }
 
-    console.log("Generating optimal cohorts for school:", schoolId);
+    // Verify the program exists
+    const Program = require("../models/ProgramModel").default;
+    const program = await Program.findById(programId);
+    if (!program) {
+      return res.status(404).json({ error: "Program not found" });
+    }
+
+    console.log("Generating optimal cohorts for school:", schoolId, "with program:", program.name);
 
     // Get all students from the school who have completed assessments
     const students: Array<{ _id: any; knowledgeLevel: Array<{ level: number }> }> = await Student.find({
@@ -291,7 +302,25 @@ export const generateOptimalCohorts = async (
           name: `Level ${plan.level} - Cohort ${i + 1}`,
           schoolId: schoolId,
           tutorId: req.user?._id, // Assign to the user generating the cohorts
+          programId: programId, // Set the program ID
+          currentLevel: plan.level as number, // Set current level based on student levels
           students: cohortStudents,
+          // Initialize time tracking
+          timeTracking: {
+            cohortStartDate: new Date(),
+            currentLevelStartDate: new Date(),
+            attendanceDays: 0,
+            expectedDaysForCurrentLevel: 14, // Default 2 weeks, will be updated based on program
+            totalExpectedDays: program.levels ? program.levels.reduce((total: number, level: any) => {
+              let days = level.timeframe || 14;
+              if (level.timeframeUnit === 'weeks') {
+                days *= 7;
+              } else if (level.timeframeUnit === 'months') {
+                days *= 30;
+              }
+              return total + days;
+            }, 0) : 140 // Default 20 weeks if no levels
+          },
           createdAt: new Date(),
           updatedAt: new Date(),
         });

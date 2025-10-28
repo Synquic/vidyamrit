@@ -67,7 +67,6 @@ import {
   Clock, 
   Power, 
   PowerOff, 
-  Calendar,
   Copy,
   Eye,
   EyeOff,
@@ -387,7 +386,7 @@ function ManageVolunteers() {
                               disabled={extendAccessMutation.isPending}
                               title="Extend by 24 hours"
                             >
-                              <Calendar className="h-4 w-4" />
+                              <Plus className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="destructive"

@@ -228,7 +228,7 @@ function ManageTutors() {
         </div>
         <Button onClick={() => setIsOpen(true)} className="w-full md:w-auto">
           <Plus className="mr-2 h-4 w-4" />
-          Add Tutorrrrr
+          Add Tutor
         </Button>
       </div>
 
@@ -359,6 +359,39 @@ function ManageTutors() {
                 placeholder="Enter full name"
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phoneNo">Phone Number *</Label>
+                <Input
+                  id="phoneNo"
+                  value={formData.phoneNo}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, phoneNo: e.target.value }))
+                  }
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="schoolId">Assign to School *</Label>
+                <Select
+                  value={formData.schoolId}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, schoolId: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a school" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schools.map((school) => (
+                      <SelectItem key={school._id} value={school._id || ""}>
+                        {school.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -389,37 +422,6 @@ function ManageTutors() {
                 />
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="phoneNo">Phone Number *</Label>
-              <Input
-                id="phoneNo"
-                value={formData.phoneNo}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, phoneNo: e.target.value }))
-                }
-                placeholder="Enter phone number"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="schoolId">Assign to School *</Label>
-              <Select
-                value={formData.schoolId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, schoolId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a school" />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((school) => (
-                    <SelectItem key={school._id} value={school._id || ""}>
-                      {school.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDialog}>

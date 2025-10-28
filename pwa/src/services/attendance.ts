@@ -168,3 +168,133 @@ export const getDailyAttendance = async (
   const response = await authAxios.get(`${baseUrl}/daily?${params.toString()}`);
   return response.data;
 };
+
+// Cohort-specific interfaces and types
+export interface CohortAttendanceRecord {
+  studentId: string;
+  status: AttendanceStatus;
+}
+
+export interface CohortAttendanceDTO {
+  cohortId: string;
+  attendanceRecords: CohortAttendanceRecord[];
+  date?: string;
+}
+
+export interface CohortAttendanceData {
+  cohort: {
+    _id: string;
+    name: string;
+    school: {
+      _id: string;
+      name: string;
+    };
+    tutor: {
+      _id: string;
+      name: string;
+    };
+    students: Array<{
+      _id: string;
+      name: string;
+      roll_no: string;
+      class: string;
+    }>;
+  };
+  attendance: {
+    [date: string]: Array<{
+      student: {
+        _id: string;
+        name: string;
+        roll_no: string;
+        class: string;
+      };
+      status: AttendanceStatus;
+      date: string;
+    }>;
+  };
+}
+
+export interface TutorAttendanceSummary {
+  cohort: {
+    _id: string;
+    name: string;
+    school: {
+      _id: string;
+      name: string;
+    };
+  };
+  attendance: {
+    totalStudents: number;
+    presentCount: number;
+    absentCount: number;
+    markedCount: number;
+    unmarkedCount: number;
+    attendanceRate: number;
+  };
+}
+
+// Record attendance for a cohort
+export const recordCohortAttendance = async (
+  data: CohortAttendanceDTO
+): Promise<{
+  message: string;
+  success: number;
+  errorCount: number;
+  results: Array<{
+    studentId: string;
+    status: AttendanceStatus;
+    date: string;
+  }>;
+  errors: Array<{
+    studentId: string;
+    error: string;
+  }>;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/cohort`, data);
+  return response.data;
+};
+
+// Get attendance for a specific cohort
+export const getCohortAttendance = async (
+  cohortId: string,
+  filters?: {
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<CohortAttendanceData> => {
+  const params = new URLSearchParams();
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+  }
+
+  const url = params.toString() 
+    ? `${baseUrl}/cohort/${cohortId}?${params.toString()}`
+    : `${baseUrl}/cohort/${cohortId}`;
+  
+  const response = await authAxios.get(url);
+  return response.data;
+};
+
+// Get attendance summary for tutor's cohorts
+export const getTutorAttendanceSummary = async (
+  date?: string,
+  schoolId?: string
+): Promise<TutorAttendanceSummary[]> => {
+  const params = new URLSearchParams();
+  if (date) {
+    params.append('date', date);
+  }
+  if (schoolId) {
+    params.append('schoolId', schoolId);
+  }
+
+  const url = params.toString() 
+    ? `${baseUrl}/tutor/summary?${params.toString()}`
+    : `${baseUrl}/tutor/summary`;
+  
+  const response = await authAxios.get(url);
+  return response.data;
+};

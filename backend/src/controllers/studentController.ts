@@ -37,7 +37,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     });
     if (existingStudent) {
       return res.status(400).json({
-        error: "Student with this roll number already exists in this school",
+        error: "Student with this aadhar number already exists in this school",
       });
     }
     // Create student in MongoDB

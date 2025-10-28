@@ -31,8 +31,11 @@ import ManageCohorts from "./pages/dashboard/ManageCohorts";
 import BaselineAssessmentsPage from "./pages/dashboard/BaselineAssessmentsPage";
 import SupportPage from "./pages/public/SupportPage.tsx";
 import ManagePrograms from "./pages/dashboard/ManagePrograms.tsx";
-import AttendanceManagementPage from "./pages/dashboard/AttendanceManagementPage.tsx";
 import ManageVolunteers from "./pages/dashboard/ManageVolunteers.tsx";
+import CohortAttendance from "./pages/attendance/CohortAttendance.tsx";
+import TutorAttendance from "./pages/attendance/TutorAttendance.tsx";
+import TutorProgress from "./pages/progress/TutorProgress.tsx";
+import CohortProgress from "./pages/progress/CohortProgress.tsx";
 
 const router = createBrowserRouter([
   {
@@ -99,7 +102,27 @@ const router = createBrowserRouter([
       },
       {
         path: DASHBOARD_ROUTE_PATHS.attendanceManagement,
-        element: <AttendanceManagementPage />,
+        element: <TutorAttendance />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.tutorAttendance,
+        element: <TutorAttendance />,
+      },
+      {
+        path: "/attendance/cohort/:cohortId",
+        element: <CohortAttendance />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.progressMonitoring,
+        element: <TutorProgress />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.tutorProgress,
+        element: <TutorProgress />,
+      },
+      {
+        path: "/progress/cohort/:cohortId",
+        element: <CohortProgress />,
       },
       {
         path: DASHBOARD_ROUTE_PATHS.managePrograms,
@@ -108,7 +131,7 @@ const router = createBrowserRouter([
       {
         path: DASHBOARD_ROUTE_PATHS.volunteers,
         element: <ManageVolunteers />,
-      },
+      },  
     ],
   },
 ]);

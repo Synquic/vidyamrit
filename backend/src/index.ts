@@ -31,3 +31,5 @@ app.use("/api", router);
 app.listen(PORT, () => {
   logger.info(`Server running at http://localhost:${PORT}`);
 });
+
+export default app;

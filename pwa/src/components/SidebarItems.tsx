@@ -20,24 +20,44 @@ export function SidebarItems({ items }: SidebarItemsProps) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
-      <SidebarMenu>
+      <SidebarGroupLabel className="sr-only">Dashboard</SidebarGroupLabel>
+      <SidebarMenu className="flex flex-col">
         {items.map((item) => {
           const isActive = location.pathname === item.url;
 
+          if (isActive) {
+            // Active — prominent pill style (matches provided screenshot)
+            return (
+              <SidebarMenuItem key={item.title} className="mb-3">
+                <SidebarMenuButton asChild>
+                  <Link
+                    to={item.url}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-full shadow-md",
+                      "bg-black text-white",
+                    )}
+                    aria-current="page"
+                    title={item.description || item.title}
+                  >
+                    {item.icon && <item.icon className="h-4 w-4" />}
+                    <span className="text-sm font-medium">{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
+
+          // Inactive — compact muted items
           return (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                tooltip={item.description || item.title}
-                className={cn(
-                  "transition-colors duration-200",
-                  isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
-                )}
-              >
-                <Link to={item.url} className="flex items-center gap-2">
+            <SidebarMenuItem key={item.title} className="mb-2">
+              <SidebarMenuButton asChild>
+                <Link
+                  to={item.url}
+                  className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground"
+                  title={item.description || item.title}
+                >
                   {item.icon && <item.icon className="h-4 w-4" />}
-                  <span>{item.title}</span>
+                  <span className="text-sm">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

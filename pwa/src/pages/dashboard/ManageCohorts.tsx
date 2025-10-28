@@ -13,6 +13,7 @@ import {
 import { getSchools } from "@/services/schools";
 import { getTutors } from "@/services/tutors";
 import { getStudents, getStudentCohortStatus } from "@/services/students";
+import { programsService } from "@/services/programs";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,6 +73,7 @@ function ManageCohorts() {
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null);
   const [deletingCohort, setDeletingCohort] = useState<Cohort | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [formData, setFormData] = useState<CreateCohortDTO>({
     name: "",
     schoolId: "",
@@ -113,6 +115,14 @@ function ManageCohorts() {
         : Promise.resolve(undefined),
     enabled: !!selectedSchool?._id,
   });
+
+  // Fetch programs for cohort generation
+  const { data: programsResponse } = useQuery({
+    queryKey: ["programs"],
+    queryFn: () => programsService.getPrograms({ isActive: "true" }),
+  });
+
+  const programs = programsResponse?.programs || [];
 
   // Filter students and tutors based on selected school
   const filteredTutors = allTutors.filter(
@@ -253,13 +263,21 @@ function ManageCohorts() {
       return;
     }
 
+    if (!selectedProgramId) {
+      toast.error("Please select a program for cohort generation");
+      return;
+    }
+
     if (!cohortStatus || cohortStatus.studentsAwaitingAssignment === 0) {
       toast.error("No students awaiting cohort assignment");
       return;
     }
 
     setIsGenerating(true);
-    generateCohortsMutation.mutate({ schoolId: selectedSchool._id });
+    generateCohortsMutation.mutate({ 
+      schoolId: selectedSchool._id,
+      programId: selectedProgramId 
+    });
   };
 
   const handleStudentChange = (studentId: string, checked: boolean) => {
@@ -326,18 +344,37 @@ function ManageCohorts() {
         </div>
         <div className="flex gap-2">
           {cohortStatus && cohortStatus.studentsAwaitingAssignment > 0 && (
-            <Button
-              onClick={handleGenerateCohorts}
-              disabled={isGenerating}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              {isGenerating ? "Generating..." : "Generate Optimal Cohorts"}
-            </Button>
+            <>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="program-select" className="text-sm whitespace-nowrap">
+                  Program:
+                </Label>
+                <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
+                  <SelectTrigger id="program-select" className="w-48">
+                    <SelectValue placeholder="Select program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs.map((program) => (
+                      <SelectItem key={program._id} value={program._id}>
+                        {program.name} ({program.subject})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={handleGenerateCohorts}
+                disabled={isGenerating || !selectedProgramId}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {isGenerating ? "Generating..." : "Generate Optimal Cohorts"}
+              </Button>
+            </>
           )}
           <Button onClick={() => setIsOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />

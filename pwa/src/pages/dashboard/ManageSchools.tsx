@@ -55,10 +55,12 @@ function ManageSchools() {
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
   const [formData, setFormData] = useState<
-    Omit<School, "_id" | "createdAt" | "updatedAt">
+    Omit<School, "_id" | "createdAt" | "updatedAt"> & {
+      pointOfContacts?: Array<{ name: string; phone: string }>;
+    }
   >({
     name: "",
-    type: "private",
+    type: "government",
     udise_code: "",
     address: "",
     level: "primary",
@@ -68,6 +70,7 @@ function ManageSchools() {
     pinCode: "",
     pointOfContact: "",
     phone: "",
+    pointOfContacts: [{ name: "", phone: "" }],
   });
 
   const {
@@ -131,6 +134,10 @@ function ManageSchools() {
       pinCode: school.pinCode,
       pointOfContact: school.pointOfContact || "",
       phone: school.phone || "",
+      pointOfContacts:
+        (school as any).pointOfContacts && (school as any).pointOfContacts.length
+          ? (school as any).pointOfContacts
+          : [{ name: school.pointOfContact || "", phone: school.phone || "" }],
     });
     setIsDialogOpen(true);
   };
@@ -145,7 +152,7 @@ function ManageSchools() {
     setEditingSchool(null);
     setFormData({
       name: "",
-      type: "private",
+      type: "government",
       udise_code: "",
       address: "",
       level: "primary",
@@ -155,6 +162,7 @@ function ManageSchools() {
       pinCode: "",
       pointOfContact: "",
       phone: "",
+      pointOfContacts: [{ name: "", phone: "" }],
     });
   };
 
@@ -183,75 +191,158 @@ function ManageSchools() {
             Manage your schools and their information
           </p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button
+          onClick={() => {
+            // Reset to blank add form (default type = government)
+            setEditingSchool(null);
+            setFormData({
+              name: "",
+              type: "government",
+              udise_code: "",
+              address: "",
+              level: "primary",
+              city: "",
+              state: "",
+              establishedYear: new Date().getFullYear(),
+              pinCode: "",
+              pointOfContact: "",
+              phone: "",
+              pointOfContacts: [{ name: "", phone: "" }],
+            });
+            setIsDialogOpen(true);
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add School
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {schools.map((school) => (
-          <Card key={school._id} className="relative">
+      {schools.length === 0 ? (
+        <div className="flex items-center justify-center">
+          <Card className="text-center w-full max-w-xl">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{school.name}</CardTitle>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(school)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setDeletingSchool(school);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-              <CardDescription>{school.address}</CardDescription>
+              <CardTitle>No schools yet</CardTitle>
+              <CardDescription>
+                It looks like you haven't added any schools. Add a school to get
+                started.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Type:</span>
-                  <Badge variant="secondary">{school.type}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Level:</span>
-                  <Badge variant="outline">{school.level}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">UDISE:</span>
-                  <span className="text-sm">{school.udise_code}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">City:</span>
-                  <span className="text-sm">{school.city}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Point of Contact:
-                  </span>
-                  <span className="text-sm">{school.pointOfContact}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Mobile No:
-                  </span>
-                  <span className="text-sm">{school.phone}</span>
-                </div>
+              <div className="flex flex-col items-center justify-center gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Schools help you organise students, cohorts and attendance.
+                </p>
+                <Button
+                  onClick={() => {
+                    // Reset to blank add form (default type = government)
+                    setEditingSchool(null);
+                    setFormData({
+                      name: "",
+                      type: "government",
+                      udise_code: "",
+                      address: "",
+                      level: "primary",
+                      city: "",
+                      state: "",
+                      establishedYear: new Date().getFullYear(),
+                      pinCode: "",
+                      pointOfContact: "",
+                      phone: "",
+                      pointOfContacts: [{ name: "", phone: "" }],
+                    });
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add your first school
+                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {schools.map((school) => {
+            const initials = school.name
+              ? school.name
+                  .split(" ")
+                  .map((s) => s[0])
+                  .slice(0, 2)
+                  .join("")
+              : "S";
+            const headerClasses =
+              school.type === "government"
+                ? "bg-gradient-to-r from-sky-600 to-sky-500 text-white"
+                : "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white";
+
+            return (
+              <Card key={school._id} className="overflow-hidden shadow-lg">
+                <div className={`p-4 flex items-center justify-between ${headerClasses}`}>
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-md bg-white/20 flex items-center justify-center text-lg font-semibold">
+                      {initials}
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold leading-tight">{school.name}</div>
+                      <div className="text-sm opacity-90 mt-0.5">{school.city} • <span className="uppercase">{school.level}</span></div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(school)}
+                    >
+                      <Pencil className="h-4 w-4 text-white" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDeletingSchool(school);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                </div>
+                <CardContent className="p-4 bg-white">
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground">
+                      {school.address}, {school.city}, {school.state} - {school.pinCode}
+                    </div>
+                    <div className="flex flex-wrap gap-4 items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">UDISE</span>
+                        <span className="text-sm font-medium">{school.udise_code}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Type</span>
+                        <Badge variant="secondary" className="capitalize">{school.type}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Established</span>
+                        <span className="text-sm font-medium">{school.establishedYear}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Point of Contact</div>
+                        <div className="text-sm font-medium">{school.pointOfContact || "-"}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Mobile</div>
+                        <div className="text-sm font-medium">{school.phone || "-"}</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
@@ -267,10 +358,10 @@ function ManageSchools() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto px-6 my-4">
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-3 py-4">
               {/* School Type & Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                <div className="space-y-2 col-span-1">
                   <Label htmlFor="type">School Type</Label>
                   <Select
                     value={formData.type}
@@ -278,7 +369,7 @@ function ManageSchools() {
                       setFormData((prev) => ({ ...prev, type: value }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -287,13 +378,33 @@ function ManageSchools() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="name">School Name</Label>
+                <div className="space-y-2 col-span-1">
+                  <Label htmlFor="level">Level</Label>
+                  <Select
+                    value={formData.level}
+                    onValueChange={(value: "primary" | "middle") =>
+                      setFormData((prev) => ({ ...prev, level: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primary</SelectItem>
+                      <SelectItem value="middle">Middle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="udise_code">UDISE Code</Label>
                   <Input
-                    id="name"
-                    value={formData.name}
+                    id="udise_code"
+                    value={formData.udise_code}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        udise_code: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -301,16 +412,14 @@ function ManageSchools() {
 
               {/* UDISE Code */}
               <div className="space-y-2">
-                <Label htmlFor="udise_code">UDISE Code</Label>
+                <Label htmlFor="name">School Name</Label>
                 <Input
-                  id="udise_code"
-                  value={formData.udise_code}
+                  id="name"
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      udise_code: e.target.value,
-                    }))
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
+                  className="w-full"
                 />
               </div>
 
@@ -327,25 +436,6 @@ function ManageSchools() {
                     }))
                   }
                 />
-              </div>
-
-              {/* Level */}
-              <div className="space-y-2">
-                <Label htmlFor="level">Level</Label>
-                <Select
-                  value={formData.level}
-                  onValueChange={(value: "primary" | "middle") =>
-                    setFormData((prev) => ({ ...prev, level: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary</SelectItem>
-                    <SelectItem value="middle">Middle</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               {/* City & State */}
@@ -407,52 +497,103 @@ function ManageSchools() {
                 </div>
               </div>
 
-              {/* Point of Contact Info */}
+              {/* Points of Contact (multiple) */}
               <div className="space-y-2">
-                <Label htmlFor="pointOfContact">Point of Contact</Label>
-                <Input
-                  id="pointOfContact"
-                  value={formData.pointOfContact}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      pointOfContact: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              {/* Phone & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Label>Points of Contact</Label>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
-                    }
-                  />
+                  {(formData.pointOfContacts || []).map((poc, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                      <div className="col-span-5">
+                        <Label className="text-xs">Name</Label>
+                        <Input
+                          value={poc.name}
+                          onChange={(e) =>
+                            setFormData((prev) => {
+                              const next = { ...(prev as any) };
+                              next.pointOfContacts = (next.pointOfContacts || []).slice();
+                              next.pointOfContacts[idx] = {
+                                ...next.pointOfContacts[idx],
+                                name: e.target.value,
+                              };
+                              return next;
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-span-5">
+                        <Label className="text-xs">Phone</Label>
+                        <Input
+                          value={poc.phone}
+                          onChange={(e) =>
+                            setFormData((prev) => {
+                              const next = { ...(prev as any) };
+                              next.pointOfContacts = (next.pointOfContacts || []).slice();
+                              next.pointOfContacts[idx] = {
+                                ...next.pointOfContacts[idx],
+                                phone: e.target.value,
+                              };
+                              return next;
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <Button
+                          variant="ghost"
+                          onClick={() =>
+                            setFormData((prev) => {
+                              const next = { ...(prev as any) };
+                              next.pointOfContacts = (next.pointOfContacts || []).slice();
+                              next.pointOfContacts.splice(idx, 1);
+                              if (next.pointOfContacts.length === 0) next.pointOfContacts = [{ name: "", phone: "" }];
+                              return next;
+                            })
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...(prev as any),
+                          pointOfContacts: [
+                            ...(prev.pointOfContacts || [{ name: "", phone: "" }]),
+                            { name: "", phone: "" },
+                          ],
+                        }))
+                      }
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add contact
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <DialogFooter className="flex-shrink-0">
+            <DialogFooter className="flex-shrink-0">
             <Button variant="outline" onClick={handleCloseDialog}>
               Cancel
             </Button>
             <Button
               onClick={() => {
+                // map pointOfContacts into legacy fields for backward compatibility
+                const payload: any = { ...(formData as any) };
+                if (formData.pointOfContacts && formData.pointOfContacts.length > 0) {
+                  payload.pointOfContact = formData.pointOfContacts[0].name;
+                  payload.phone = formData.pointOfContacts[0].phone;
+                }
                 if (editingSchool) {
-                  updateMutation.mutate({
-                    id: editingSchool._id!,
-                    data: formData,
-                  });
+                  updateMutation.mutate({ id: editingSchool._id!, data: payload });
                 } else {
-                  createMutation.mutate(formData);
+                  createMutation.mutate(payload);
                 }
               }}
               disabled={createMutation.isPending || updateMutation.isPending}

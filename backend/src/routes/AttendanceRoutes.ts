@@ -5,6 +5,9 @@ import {
   bulkMarkAttendance,
   getAttendanceStats,
   getDailyAttendance,
+  recordCohortAttendance,
+  getCohortAttendance,
+  getTutorAttendanceSummary,
 } from "../controllers/attendanceController";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
 import { UserRole } from "../configs/roles";
@@ -44,6 +47,27 @@ attendanceRouter.get(
   "/daily",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   getDailyAttendance
+);
+
+// Record attendance for a cohort
+attendanceRouter.post(
+  "/cohort",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  recordCohortAttendance
+);
+
+// Get attendance for a specific cohort
+attendanceRouter.get(
+  "/cohort/:cohortId",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  getCohortAttendance
+);
+
+// Get attendance summary for tutor's cohorts
+attendanceRouter.get(
+  "/tutor/summary",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  getTutorAttendanceSummary
 );
 
 export default attendanceRouter;

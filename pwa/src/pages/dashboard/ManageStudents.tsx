@@ -354,6 +354,17 @@ function ManageStudents() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            
+            <div className="space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="roll_no">Aadhar Number</Label>
               <Input
@@ -366,57 +377,58 @@ function ManageStudents() {
                 disabled={!!editingStudent}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="age">Age</Label>
-              <Input
-                id="age"
-                type="number"
-                value={formData.age}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    age: Number(e.target.value),
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              <Select
-                value={formData.gender}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, gender: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="caste">Caste</Label>
-              <Input
-                id="caste"
-                value={formData.caste}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, caste: e.target.value }))
-                }
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="age">Age</Label>
+                <Input
+                  id="age"
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      age: Number(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select
+                  value={formData.gender}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, gender: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="caste">Caste</Label>
+                <Select
+                  value={formData.caste}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, caste: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select caste" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="st">ST</SelectItem>
+                    <SelectItem value="gen">GEN</SelectItem>
+                    <SelectItem value="sc">SC</SelectItem>
+                    <SelectItem value="obc">OBC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
