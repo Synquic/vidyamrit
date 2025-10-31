@@ -10,7 +10,6 @@ import {
   type Volunteer,
   type CreateVolunteerDTO,
 } from "@/services/volunteers";
-import { getSchools } from "@/services/schools";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/user";
 import { useSchoolContext } from "@/contexts/SchoolContext";
@@ -25,13 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -98,13 +90,6 @@ function ManageVolunteers() {
     enabled: user?.role === UserRole.SUPER_ADMIN,
   });
 
-  // Fetch schools for the select dropdown (for super admin)
-  const { data: schools = [] } = useQuery({
-    queryKey: ["schools"],
-    queryFn: getSchools,
-    enabled: user?.role === UserRole.SUPER_ADMIN,
-  });
-
   // Create volunteer mutation
   const createMutation = useMutation({
     mutationFn: (data: CreateVolunteerDTO) => createVolunteer(data),
@@ -165,8 +150,8 @@ function ManageVolunteers() {
   });
 
   const handleSubmit = () => {
-    if (!formData.schoolId) {
-      toast.error("Please select a school");
+    if (!selectedSchool) {
+      toast.error("Please select a school first");
       return;
     }
 
@@ -263,7 +248,18 @@ function ManageVolunteers() {
             Create and manage volunteer accounts for schools
           </p>
         </div>
-        <Button onClick={() => setIsOpen(true)} className="w-full md:w-auto">
+        <Button 
+          onClick={() => {
+            setFormData({
+              schoolId: selectedSchool?._id || "",
+              durationHours: 24,
+              volunteerName: "Volunteer",
+            });
+            setIsOpen(true);
+          }} 
+          disabled={!selectedSchool}
+          className="w-full md:w-auto"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Create Volunteer Account
         </Button>
@@ -416,30 +412,17 @@ function ManageVolunteers() {
           <DialogHeader>
             <DialogTitle>Create Volunteer Account</DialogTitle>
             <DialogDescription>
-              Create a shared volunteer account for a school with time-limited access
+              Create a shared volunteer account for the selected school with time-limited access
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="schoolId">Select School *</Label>
-              <Select
-                value={formData.schoolId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, schoolId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a school" />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((school) => (
-                    <SelectItem key={school._id} value={school._id || ""}>
-                      {school.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {selectedSchool && (
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+              <p className="text-sm text-blue-700">
+                Creating volunteer for: <strong>{selectedSchool.name}</strong>
+              </p>
             </div>
+          )}
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="volunteerName">Account Name</Label>
               <Input

@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router";
-import { NavigationItem } from "@/config/roleNavigation";
+import { NavigationItem } from "@/config/SidebarListAndRoleNavigation";
 import { cn } from "@/lib/utils";
 
 interface SidebarItemsProps {
@@ -34,7 +34,7 @@ export function SidebarItems({ items }: SidebarItemsProps) {
                     to={item.url}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-full shadow-md",
-                      "bg-black text-white",
+                      "bg-black text-white"
                     )}
                     aria-current="page"
                     title={item.description || item.title}

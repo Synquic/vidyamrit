@@ -49,7 +49,6 @@ export default function BaselineAssessmentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [todaysAssessments, setTodaysAssessments] = useState<Assessment[]>([]);
   const [programs, setPrograms] = useState<IProgram[]>([]);
-  const [selectedProgram, setSelectedProgram] = useState<IProgram | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -194,12 +193,10 @@ export default function BaselineAssessmentsPage() {
       // Refresh students list in background to keep data in sync
       fetchStudents();
 
-      // If a program is already selected, immediately start baseline for the created student
-      if (selectedProgram) {
-        toast(`Starting baseline for ${created.name}...`, { duration: 1000 });
-        setSelectedStudent(created);
-        setModalOpen(true);
-      }
+      // Auto-start baseline assessment for the created student
+      toast(`Starting baseline for ${created.name}...`, { duration: 1000 });
+      setSelectedStudent(created);
+      setModalOpen(true);
     } catch (error: any) {
       // Extract the error message from the server response
       let errorMessage = "Failed to create student";
@@ -237,7 +234,7 @@ export default function BaselineAssessmentsPage() {
     setModalOpen(false);
     setSelectedStudent(null);
   };
-
+  
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
@@ -318,7 +315,7 @@ export default function BaselineAssessmentsPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="caste">Caste</Label>
+                    <Label htmlFor="caste">Category</Label>
                     <Select
                       value={newStudent.caste || ""}
                       onValueChange={(value) =>
@@ -432,105 +429,9 @@ export default function BaselineAssessmentsPage() {
             </div>
           )}
 
-          {/* Program Selection - Only show if school is selected */}
+          {/* Student Selection - Only show if school is selected */}
           {selectedSchool?._id && (
             <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BookOpen className="mr-2 h-5 w-5" />
-                    Select Assessment Program
-                  </CardTitle>
-                  <CardDescription>
-                    Choose the program/subject for baseline assessment
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {programs.length === 0 ? (
-                    <div className="text-center py-8">
-                      <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <h3 className="mt-4 text-lg font-semibold">
-                        No programs available
-                      </h3>
-                      <p className="text-muted-foreground mt-2">
-                        Create a program first to conduct assessments
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label>Available Programs ({programs.length})</Label>
-                      <Select
-                        value={selectedProgram?._id || ""}
-                        onValueChange={(value) => {
-                          const program = programs.find((p) => p._id === value);
-                          console.log("=== PROGRAM SELECTION DEBUG ===");
-                          console.log("Selected program ID:", value);
-                          console.log("Found program:", program);
-                          console.log(
-                            "Program object:",
-                            JSON.stringify(program, null, 2)
-                          );
-                          console.log("Program _id:", program?._id);
-                          console.log("================================");
-
-                          setSelectedProgram(program || null);
-                          // Clear student selection when program changes
-                          setSelectedStudent(null);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="-- Select a program --" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {programs.map((program) => (
-                            <SelectItem key={program._id} value={program._id}>
-                              <div className="flex items-center justify-between w-full">
-                                <span>
-                                  {program.name} ({program.subject})
-                                </span>
-                                <Badge variant="secondary" className="ml-2">
-                                  {program.totalLevels} levels
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedProgram && (
-                    <div className="p-3 border rounded-lg bg-green-50 border-green-200 mt-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <BookOpen className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-sm text-green-800">
-                          Selected Program
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold">
-                          {selectedProgram.name}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {selectedProgram.subject}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span>Levels: {selectedProgram.totalLevels}</span>
-                        <Badge variant="default" className="text-xs">
-                          Active
-                        </Badge>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Student Selection - Only show if program is selected */}
-          {selectedProgram && selectedSchool?._id && (
-            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -722,8 +623,8 @@ export default function BaselineAssessmentsPage() {
             </div>
           )}
 
-          {/* Assessment Info - Only show if program and school are selected */}
-          {selectedProgram && selectedSchool?._id && (
+          {/* Assessment Info - Only show if school is selected and we have students */}
+          {selectedSchool?._id && students.length > 0 && (
             <div>
               <Card>
                 <CardHeader>
@@ -766,16 +667,13 @@ export default function BaselineAssessmentsPage() {
         </div>
       </div>
 
-      {modalOpen && selectedStudent && selectedProgram && (
+      {modalOpen && selectedStudent && (
         <BaselineAssessmentModal
           isOpen={modalOpen}
           onClose={handleCloseModal}
           student={selectedStudent}
-          program={selectedProgram}
+          programs={programs}
           onAssessmentComplete={handleAssessmentComplete}
-          oscillationTolerance={0.5}
-          minQuestionsBeforeOscillationStop={3}
-          maxQuestionsPerLevel={2}
         />
       )}
     </div>

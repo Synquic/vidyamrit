@@ -11,6 +11,7 @@ export interface IUser extends Document {
     // Volunteer-specific fields
     expiresAt?: Date; // When volunteer access expires
     isActive?: boolean; // To enable/disable volunteer access
+    //
     createdAt: Date;
     updatedAt: Date;
 }
@@ -25,6 +26,7 @@ const UserSchema = new mongoose.Schema({
     // Volunteer-specific fields
     expiresAt: { type: Date, required: false }, // When volunteer access expires
     isActive: { type: Boolean, default: true }, // To enable/disable volunteer access
+    //
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

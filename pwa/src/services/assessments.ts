@@ -16,7 +16,7 @@ export interface CreateAssessmentDTO {
     student: string;
     school: string;
     mentor: string;
-    subject: 'hindi' | 'math' | 'english';
+    subject: string;
     level: number;
     date?: string;
 }

@@ -68,7 +68,7 @@ export const navigationItems: NavigationItem[] = [
   },
   {
     title: "Daily Attendance",
-    url: DASHBOARD_ROUTE_PATHS.tutorAttendance,
+    url: DASHBOARD_ROUTE_PATHS.attendanceManagement,
     icon: Calendar,
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
     description: "Track daily student attendance",

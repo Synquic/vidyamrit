@@ -64,6 +64,7 @@ import {
   AlertCircle,
   CheckCircle,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 
 function ManageCohorts() {
@@ -126,12 +127,11 @@ function ManageCohorts() {
 
   // Filter students and tutors based on selected school
   const filteredTutors = allTutors.filter(
-    (tutor) => !formData.schoolId || tutor.schoolId?._id === formData.schoolId
+    (tutor) => tutor.schoolId?._id === selectedSchool?._id
   );
 
   const filteredStudents = allStudents.filter(
-    (student) =>
-      !formData.schoolId || student.schoolId?._id === formData.schoolId
+    (student) => student.schoolId?._id === selectedSchool?._id
   );
 
   // Filter cohorts to show only those from the selected school (additional safety filter)
@@ -246,7 +246,7 @@ function ManageCohorts() {
     setEditingCohort(null);
     setFormData({
       name: "",
-      schoolId: "",
+      schoolId: selectedSchool?._id || "",
       tutorId: "",
       students: [],
     });
@@ -477,6 +477,14 @@ function ManageCohorts() {
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.location.href = `/progress/cohort/${cohort._id}`}
+                      title="View Progress"
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => {
@@ -503,9 +511,16 @@ function ManageCohorts() {
             <DialogDescription>
               {editingCohort
                 ? "Update the cohort's information below"
-                : "Fill in the details to create a new cohort"}
+                : "Fill in the details to create a new cohort for the selected school"}
             </DialogDescription>
           </DialogHeader>
+          {selectedSchool && !editingCohort && (
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
+              <p className="text-sm text-blue-700">
+                Creating cohort for: <strong>{selectedSchool.name}</strong>
+              </p>
+            </div>
+          )}
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Cohort Name</Label>
@@ -519,41 +534,12 @@ function ManageCohorts() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="schoolId">School</Label>
-              <Select
-                value={formData.schoolId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    schoolId: value,
-                    tutorId: "",
-                    students: [],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a school" />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools
-                    .filter((school) => school._id)
-                    .map((school) => (
-                      <SelectItem key={school._id} value={school._id!}>
-                        {school.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="tutorId">Tutor</Label>
               <Select
                 value={formData.tutorId}
                 onValueChange={(value) =>
                   setFormData((prev) => ({ ...prev, tutorId: value }))
                 }
-                disabled={!formData.schoolId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a tutor" />
@@ -591,9 +577,7 @@ function ManageCohorts() {
                   ))}
                   {filteredStudents.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                      {formData.schoolId
-                        ? "No students found for selected school"
-                        : "Please select a school first"}
+                      No students found for selected school
                     </p>
                   )}
                 </div>

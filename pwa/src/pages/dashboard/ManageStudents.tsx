@@ -274,7 +274,7 @@ function ManageStudents() {
               <TableHead>Name</TableHead>
               <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
-              <TableHead>Caste</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Level & Assessments</TableHead>
               <TableHead>Actions</TableHead>
@@ -411,7 +411,7 @@ function ManageStudents() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="caste">Caste</Label>
+                <Label htmlFor="caste">Category</Label>
                 <Select
                   value={formData.caste}
                   onValueChange={(value) =>

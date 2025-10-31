@@ -17,28 +17,29 @@ export type AuthRoutePath = (typeof AUTH_ROUTE_PATHS)[AuthRouteKey];
 export const DASHBOARD_ROUTE_PATHS = {
   dashboard: "/dashboard",
   //
-  schools: "/schools",
-  schoolAdmin: "/school-admins",
-  //
-  mentors: "/mentors",
-  mentorManagement: "/mentor-management",
-  volunteers: "/volunteers",
   students: "/students",
-  cohorts: "/cohorts",
-  //
-  baselineAssessments: "/baseline-assessments",
-  //
-  studentReports: "/student-reports",
-  assessmentQuestionSets: "/assessment-question-sets",
-  //
-  attendanceManagement: "/attendance",
-  tutorAttendance: "/attendance/tutor",
-  cohortAttendance: "/attendance/cohort/:cohortId",
-  learningGroups: "/groups",
-  progressMonitoring: "/progress",
-  tutorProgress: "/progress/tutor", 
-  cohortProgress: "/progress/cohort/:cohortId",
+  mentors: "/mentors",
+  volunteers: "/volunteers",
   managePrograms: "/programs",
+  cohorts: "/cohorts",
+  baselineAssessments: "/baseline-assessments",
+  attendanceManagement: "/attendance",
+  tutorProgress: "/progress/tutor",
+  schools: "/schools",
+  //
+  // schoolAdmin: "/school-admins",
+  //
+  // mentorManagement: "/mentor-management",
+  // //
+  // //
+  // studentReports: "/student-reports",
+  // assessmentQuestionSets: "/assessment-question-sets",
+  // //
+  // tutorAttendance: "/attendance/tutor",
+  // cohortAttendance: "/attendance/cohort/:cohortId",
+  // learningGroups: "/groups",
+  // progressMonitoring: "/progress",
+  // cohortProgress: "/progress/cohort/:cohortId",
 } as const;
 
 export type DashboardRouteKey = keyof typeof DASHBOARD_ROUTE_PATHS;

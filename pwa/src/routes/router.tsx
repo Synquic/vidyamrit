@@ -1,14 +1,24 @@
 import { createBrowserRouter } from "react-router";
 import { Outlet } from "react-router";
-import { AUTH_ROUTE_PATHS, DASHBOARD_ROUTE_PATHS } from "./index";
+import {
+  AUTH_ROUTE_PATHS,
+  DASHBOARD_ROUTE_PATHS,
+  PUBLIC_ROUTE_PATHS,
+} from "./index";
 import { routePermissions } from "./permissions";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "@/components/DashboardLayout";
+import { SchoolProvider } from "@/contexts/SchoolContext";
+import NotFoundComponent from "@/components/NotFound";
 
 // Auth Pages
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import LogoutPage from "@/pages/auth/LogoutPage";
+
+// Public Pages
+import LandingPage from "@/pages/public/LandingPage";
+import SupportPage from "@/pages/public/SupportPage";
 
 // Dashboard Pages
 import DashboardPage from "@/pages/dashboard/DashboardPage";
@@ -17,8 +27,34 @@ import ManageStudents from "@/pages/dashboard/ManageStudents";
 import ManageCohorts from "@/pages/dashboard/ManageCohorts";
 import ManageVolunteers from "@/pages/dashboard/ManageVolunteers";
 import BaselineAssessmentsPage from "@/pages/dashboard/BaselineAssessmentsPage";
+import ManageTutors from "@/pages/dashboard/ManageTutors";
+import ManagePrograms from "@/pages/dashboard/ManagePrograms";
+
+// Attendance Pages
+// import CohortAttendance from "@/pages/attendance/CohortAttendance";
+import TutorAttendance from "@/pages/dashboard/attendance/TutorAttendance";
+
+// Progress Pages
+import {
+  // CohortProgress,
+  TutorProgress,
+} from "@/pages/dashboard/progress";
 
 export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <LandingPage />,
+  },
+  {
+    path: PUBLIC_ROUTE_PATHS.support,
+    element: <SupportPage />,
+  },
+  // 404 not found
+  {
+    path: "*",
+    element: <NotFoundComponent />,
+  },
+  // Auth routes
   {
     path: AUTH_ROUTE_PATHS.login,
     element: <LoginPage />,
@@ -31,29 +67,22 @@ export const router = createBrowserRouter([
     path: AUTH_ROUTE_PATHS.logout,
     element: <LogoutPage />,
   },
+  // Protected routes
   {
     path: "/",
     element: (
       <ProtectedRoute>
-        <DashboardLayout>
-          <Outlet />
-        </DashboardLayout>
+        <SchoolProvider>
+          <DashboardLayout>
+            <Outlet />
+          </DashboardLayout>
+        </SchoolProvider>
       </ProtectedRoute>
     ),
     children: [
       {
         path: DASHBOARD_ROUTE_PATHS.dashboard,
         element: <DashboardPage />,
-      },
-      {
-        path: DASHBOARD_ROUTE_PATHS.schools,
-        element: (
-          <ProtectedRoute
-            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.schools]}
-          >
-            <ManageSchools />
-          </ProtectedRoute>
-        ),
       },
       {
         path: DASHBOARD_ROUTE_PATHS.students,
@@ -66,12 +95,12 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: DASHBOARD_ROUTE_PATHS.cohorts,
+        path: DASHBOARD_ROUTE_PATHS.mentors,
         element: (
           <ProtectedRoute
-            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.cohorts]}
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.mentors]}
           >
-            <ManageCohorts />
+            <ManageTutors />
           </ProtectedRoute>
         ),
       },
@@ -82,6 +111,28 @@ export const router = createBrowserRouter([
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.volunteers]}
           >
             <ManageVolunteers />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.managePrograms,
+        element: (
+          <ProtectedRoute
+            requiredRole={
+              routePermissions[DASHBOARD_ROUTE_PATHS.managePrograms]
+            }
+          >
+            <ManagePrograms />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.cohorts,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.cohorts]}
+          >
+            <ManageCohorts />
           </ProtectedRoute>
         ),
       },
@@ -97,6 +148,46 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: DASHBOARD_ROUTE_PATHS.attendanceManagement,
+        element: (
+          <ProtectedRoute
+            requiredRole={
+              routePermissions[DASHBOARD_ROUTE_PATHS.attendanceManagement]
+            }
+          >
+            <TutorAttendance />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.schools,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.schools]}
+          >
+            <ManageSchools />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.tutorProgress,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
+          >
+            <TutorProgress />
+          </ProtectedRoute>
+        ),
+      },
+      // {
+      //   path: "/attendance/cohort/:cohortId",
+      //   element: <CohortAttendance />,
+      // },
+      // {
+      //   path: "/progress/cohort/:cohortId",
+      //   element: <CohortProgress />,
+      // },
     ],
   },
 ]);

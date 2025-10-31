@@ -320,7 +320,7 @@ export const getDailyAttendance = async (req: AuthRequest, res: Response) => {
     }
 
     // Get all students in the school
-    const students = await Student.find({ schoolId }).select(
+    const students = await Student.find({ school: schoolId }).select(
       "name roll_no class"
     );
 

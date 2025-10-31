@@ -3,7 +3,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { getNavigationForRole } from "@/config/roleNavigation";
+import { getNavigationForRole } from "@/config/SidebarListAndRoleNavigation";
 import { LogOut, User, EllipsisVertical, Info } from "lucide-react";
 import { SidebarItems } from "@/components/SidebarItems";
 import { SchoolSwitcher } from "@/components/SchoolSwitcher";

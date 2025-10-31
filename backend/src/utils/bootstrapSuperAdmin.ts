@@ -29,6 +29,7 @@ async function bootstrap() {
             email: firebaseUser.email,
             role: UserRole.SUPER_ADMIN,
             schoolId: null,
+            phoneNo: "0000000000"
         });
 
         await user.save();

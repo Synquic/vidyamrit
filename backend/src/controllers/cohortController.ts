@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Cohort from "../models/CohortModel";
 import Student from "../models/StudentModel";
+import User from "../models/UserModel";
 import { AuthRequest } from "../types/auth";
 import { UserRole } from "../configs/roles";
 import { generateCohortPlan, LevelInput } from "../lib/CohortGenerationAlgo";
@@ -252,6 +253,20 @@ export const generateOptimalCohorts = async (
       });
     }
 
+    // Get all tutors for the school
+    const tutors = await User.find({
+      schoolId: schoolId,
+      role: UserRole.TUTOR,
+    });
+
+    if (tutors.length === 0) {
+      return res.status(400).json({
+        error: "No tutors found for this school. Please add tutors before generating cohorts.",
+      });
+    }
+
+    console.log(`Found ${tutors.length} tutors for the school`);
+
     // Group students by their latest knowledge level
     const levelGroups: { [key: number]: string[] } = {};
 
@@ -285,6 +300,7 @@ export const generateOptimalCohorts = async (
 
     // Create cohorts based on the plan
     const createdCohorts = [];
+    let tutorIndex = 0; // To cycle through available tutors
 
     for (const plan of cohortPlans) {
       const levelStudents = levelGroups[plan.level as number];
@@ -298,10 +314,14 @@ export const generateOptimalCohorts = async (
         );
         studentIndex += cohortSize;
 
+        // Assign tutor in round-robin fashion
+        const assignedTutor = tutors[tutorIndex % tutors.length];
+        tutorIndex++;
+
         const cohort = new Cohort({
           name: `Level ${plan.level} - Cohort ${i + 1}`,
           schoolId: schoolId,
-          tutorId: req.user?._id, // Assign to the user generating the cohorts
+          tutorId: assignedTutor._id, // Assign to a tutor from the school
           programId: programId, // Set the program ID
           currentLevel: plan.level as number, // Set current level based on student levels
           students: cohortStudents,
