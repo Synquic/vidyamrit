@@ -67,7 +67,7 @@ jobs:
       # ✅ Backend
       - name: Install backend deps (with production)
         working-directory: ./backend
-        run: npm install --production
+        run: npm install
 
       - name: Create backend .env
         working-directory: ./backend
