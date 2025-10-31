@@ -1,28 +1,16 @@
 # ===========================================
 # 🚀 Vidyamrit Full Stack Deployment Workflow
 # ===========================================
-# This workflow automates the deployment of our full-stack Vidyamrit application
-# to an AWS EC2 instance. It handles both the PWA frontend and Node.js backend
-# deployment in a single, coordinated process.
 
 name: Deploy Full Stack App to EC2
 
-# ===========================================
-# 📦 Trigger Configuration
-# ===========================================
-# The deployment process begins automatically when code is pushed to the main branch
 on:
   push:
     branches:
       - main
 
-# ===========================================
-# 🔐 Environment Variables
-# ===========================================
-# These variables are securely stored in GitHub Secrets and
-# are made available to both frontend and backend during deployment
 env:
-  # Frontend Environment Variables
+  # Frontend ENV
   VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
   VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
   VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -31,7 +19,7 @@ env:
   VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
   VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
 
-  # Backend Environment Variables
+  # Backend ENV
   PORT: ${{ secrets.PORT }}
   MONGO_URI: ${{ secrets.MONGO_URI }}
   FIREBASE_SERVICE_ACCOUNT_KEY_PATH: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY_PATH }}
@@ -41,18 +29,11 @@ env:
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   LOGGER_PATH: ${{ secrets.LOGGER_PATH }}
 
-# ===========================================
-# 👷‍♂️ Build Jobs (on GitHub Action Runners)
-# ===========================================
 jobs:
   deploy:
-    name: Build & Deploy
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Initial Setup
-      # -------------------------------------------
-      # First, we get our code and set up Node.js environment
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -61,10 +42,8 @@ jobs:
         with:
           node-version: "18"
 
-      # 2️⃣ Frontend Build Process
-      # -------------------------------------------
-      # Build our React/Vite PWA application
-      - name: Install frontend dependencies
+      # ✅ Frontend
+      - name: Install frontend deps
         working-directory: ./pwa
         run: npm ci
 
@@ -85,12 +64,10 @@ jobs:
         working-directory: ./pwa
         run: npm run build
 
-      # 3️⃣ Backend Build Process
-      # -------------------------------------------
-      # Compile our TypeScript backend to JavaScript
-      - name: Install backend dependencies
+      # ✅ Backend
+      - name: Install backend deps (with production)
         working-directory: ./backend
-        run: npm ci
+        run: npm install --production
 
       - name: Create backend .env
         working-directory: ./backend
@@ -110,64 +87,49 @@ jobs:
         working-directory: ./backend
         run: npm run build
 
-      # ===========================================
-      # 💼 Deployment Preparation
-      # ===========================================
-
-      # 1️⃣ Deployment Organization
-      # -------------------------------------------
-      # Organize our built files for efficient deployment
+      # ✅ Prepare Deployment Folder
       - name: Prepare deployment folder
         run: |
-          # Create organized structure
           mkdir -p deploy/frontend
           mkdir -p deploy/backend
 
-          # Copy frontend build
           cp -r pwa/dist/* deploy/frontend/
 
-          # Copy backend build and required files
           cp -r backend/dist deploy/backend/dist
+          cp -r backend/node_modules deploy/backend/node_modules
           cp backend/package.json deploy/backend/
-          cp backend/firebaseServiceAccountKey.json deploy/backend/ || echo "Firebase key will be linked on server"
 
-      # 2️⃣ Upload to EC2
-      # -------------------------------------------
-      # Securely transfer our deployment files to EC2
-      - name: Upload artifacts to EC2
+          cp backend/firebaseServiceAccountKey.json deploy/backend/ || echo "Will symlink on server"
+
+      # ✅ Upload to EC2
+      - name: Upload to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
           source: "deploy/"
-          target: "/home/ubuntu/prod-deployment/"
+          target: "/home/ubuntu/vidyamrit_prod/"
           overwrite: true
 
-      # 3️⃣ Final Deployment
-      # -------------------------------------------
-      # Deploy our application on the EC2 instance
-      - name: SSH into EC2 and deploy
+      # ✅ Deploy on EC2
+      - name: SSH Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
           script: |
-            # Load nvm and use Node.js
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-            # Navigate to deployment directory
-            cd /home/ubuntu/prod-deployment/deploy
+            cd /home/ubuntu/vidyamrit_prod/deploy
 
-            echo "📄 Creating backend environment configuration"
+            echo "🔥 Creating backend env"
             cat <<EOF > backend/.env
             PORT=${{ secrets.PORT }}
             MONGO_URI=${{ secrets.MONGO_URI }}
-            FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/home/ubuntu/prod-deployment/deploy/backend/firebaseServiceAccountKey.json
+            FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/home/ubuntu/vidyamrit_prod/deploy/backend/firebaseServiceAccountKey.json
             MAIL_USER=${{ secrets.MAIL_USER }}
             MAIL_PASS=${{ secrets.MAIL_PASS }}
             CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
@@ -175,25 +137,16 @@ jobs:
             LOGGER_PATH=${{ secrets.LOGGER_PATH }}
             EOF
 
-            cd backend
+            echo "🔑 Linking Firebase key"
+            ln -sf /home/ubuntu/secrets/firebaseServiceAccountKey.json /home/ubuntu/vidyamrit_prod/deploy/backend/firebaseServiceAccountKey.json
 
-            echo "📦 Installing production dependencies"
-            npm ci
+            echo "🚀 Starting backend via PM2"
+            pm2 restart backend-app || pm2 start /home/ubuntu/vidyamrit_prod/deploy/backend/dist/index.js --name backend-app
+            pm2 save
 
-            echo "🔑 Linking Firebase service account key"
-            ln -sf /home/ubuntu/secrets/firebaseServiceAccountKey.json /home/ubuntu/prod-deployment/deploy/backend/firebaseServiceAccountKey.json
-
-            echo "🚀 Restarting backend service with PM2"
-            # Gracefully stop and remove existing instance
-            pm2 restart backend-app || pm2 start dist/index.js --name backend-app
-
-            echo "🌐 Updating frontend in Nginx"
-            # Clear existing deployment and copy new files
+            echo "🌍 Deploying Frontend"
             sudo rm -rf /var/www/html/*
-            sudo cp -r /home/ubuntu/prod-deployment/deploy/frontend/* /var/www/html/
+            sudo cp -r /home/ubuntu/vidyamrit_prod/deploy/frontend/* /var/www/html/
 
-            echo "🏥 Health check"
-            sleep 5
+            echo "✅ Deployment complete"
             pm2 status backend-app
-
-            echo "✅ Deployment successfully completed!"
