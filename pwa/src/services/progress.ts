@@ -75,7 +75,8 @@ export interface TutorProgressSummary {
       name: string;
       subject: string;
       totalLevels: number;
-    };
+    } | null;
+    currentLevel?: number;
   };
   summary: {
     totalStudents: number;
@@ -101,8 +102,15 @@ export interface TutorProgressSummary {
       durationWeeks: number;
       startDate: string;
       endDate: string;
-    };
-  };
+    } | null;
+  } | null;
+  levelProgress?: {
+    weeksCompleted: number;
+    weeksRequired: number;
+    completionPercentage: number;
+    isReadyForAssessment: boolean;
+    daysRemaining?: number;
+  } | null;
 }
 
 export interface StudentReadyForAssessment {
@@ -177,8 +185,10 @@ export const getCohortProgress = async (
 };
 
 // Get progress summary for tutor's cohorts
-export const getTutorProgressSummary = async (): Promise<TutorProgressSummary[]> => {
-  const response = await authAxios.get(`${baseUrl}/tutor/summary`);
+export const getTutorProgressSummary = async (schoolId?: string): Promise<TutorProgressSummary[]> => {
+  const params: any = {};
+  if (schoolId) params.schoolId = schoolId;
+  const response = await authAxios.get(`${baseUrl}/tutor/summary`, { params });
   return response.data;
 };
 

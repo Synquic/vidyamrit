@@ -12,6 +12,7 @@ export interface ISchool extends Document {
   pinCode: string;
   pointOfContact: string;
   phone: string;
+  block?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +30,18 @@ const SchoolSchema = new mongoose.Schema(
     pinCode: { type: String, required: true },
     pointOfContact: { type: String, required: true },
     phone: { type: String, required: true },
+    block: {
+      type: String,
+      enum: [
+        "Indore Urban 1",
+        "Indore Urban 2",
+        "Indore Rural",
+        "Sanwer",
+        "Mhow",
+        "Depalpur",
+      ],
+      required: false,
+    },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },

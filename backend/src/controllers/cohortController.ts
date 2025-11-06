@@ -4,7 +4,7 @@ import Student from "../models/StudentModel";
 import User from "../models/UserModel";
 import { AuthRequest } from "../types/auth";
 import { UserRole } from "../configs/roles";
-import { generateCohortPlan, LevelInput } from "../lib/CohortGenerationAlgo";
+import { generateCohortPlan, LevelInput, GenerationStrategy, GenerationResult } from "../lib/CohortGenerationAlgo";
 
 // Get all cohorts
 export const getCohorts = async (req: AuthRequest, res: Response) => {
@@ -123,14 +123,161 @@ export const updateCohort = async (req: Request, res: Response) => {
 };
 
 // Delete cohort (School Admin, Super Admin only)
-export const deleteCohort = async (req: Request, res: Response) => {
+// Check if cohort is ready for level-up assessment
+// Mark/unmark a date as holiday for a cohort
+export const toggleCohortHoliday = async (req: AuthRequest, res: Response) => {
   try {
-    const cohort = await Cohort.findByIdAndDelete(req.params.id);
+    const { id } = req.params; // Route uses :id
+    const { date } = req.body; // Date string in YYYY-MM-DD format
+    const tutorId = req.user?._id;
+
+    if (!date) {
+      return res.status(400).json({ error: "Date is required" });
+    }
+
+    const cohort = await Cohort.findById(id);
     if (!cohort) {
       return res.status(404).json({ error: "Cohort not found" });
     }
+
+    // Verify tutor has access to this cohort
+    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ error: "You are not authorized to modify this cohort" });
+    }
+
+    const holidayDate = new Date(date);
+    holidayDate.setHours(0, 0, 0, 0);
+
+    // Check if it's Sunday
+    if (holidayDate.getDay() === 0) {
+      return res.status(400).json({ error: "Sunday is already a holiday. You cannot mark it separately." });
+    }
+
+    // Initialize holidays array if it doesn't exist
+    if (!cohort.holidays) {
+      cohort.holidays = [];
+    }
+
+    // Check if date is already a holiday
+    const dateStr = holidayDate.toDateString();
+    const existingHolidayIndex = cohort.holidays.findIndex((h: Date) => {
+      const hDate = new Date(h);
+      hDate.setHours(0, 0, 0, 0);
+      return hDate.toDateString() === dateStr;
+    });
+
+    if (existingHolidayIndex >= 0) {
+      // Remove holiday (unmark)
+      cohort.holidays.splice(existingHolidayIndex, 1);
+      await cohort.save();
+      return res.json({ 
+        message: "Holiday removed successfully",
+        isHoliday: false,
+        date: date
+      });
+    } else {
+      // Add holiday (mark)
+      cohort.holidays.push(holidayDate);
+      await cohort.save();
+      return res.json({ 
+        message: "Date marked as holiday successfully",
+        isHoliday: true,
+        date: date
+      });
+    }
+  } catch (error: any) {
+    console.error("Error toggling holiday:", error);
+    res.status(500).json({ error: "Error toggling holiday" });
+  }
+};
+
+export const checkAssessmentReadiness = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params; // Route uses :id
+    const tutorId = req.user?._id;
+
+    const cohort = await Cohort.findById(id).populate('programId');
+    
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Verify tutor has access to this cohort
+    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+      return res.status(403).json({ error: "You are not authorized to view this cohort" });
+    }
+
+    if (!cohort.programId) {
+      return res.status(400).json({ 
+        error: "Cohort does not have an associated program",
+        isReadyForAssessment: false 
+      });
+    }
+
+    // Calculate level progress
+    const { calculateLevelProgress } = require("../lib/cohortProgressHelper");
+    const levelProgress = await calculateLevelProgress(cohort);
+
+    // Get current level info
+    const Program = require("../models/ProgramModel").default;
+    const program = await Program.findById(cohort.programId._id || cohort.programId);
+    const currentLevel = cohort.currentLevel || 1;
+    const levelInfo = program?.getLevelByNumber(currentLevel);
+
+    res.json({
+      cohortId: cohort._id,
+      cohortName: cohort.name,
+      currentLevel,
+      levelTitle: levelInfo?.title || `Level ${currentLevel}`,
+      isReadyForAssessment: levelProgress.isReadyForAssessment,
+      weeksCompleted: levelProgress.weeksCompleted,
+      weeksRequired: levelProgress.weeksRequired,
+      completionPercentage: levelProgress.completionPercentage,
+      daysRemaining: levelProgress.daysRemaining,
+      nextLevel: program?.getNextLevel(currentLevel) ? {
+        levelNumber: currentLevel + 1,
+        title: program.getNextLevel(currentLevel)?.title,
+        description: program.getNextLevel(currentLevel)?.description
+      } : null,
+      message: levelProgress.isReadyForAssessment 
+        ? `Cohort has completed ${levelProgress.weeksCompleted}/${levelProgress.weeksRequired} weeks for Level ${currentLevel}. Ready for level-specific assessment.`
+        : `Cohort has completed ${levelProgress.weeksCompleted}/${levelProgress.weeksRequired} weeks for Level ${currentLevel}. ${levelProgress.daysRemaining ? `${levelProgress.daysRemaining} teaching days remaining.` : ''}`
+    });
+  } catch (error: any) {
+    console.error("Error checking assessment readiness:", error);
+    res.status(500).json({ error: "Error checking assessment readiness" });
+  }
+};
+
+export const deleteCohort = async (req: Request, res: Response) => {
+  try {
+    // Find the cohort first
+    const cohort = await Cohort.findById(req.params.id);
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Update all students in this cohort to mark their cohort membership as ended
+    if (cohort.students && cohort.students.length > 0) {
+      await Student.updateMany(
+        { _id: { $in: cohort.students } },
+        {
+          $set: {
+            "cohort.$[elem].dateLeaved": new Date(),
+          },
+        },
+        {
+          arrayFilters: [{ "elem.cohortId": cohort._id }],
+        }
+      );
+    }
+
+    // Now delete the cohort
+    await Cohort.findByIdAndDelete(req.params.id);
+    
     res.json({ message: "Cohort deleted successfully" });
   } catch (error) {
+    console.error("Error deleting cohort:", error);
     res.status(500).json({ error: "Error deleting cohort" });
   }
 };
@@ -215,14 +362,21 @@ export const generateOptimalCohorts = async (
   res: Response
 ) => {
   try {
-    const { schoolId, programId } = req.body;
+    const { schoolId, strategy = 'low-first', capacityLimit = 5 } = req.body;
 
     if (!schoolId) {
       return res.status(400).json({ error: "School ID is required" });
     }
 
-    if (!programId) {
-      return res.status(400).json({ error: "Program ID is required" });
+    // Validate strategy
+    if (strategy !== 'high-first' && strategy !== 'low-first') {
+      return res.status(400).json({ error: "Strategy must be 'high-first' or 'low-first'" });
+    }
+
+    // Validate capacity limit
+    const capacity = parseInt(capacityLimit);
+    if (isNaN(capacity) || capacity < 1 || capacity > 50) {
+      return res.status(400).json({ error: "Capacity limit must be a number between 1 and 50" });
     }
 
     // Check if user has permission to generate cohorts for this school
@@ -232,24 +386,30 @@ export const generateOptimalCohorts = async (
       });
     }
 
-    // Verify the program exists
+    // Get all active programs
     const Program = require("../models/ProgramModel").default;
-    const program = await Program.findById(programId);
-    if (!program) {
-      return res.status(404).json({ error: "Program not found" });
+    const allPrograms = await Program.find({ isActive: true });
+    
+    if (allPrograms.length === 0) {
+      return res.status(400).json({ error: "No active programs found. Please create at least one active program." });
     }
 
-    console.log("Generating optimal cohorts for school:", schoolId, "with program:", program.name);
+    console.log(`Generating optimal cohorts for school: ${schoolId} for ${allPrograms.length} active programs`);
 
     // Get all students from the school who have completed assessments
-    const students: Array<{ _id: any; knowledgeLevel: Array<{ level: number }> }> = await Student.find({
+    const students: Array<{ 
+      _id: any; 
+      knowledgeLevel: Array<{ level: number }>;
+      hindi_level?: number;
+      math_level?: number;
+      english_level?: number;
+    }> = await Student.find({
       school: schoolId,
-      knowledgeLevel: { $exists: true, $not: { $size: 0 } },
     });
 
     if (students.length === 0) {
       return res.status(400).json({
-        error: "No students with assessment data found for this school",
+        error: "No students found for this school",
       });
     }
 
@@ -267,116 +427,249 @@ export const generateOptimalCohorts = async (
 
     console.log(`Found ${tutors.length} tutors for the school`);
 
-    // Group students by their latest knowledge level
-    const levelGroups: { [key: number]: string[] } = {};
-
-    students.forEach((student) => {
-      if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
-        const latestLevel =
-          student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
-        if (!levelGroups[latestLevel]) {
-          levelGroups[latestLevel] = [];
-        }
-        levelGroups[latestLevel].push(student._id.toString());
-      }
+    // Get students who are already in active cohorts (to exclude them)
+    const studentsInActiveCohorts = await Student.find({
+      school: schoolId,
+      cohort: {
+        $elemMatch: {
+          dateLeaved: { $exists: false },
+        },
+      },
     });
-
-    // Convert to format expected by algorithm
-    const levelInputs: LevelInput[] = Object.entries(levelGroups).map(
-      ([level, studentIds]) => ({
-        level: parseInt(level),
-        students: studentIds.length,
-      })
+    const activeCohortStudentIds = new Set(
+      studentsInActiveCohorts.map((s) => s._id.toString())
     );
 
-    console.log("Level distribution:", levelInputs);
+    // Aggregate results across all programs
+    const allCreatedCohorts: any[] = [];
+    const allPendingStudents: Array<{
+      program: string;
+      level: number | string;
+      students: number;
+    }> = [];
+    let totalStudentsAssigned = 0;
+    let globalTutorIndex = 0;
+    let globalCohortNumber = 1;
+    const programResults: Array<{
+      programName: string;
+      programSubject: string;
+      cohortsCreated: number;
+      studentsAssigned: number;
+      pendingStudents: number;
+    }> = [];
 
-    // Generate optimal cohort plan
-    const cohortPlans = generateCohortPlan(levelInputs);
-    console.log("Generated cohort plans:", cohortPlans);
+    // Process each program
+    for (const program of allPrograms) {
+      console.log(`Processing program: ${program.name} (${program.subject})`);
 
-    // Delete existing cohorts for this school (optional - you might want to keep them)
-    await Cohort.deleteMany({ schoolId: schoolId });
+      // Get students with assessment data for this program's subject
+      // Use subject-specific level field if available, otherwise use knowledgeLevel
+      const studentsForProgram = students.filter((student) => {
+        // Check if student has level data for this subject
+        const subjectLower = program.subject.toLowerCase();
+        if (subjectLower === 'hindi' && student.hindi_level) return true;
+        if (subjectLower === 'math' && student.math_level) return true;
+        if (subjectLower === 'english' && student.english_level) return true;
+        // Fallback to knowledgeLevel if subject-specific not available
+        return student.knowledgeLevel && student.knowledgeLevel.length > 0;
+      });
 
-    // Create cohorts based on the plan
-    const createdCohorts = [];
-    let tutorIndex = 0; // To cycle through available tutors
-
-    for (const plan of cohortPlans) {
-      const levelStudents = levelGroups[plan.level as number];
-      let studentIndex = 0;
-
-      for (let i = 0; i < plan.cohorts.length; i++) {
-        const cohortSize = plan.cohorts[i];
-        const cohortStudents = levelStudents.slice(
-          studentIndex,
-          studentIndex + cohortSize
-        );
-        studentIndex += cohortSize;
-
-        // Assign tutor in round-robin fashion
-        const assignedTutor = tutors[tutorIndex % tutors.length];
-        tutorIndex++;
-
-        const cohort = new Cohort({
-          name: `Level ${plan.level} - Cohort ${i + 1}`,
-          schoolId: schoolId,
-          tutorId: assignedTutor._id, // Assign to a tutor from the school
-          programId: programId, // Set the program ID
-          currentLevel: plan.level as number, // Set current level based on student levels
-          students: cohortStudents,
-          // Initialize time tracking
-          timeTracking: {
-            cohortStartDate: new Date(),
-            currentLevelStartDate: new Date(),
-            attendanceDays: 0,
-            expectedDaysForCurrentLevel: 14, // Default 2 weeks, will be updated based on program
-            totalExpectedDays: program.levels ? program.levels.reduce((total: number, level: any) => {
-              let days = level.timeframe || 14;
-              if (level.timeframeUnit === 'weeks') {
-                days *= 7;
-              } else if (level.timeframeUnit === 'months') {
-                days *= 30;
-              }
-              return total + days;
-            }, 0) : 140 // Default 20 weeks if no levels
-          },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-
-        const savedCohort = await cohort.save();
-
-        // Update students with cohort information
-        await Student.updateMany(
-          { _id: { $in: cohortStudents } },
-          {
-            $push: {
-              cohort: {
-                cohortId: savedCohort._id,
-                dateJoined: new Date(),
-              },
-            },
-          }
-        );
-
-        createdCohorts.push(savedCohort);
+      if (studentsForProgram.length === 0) {
+        console.log(`No students with assessment data for ${program.subject}`);
+        continue;
       }
+
+      // Filter to only awaiting students
+      const awaitingStudents = studentsForProgram.filter(
+        (s) => !activeCohortStudentIds.has(s._id.toString())
+      );
+
+      if (awaitingStudents.length === 0) {
+        console.log(`All students for ${program.subject} are already in cohorts`);
+        continue;
+      }
+
+      // Group students by their level for this subject
+      const levelGroups: { [key: number]: string[] } = {};
+      awaitingStudents.forEach((student) => {
+        const subjectLower = program.subject.toLowerCase();
+        let studentLevel: number | undefined;
+
+        // Get level from subject-specific field
+        if (subjectLower === 'hindi' && student.hindi_level) {
+          studentLevel = student.hindi_level;
+        } else if (subjectLower === 'math' && student.math_level) {
+          studentLevel = student.math_level;
+        } else if (subjectLower === 'english' && student.english_level) {
+          studentLevel = student.english_level;
+        } else if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
+          // Fallback to knowledgeLevel
+          studentLevel = student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
+        }
+
+        if (studentLevel !== undefined) {
+          if (!levelGroups[studentLevel]) {
+            levelGroups[studentLevel] = [];
+          }
+          levelGroups[studentLevel].push(student._id.toString());
+        }
+      });
+
+      if (Object.keys(levelGroups).length === 0) {
+        console.log(`No valid level data found for ${program.subject}`);
+        continue;
+      }
+
+      // Convert to format expected by algorithm
+      const levelInputs: LevelInput[] = Object.entries(levelGroups).map(
+        ([level, studentIds]) => ({
+          level: parseInt(level),
+          students: studentIds.length,
+        })
+      );
+
+      console.log(`${program.subject} level distribution:`, levelInputs);
+
+      // Generate optimal cohort plan with strategy and capacity
+      const generationResult: GenerationResult = generateCohortPlan(
+        levelInputs,
+        strategy as GenerationStrategy,
+        capacity
+      );
+
+      // Create active cohorts for this program
+      const programCohorts: any[] = [];
+
+      for (const plan of generationResult.activeCohorts) {
+        const level = plan.level as number;
+        const levelStudents = levelGroups[level] || [];
+        let studentIndex = 0;
+
+        for (let i = 0; i < plan.cohorts.length; i++) {
+          const cohortSize = plan.cohorts[i];
+          const cohortStudents = levelStudents.slice(
+            studentIndex,
+            studentIndex + cohortSize
+          );
+          studentIndex += cohortSize;
+
+          if (cohortStudents.length === 0) {
+            console.warn(`No students available for ${program.subject} Level ${level} Cohort ${i + 1}`);
+            continue;
+          }
+
+          // Assign tutor in round-robin fashion
+          const assignedTutor = tutors[globalTutorIndex % tutors.length];
+          globalTutorIndex++;
+
+          const cohort = new Cohort({
+            name: `${program.subject.toUpperCase()} Level ${level} - Cohort ${globalCohortNumber}${strategy === 'high-first' ? ' (High Priority)' : ''}`,
+            schoolId: schoolId,
+            tutorId: assignedTutor._id,
+            programId: program._id,
+            currentLevel: level,
+            status: 'active',
+            students: cohortStudents,
+            timeTracking: {
+              cohortStartDate: new Date(),
+              currentLevelStartDate: new Date(),
+              attendanceDays: 0,
+              expectedDaysForCurrentLevel: 14,
+              totalExpectedDays: program.levels ? program.levels.reduce((total: number, level: any) => {
+                let days = level.timeframe || 14;
+                if (level.timeframeUnit === 'weeks') {
+                  days *= 7;
+                } else if (level.timeframeUnit === 'months') {
+                  days *= 30;
+                }
+                return total + days;
+              }, 0) : 140
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          const savedCohort = await cohort.save();
+
+          // Update students with cohort information
+          await Student.updateMany(
+            { _id: { $in: cohortStudents } },
+            {
+              $push: {
+                cohort: {
+                  cohortId: savedCohort._id,
+                  dateJoined: new Date(),
+                },
+              },
+            }
+          );
+
+          programCohorts.push(savedCohort);
+          allCreatedCohorts.push(savedCohort);
+          globalCohortNumber++;
+        }
+      }
+
+      // Track pending students for this program
+      const programPendingCount = generationResult.pendingStudents.reduce(
+        (sum, p) => sum + p.students,
+        0
+      );
+
+      generationResult.pendingStudents.forEach((pending) => {
+        allPendingStudents.push({
+          program: program.name,
+          level: pending.level,
+          students: pending.students,
+        });
+      });
+
+      const programStudentsAssigned = programCohorts.reduce(
+        (sum, c) => sum + (c.students?.length || 0),
+        0
+      );
+      totalStudentsAssigned += programStudentsAssigned;
+
+      programResults.push({
+        programName: program.name,
+        programSubject: program.subject,
+        cohortsCreated: programCohorts.length,
+        studentsAssigned: programStudentsAssigned,
+        pendingStudents: programPendingCount,
+      });
+
+      console.log(`${program.subject}: Created ${programCohorts.length} cohorts, ${programStudentsAssigned} students assigned, ${programPendingCount} pending`);
     }
 
-    console.log(`Successfully created ${createdCohorts.length} cohorts`);
+    console.log(`Successfully created ${allCreatedCohorts.length} active cohorts across ${allPrograms.length} programs`);
+    console.log(`Total pending students: ${allPendingStudents.reduce((sum, p) => sum + p.students, 0)}`);
 
     // Return the created cohorts with populated data
-    const populatedCohorts = await Cohort.find({ schoolId: schoolId })
+    const populatedCohorts = await Cohort.find({ 
+      schoolId: schoolId,
+      status: 'active'
+    })
       .populate("schoolId", "name")
       .populate("tutorId", "name email")
+      .populate("programId", "name subject")
       .sort({ createdAt: -1 });
 
+    // Calculate total pending students
+    const totalPendingStudents = allPendingStudents.reduce(
+      (sum, p) => sum + p.students,
+      0
+    );
+
     res.status(201).json({
-      message: `Successfully generated ${createdCohorts.length} optimal cohorts`,
+      message: `Successfully generated ${allCreatedCohorts.length} active cohorts across ${programResults.length} programs${totalPendingStudents > 0 ? ` with ${totalPendingStudents} students pending` : ''}`,
       cohorts: populatedCohorts,
-      studentsAssigned: students.length,
-      levelDistribution: levelInputs,
+      studentsAssigned: totalStudentsAssigned,
+      pendingStudents: allPendingStudents,
+      totalPendingStudents,
+      strategy,
+      capacityLimit: capacity,
+      programsProcessed: programResults.length,
+      programResults, // Breakdown by program
     });
   } catch (error: any) {
     console.error("Error generating optimal cohorts:", error);

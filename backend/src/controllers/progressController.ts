@@ -211,14 +211,31 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
 export const getTutorProgressSummary = async (req: AuthRequest, res: Response) => {
   try {
     const tutorId = req.user?._id;
+    const { schoolId } = req.query;
+    const UserRole = require("../configs/roles").UserRole;
 
-    const cohorts = await Cohort.find({ tutorId })
-      .populate('students', 'name')
+    // Build query - only active cohorts
+    const query: any = { status: 'active' };
+    
+    // For tutors, only show their cohorts. For super admins, show all (or filtered by schoolId)
+    if (req.user?.role === UserRole.TUTOR) {
+      query.tutorId = tutorId;
+    }
+    
+    // If schoolId is provided, filter by school
+    if (schoolId) {
+      query.schoolId = schoolId;
+    }
+
+    const cohorts = await Cohort.find(query)
+      .populate('students', 'name roll_no class')
       .populate('schoolId', 'name')
-      .populate('programId');
+      .populate('tutorId', 'name email')
+      .populate('programId')
+      .sort({ createdAt: -1 }); // Most recent first
 
-    const summaryData = cohorts.map((cohort: any) => {
-      const totalStudents = cohort.students.length;
+    const summaryData = await Promise.all(cohorts.map(async (cohort: any) => {
+      const totalStudents = cohort.students?.length || 0;
       const progressCounts = {
         green: 0,
         yellow: 0,
@@ -226,19 +243,29 @@ export const getTutorProgressSummary = async (req: AuthRequest, res: Response) =
         red: 0
       };
 
-      // Count students by progress status
-      cohort.progress.forEach((progress: any) => {
-        if (progressCounts.hasOwnProperty(progress.status)) {
-          progressCounts[progress.status as keyof typeof progressCounts]++;
-        }
-      });
+      // Count students by progress status - if no progress records, assume all are green
+      if (cohort.progress && cohort.progress.length > 0) {
+        cohort.progress.forEach((progress: any) => {
+          if (progressCounts.hasOwnProperty(progress.status)) {
+            progressCounts[progress.status as keyof typeof progressCounts]++;
+          }
+        });
+      } else {
+        // No progress records yet - all students default to green
+        progressCounts.green = totalStudents;
+      }
 
       // Calculate level distribution
       const levelDistribution: { [key: number]: number } = {};
-      cohort.progress.forEach((progress: any) => {
-        const level = progress.currentLevel;
-        levelDistribution[level] = (levelDistribution[level] || 0) + 1;
-      });
+      if (cohort.progress && cohort.progress.length > 0) {
+        cohort.progress.forEach((progress: any) => {
+          const level = progress.currentLevel;
+          levelDistribution[level] = (levelDistribution[level] || 0) + 1;
+        });
+      } else if (totalStudents > 0 && cohort.currentLevel) {
+        // If no progress records but cohort has a currentLevel, use that
+        levelDistribution[cohort.currentLevel] = totalStudents;
+      }
 
       // Calculate time tracking if program is available
       let timeTracking = null;
@@ -299,6 +326,17 @@ export const getTutorProgressSummary = async (req: AuthRequest, res: Response) =
         };
       }
 
+      // Calculate level progress based on attendance
+      let levelProgress = null;
+      if (cohort.programId) {
+        const { calculateLevelProgress } = require("../lib/cohortProgressHelper");
+        try {
+          levelProgress = await calculateLevelProgress(cohort);
+        } catch (error) {
+          logger.error("Error calculating level progress:", error);
+        }
+      }
+
       return {
         cohort: {
           _id: cohort._id,
@@ -309,7 +347,8 @@ export const getTutorProgressSummary = async (req: AuthRequest, res: Response) =
             name: cohort.programId.name,
             subject: cohort.programId.subject,
             totalLevels: cohort.programId.totalLevels
-          } : null
+          } : null,
+          currentLevel: cohort.currentLevel || 1
         },
         summary: {
           totalStudents,
@@ -317,9 +356,10 @@ export const getTutorProgressSummary = async (req: AuthRequest, res: Response) =
           levelDistribution,
           studentsNeedingAttention: progressCounts.yellow + progressCounts.orange + progressCounts.red
         },
-        timeTracking
+        timeTracking,
+        levelProgress // Add level progress information
       };
-    });
+    }));
 
     res.json(summaryData);
   } catch (error: any) {

@@ -10,7 +10,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "serve": "node dist/index.js",
-    "bootstrapSuperAdmin": "ts-node src/utils/bootstrapSuperAdmin.ts"
+    "bootstrapSuperAdmin": "ts-node src/utils/bootstrapSuperAdmin.ts",
+    "test:attendance-progress": "tsx src/scripts/testAttendanceProgress.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

@@ -55,6 +55,8 @@
  * ------------------------------------------------------------
  */
 
+export type GenerationStrategy = 'high-first' | 'low-first';
+
 export interface LevelInput {
   level: number | string;
   students: number;
@@ -63,6 +65,16 @@ export interface LevelInput {
 export interface CohortPlan {
   level: number | string;
   cohorts: number[];
+}
+
+export interface GenerationResult {
+  activeCohorts: CohortPlan[];
+  pendingStudents: Array<{
+    level: number | string;
+    students: number;
+  }>;
+  totalCohorts: number;
+  activeCohortsCount: number;
 }
 
 /**
@@ -134,13 +146,99 @@ export function createCohorts(
  * Generate cohort plans for multiple levels.
  *
  * @param levels - list of levels with student counts
- * @returns array of cohort plans for each level
+ * @param strategy - 'high-first' to prioritize high levels, 'low-first' to prioritize low levels
+ * @param maxActiveCohorts - maximum number of active cohorts (default: 5)
+ * @returns generation result with active cohorts and pending students
  */
-export function generateCohortPlan(levels: LevelInput[]): CohortPlan[] {
-  return levels.map(({ level, students }) => ({
+export function generateCohortPlan(
+  levels: LevelInput[],
+  strategy: GenerationStrategy = 'low-first',
+  maxActiveCohorts: number = 5
+): GenerationResult {
+  // Sort levels based on strategy
+  const sortedLevels = [...levels].sort((a, b) => {
+    const levelA = typeof a.level === 'number' ? a.level : parseInt(String(a.level));
+    const levelB = typeof b.level === 'number' ? b.level : parseInt(String(b.level));
+    
+    if (strategy === 'high-first') {
+      return levelB - levelA; // Descending: high levels first
+    } else {
+      return levelA - levelB; // Ascending: low levels first
+    }
+  });
+
+  // Generate all cohort plans
+  const allPlans: CohortPlan[] = sortedLevels.map(({ level, students }) => ({
     level,
     cohorts: createCohorts(students),
   }));
+
+  // Calculate total number of cohorts
+  const totalCohorts = allPlans.reduce((sum, plan) => sum + plan.cohorts.length, 0);
+
+  // If total cohorts <= maxActiveCohorts, all are active
+  if (totalCohorts <= maxActiveCohorts) {
+    return {
+      activeCohorts: allPlans,
+      pendingStudents: [],
+      totalCohorts,
+      activeCohortsCount: totalCohorts,
+    };
+  }
+
+  // Otherwise, we need to split into active and pending
+  let activeCohortsCount = 0;
+  const activeCohorts: CohortPlan[] = [];
+  const pendingStudents: Array<{ level: number | string; students: number }> = [];
+  let remainingCapacity = maxActiveCohorts;
+
+  for (const plan of allPlans) {
+    const cohortsInThisLevel = plan.cohorts.length;
+    
+    if (remainingCapacity >= cohortsInThisLevel) {
+      // All cohorts in this level can be active
+      activeCohorts.push(plan);
+      activeCohortsCount += cohortsInThisLevel;
+      remainingCapacity -= cohortsInThisLevel;
+    } else if (remainingCapacity > 0) {
+      // Partial: some cohorts active, rest pending
+      const activeCohortsForLevel = plan.cohorts.slice(0, remainingCapacity);
+      const pendingCohortsForLevel = plan.cohorts.slice(remainingCapacity);
+      
+      activeCohorts.push({
+        level: plan.level,
+        cohorts: activeCohortsForLevel,
+      });
+      activeCohortsCount += activeCohortsForLevel.length;
+      
+      // Calculate pending students
+      const pendingCount = pendingCohortsForLevel.reduce((sum, size) => sum + size, 0);
+      if (pendingCount > 0) {
+        pendingStudents.push({
+          level: plan.level,
+          students: pendingCount,
+        });
+      }
+      
+      remainingCapacity = 0;
+    } else {
+      // All remaining cohorts go to pending
+      const pendingCount = plan.cohorts.reduce((sum, size) => sum + size, 0);
+      if (pendingCount > 0) {
+        pendingStudents.push({
+          level: plan.level,
+          students: pendingCount,
+        });
+      }
+    }
+  }
+
+  return {
+    activeCohorts,
+    pendingStudents,
+    totalCohorts,
+    activeCohortsCount,
+  };
 }
 
 /**

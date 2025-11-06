@@ -8,6 +8,8 @@ import {
   addStudentToCohort,
   addStudentToDefaultCohort,
   generateOptimalCohorts,
+  checkAssessmentReadiness,
+  toggleCohortHoliday,
 } from "../controllers/cohortController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
@@ -59,6 +61,20 @@ cohortRouter.post(
   "/generate-optimal",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   generateOptimalCohorts
+);
+
+// Check if cohort is ready for level-up assessment
+cohortRouter.get(
+  "/:id/assessment-readiness",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  checkAssessmentReadiness
+);
+
+// Mark/unmark a date as holiday for a cohort
+cohortRouter.post(
+  "/:id/toggle-holiday",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  toggleCohortHoliday
 );
 
 export default cohortRouter;

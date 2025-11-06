@@ -42,10 +42,12 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
   return (
     <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Target className="h-5 w-5 text-blue-600" />
-          Program Timeline Progress
-          <Badge variant="outline" className="ml-auto">
+        <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row items-start sm:items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+            <span className="truncate">Program Timeline Progress</span>
+          </div>
+          <Badge variant="outline" className="ml-0 sm:ml-auto self-start sm:self-auto">
             {programName || 'Program'}
           </Badge>
         </CardTitle>
@@ -54,9 +56,9 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
       <CardContent className="space-y-6">
         {/* Overall Program Progress */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">Overall Program Progress</h3>
-            <span className="text-sm font-medium text-blue-600">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <h3 className="font-medium text-sm sm:text-base text-gray-900">Overall Program Progress</h3>
+            <span className="text-xs sm:text-sm font-medium text-blue-600">
               {overallProgress.toFixed(1)}% Complete
             </span>
           </div>
@@ -76,20 +78,20 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="p-2 bg-white rounded border">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
+            <div className="p-2 sm:p-3 bg-white rounded border">
               <p className="text-xs text-gray-500">Start Date</p>
-              <p className="font-medium text-sm">
+              <p className="font-medium text-xs sm:text-sm">
                 {new Date(timeTracking.cohortStartDate).toLocaleDateString()}
               </p>
             </div>
-            <div className="p-2 bg-white rounded border">
+            <div className="p-2 sm:p-3 bg-white rounded border">
               <p className="text-xs text-gray-500">Total Duration</p>
-              <p className="font-medium text-sm">{timeTracking.totalDurationWeeks} weeks</p>
+              <p className="font-medium text-xs sm:text-sm">{timeTracking.totalDurationWeeks} weeks</p>
             </div>
-            <div className="p-2 bg-white rounded border">
+            <div className="p-2 sm:p-3 bg-white rounded border">
               <p className="text-xs text-gray-500">Est. Completion</p>
-              <p className="font-medium text-sm">
+              <p className="font-medium text-xs sm:text-sm">
                 {new Date(timeTracking.estimatedCompletionDate).toLocaleDateString()}
               </p>
             </div>
@@ -99,11 +101,11 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
         {/* Current Level Progress */}
         {timeTracking.currentLevelTimeframe && (
           <div className="space-y-3 pt-4 border-t border-blue-200">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium text-gray-900">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h3 className="font-medium text-sm sm:text-base text-gray-900">
                 Current Level {timeTracking.currentLevelTimeframe.level} Progress
               </h3>
-              <span className="text-sm font-medium text-indigo-600">
+              <span className="text-xs sm:text-sm font-medium text-indigo-600">
                 {currentLevelProgress.toFixed(1)}%
               </span>
             </div>
@@ -116,7 +118,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
               } as React.CSSProperties}
             />
             
-            <div className="text-sm text-gray-600">
+            <div className="text-xs sm:text-sm text-gray-600">
               Duration: {timeTracking.currentLevelTimeframe.durationWeeks} weeks
             </div>
           </div>
@@ -134,7 +136,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
               urgency.color === 'orange' ? 'text-orange-600' :
               'text-green-600'
             }`} />
-            <h3 className={`font-medium ${
+            <h3 className={`font-medium text-sm sm:text-base ${
               urgency.color === 'red' ? 'text-red-900' :
               urgency.color === 'orange' ? 'text-orange-900' :
               'text-green-900'
@@ -143,7 +145,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
             </h3>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
             <div>
               <p className={`${
                 urgency.color === 'red' ? 'text-red-600' :
@@ -180,16 +182,16 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
 
           {/* Action based on urgency */}
           {urgency.color === 'red' && (
-            <div className="mt-3 p-2 bg-red-100 rounded border border-red-200">
-              <p className="text-sm text-red-800 font-medium">
+            <div className="mt-3 p-2 sm:p-3 bg-red-100 rounded border border-red-200">
+              <p className="text-xs sm:text-sm text-red-800 font-medium">
                 🚨 Action Required: Schedule assessment immediately or update progress
               </p>
             </div>
           )}
           
           {urgency.color === 'orange' && (
-            <div className="mt-3 p-2 bg-orange-100 rounded border border-orange-200">
-              <p className="text-sm text-orange-800 font-medium">
+            <div className="mt-3 p-2 sm:p-3 bg-orange-100 rounded border border-orange-200">
+              <p className="text-xs sm:text-sm text-orange-800 font-medium">
                 ⚠️ Reminder: Assessment due within a week - prepare students
               </p>
             </div>

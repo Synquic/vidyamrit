@@ -74,7 +74,8 @@ function ManageCohorts() {
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null);
   const [deletingCohort, setDeletingCohort] = useState<Cohort | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+  const [generationStrategy, setGenerationStrategy] = useState<'high-first' | 'low-first'>('low-first');
+  const [capacityLimit, setCapacityLimit] = useState<number>(5);
   const [formData, setFormData] = useState<CreateCohortDTO>({
     name: "",
     schoolId: "",
@@ -151,6 +152,10 @@ function ManageCohorts() {
       queryClient.invalidateQueries({
         queryKey: ["cohorts", selectedSchool?._id],
       });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["progress"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-progress-summary"] });
       handleCloseDialog();
       toast.success("Cohort created successfully");
     },
@@ -199,9 +204,23 @@ function ManageCohorts() {
       });
       queryClient.invalidateQueries({ queryKey: ["student-cohort-status"] });
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      // Invalidate attendance and progress queries so new cohorts show up immediately
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["progress"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["tutor-progress-summary"] });
       setIsGenerating(false);
+      
+      const pendingMsg = data.totalPendingStudents > 0 
+        ? ` ${data.totalPendingStudents} students are pending for later assignment.`
+        : '';
+      
+      const programBreakdown = data.programResults && data.programResults.length > 0
+        ? ` (${data.programResults.map(r => `${r.programSubject}: ${r.cohortsCreated}`).join(', ')})`
+        : '';
+      
       toast.success(
-        `Successfully generated ${data.cohorts.length} optimal cohorts for ${data.studentsAssigned} students!`
+        `Successfully generated ${data.cohorts.length} active cohorts across ${data.programsProcessed} programs for ${data.studentsAssigned} students!${pendingMsg}`
       );
     },
     onError: (error: any) => {
@@ -263,8 +282,8 @@ function ManageCohorts() {
       return;
     }
 
-    if (!selectedProgramId) {
-      toast.error("Please select a program for cohort generation");
+    if (programs.length === 0) {
+      toast.error("No active programs found. Please create at least one active program.");
       return;
     }
 
@@ -276,7 +295,8 @@ function ManageCohorts() {
     setIsGenerating(true);
     generateCohortsMutation.mutate({ 
       schoolId: selectedSchool._id,
-      programId: selectedProgramId 
+      strategy: generationStrategy,
+      capacityLimit: capacityLimit
     });
   };
 
@@ -342,29 +362,78 @@ function ManageCohorts() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {cohortStatus && cohortStatus.studentsAwaitingAssignment > 0 && (
             <>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="program-select" className="text-sm whitespace-nowrap">
-                  Program:
-                </Label>
-                <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
-                  <SelectTrigger id="program-select" className="w-48">
-                    <SelectValue placeholder="Select program" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {programs.map((program) => (
-                      <SelectItem key={program._id} value={program._id}>
-                        {program.name} ({program.subject})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Info about automatic program processing */}
+              {programs.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
+                  <Sparkles className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-800">
+                    Will generate cohorts for all {programs.length} active program{programs.length > 1 ? 's' : ''}: {programs.map(p => p.subject).join(', ')}
+                  </span>
+                </div>
+              )}
+              
+              {/* Strategy Selection */}
+              <div className="flex items-center gap-3 border rounded-md px-3 py-2">
+                <Label className="text-sm font-medium">Strategy:</Label>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="low-first"
+                      name="strategy"
+                      value="low-first"
+                      checked={generationStrategy === 'low-first'}
+                      onChange={(e) => setGenerationStrategy(e.target.value as 'low-first')}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="low-first" className="text-sm cursor-pointer">
+                      Low First
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      id="high-first"
+                      name="strategy"
+                      value="high-first"
+                      checked={generationStrategy === 'high-first'}
+                      onChange={(e) => setGenerationStrategy(e.target.value as 'high-first')}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="high-first" className="text-sm cursor-pointer">
+                      High First
+                    </Label>
+                  </div>
+                </div>
               </div>
+
+              {/* Capacity Limit */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="capacity-limit" className="text-sm whitespace-nowrap">
+                  Max Active:
+                </Label>
+                <Input
+                  id="capacity-limit"
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={capacityLimit}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val >= 1 && val <= 20) {
+                      setCapacityLimit(val);
+                    }
+                  }}
+                  className="w-20"
+                />
+              </div>
+
               <Button
                 onClick={handleGenerateCohorts}
-                disabled={isGenerating || !selectedProgramId}
+                disabled={isGenerating || programs.length === 0}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {isGenerating ? (
@@ -372,7 +441,7 @@ function ManageCohorts() {
                 ) : (
                   <Sparkles className="mr-2 h-4 w-4" />
                 )}
-                {isGenerating ? "Generating..." : "Generate Optimal Cohorts"}
+                {isGenerating ? "Generating..." : `Generate Cohorts for All Programs`}
               </Button>
             </>
           )}
@@ -423,9 +492,72 @@ function ManageCohorts() {
               <p className="text-sm text-blue-800">
                 <strong>💡 Recommendation:</strong> Use automated cohort
                 generation for most efficient grouping. Our algorithm creates
-                optimal cohorts of 5-30 students based on assessment levels,
-                ensuring balanced learning groups.
+                optimal cohorts based on assessment levels and your capacity limit.
+                Choose a strategy (Low First or High First) and set the maximum
+                number of active cohorts you can teach simultaneously.
               </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pending Students Display */}
+      {generateCohortsMutation.data?.totalPendingStudents > 0 && (
+        <div className="mb-6 p-4 border border-orange-200 bg-orange-50 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <h3 className="font-semibold text-orange-900">
+                Pending Students ({generateCohortsMutation.data.totalPendingStudents})
+              </h3>
+            </div>
+            <Badge variant="outline" className="bg-orange-100 text-orange-700">
+              Will be assigned after active cohorts complete
+            </Badge>
+          </div>
+          <p className="text-sm text-orange-800 mb-3">
+            These students have been assessed but are not yet assigned to cohorts
+            due to capacity constraints. They will be available for cohort creation
+            once the current active cohorts are completed.
+          </p>
+          <div className="space-y-3">
+            {/* Group by program */}
+            {Array.from(new Set(generateCohortsMutation.data.pendingStudents.map(p => p.program))).map(programName => {
+              const programPending = generateCohortsMutation.data.pendingStudents.filter(p => p.program === programName);
+              return (
+                <div key={programName} className="bg-white rounded-md p-3 border border-orange-200">
+                  <div className="font-semibold text-orange-800 mb-2">{programName}</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {programPending.map((pending, idx) => (
+                      <div key={idx} className="text-center">
+                        <div className="text-base font-bold text-orange-700">
+                          Level {pending.level}
+                        </div>
+                        <div className="text-xs text-orange-600">
+                          {pending.students} students
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Program Results Summary */}
+          {generateCohortsMutation.data.programResults && generateCohortsMutation.data.programResults.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-orange-300">
+              <h4 className="text-sm font-semibold text-orange-900 mb-2">Generation Summary by Program:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {generateCohortsMutation.data.programResults.map((result, idx) => (
+                  <div key={idx} className="bg-white rounded p-2 border border-orange-200">
+                    <div className="font-medium text-sm text-orange-800">{result.programSubject.toUpperCase()}</div>
+                    <div className="text-xs text-orange-600 mt-1">
+                      {result.cohortsCreated} cohorts • {result.studentsAssigned} students • {result.pendingStudents} pending
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -15,6 +15,7 @@ export interface School {
   pinCode: string;
   pointOfContact: string;
   phone: string;
+  block?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -70,6 +70,7 @@ function ManageSchools() {
     pinCode: "",
     pointOfContact: "",
     phone: "",
+    block: "",
     pointOfContacts: [{ name: "", phone: "" }],
   });
 
@@ -134,6 +135,7 @@ function ManageSchools() {
       pinCode: school.pinCode,
       pointOfContact: school.pointOfContact || "",
       phone: school.phone || "",
+      block: school.block || "",
       pointOfContacts:
         (school as any).pointOfContacts && (school as any).pointOfContacts.length
           ? (school as any).pointOfContacts
@@ -162,6 +164,7 @@ function ManageSchools() {
       pinCode: "",
       pointOfContact: "",
       phone: "",
+      block: "",
       pointOfContacts: [{ name: "", phone: "" }],
     });
   };
@@ -207,6 +210,7 @@ function ManageSchools() {
               pinCode: "",
               pointOfContact: "",
               phone: "",
+              block: "",
               pointOfContacts: [{ name: "", phone: "" }],
             });
             setIsDialogOpen(true);
@@ -278,12 +282,19 @@ function ManageSchools() {
             return (
               <Card key={school._id} className="overflow-hidden shadow-lg">
                 <div className={`p-4 flex items-center justify-between ${headerClasses}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-md bg-white/20 flex items-center justify-center text-lg font-semibold">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="h-12 w-12 rounded-md bg-white/20 flex items-center justify-center text-lg font-semibold flex-shrink-0">
                       {initials}
                     </div>
-                    <div>
-                      <div className="text-lg font-semibold leading-tight">{school.name}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="text-lg font-semibold leading-tight truncate">{school.name}</div>
+                        {school.block && (
+                          <span className="text-xs opacity-90 px-2 py-0.5 bg-white/20 rounded border border-white/30">
+                            {school.block}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-sm opacity-90 mt-0.5">{school.city} • <span className="uppercase">{school.level}</span></div>
                     </div>
                   </div>
@@ -410,18 +421,42 @@ function ManageSchools() {
                 </div>
               </div>
 
-              {/* UDISE Code */}
-              <div className="space-y-2">
-                <Label htmlFor="name">School Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  className="w-full"
-                />
+              {/* School Name & Block */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                <div className="space-y-2 col-span-1 sm:col-span-3">
+                  <Label htmlFor="name">School Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2 col-span-1">
+                  <Label htmlFor="block">Block</Label>
+                  <Select
+                    value={formData.block || ""}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, block: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select block" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Indore Urban 1">Indore Urban 1</SelectItem>
+                      <SelectItem value="Indore Urban 2">Indore Urban 2</SelectItem>
+                      <SelectItem value="Indore Rural">Indore Rural</SelectItem>
+                      <SelectItem value="Sanwer">Sanwer</SelectItem>
+                      <SelectItem value="Mhow">Mhow</SelectItem>
+                      <SelectItem value="Depalpur">Depalpur</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
 
               {/* Address */}
               <div className="space-y-2">

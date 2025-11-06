@@ -31,14 +31,10 @@ import ManageTutors from "@/pages/dashboard/ManageTutors";
 import ManagePrograms from "@/pages/dashboard/ManagePrograms";
 
 // Attendance Pages
-// import CohortAttendance from "@/pages/attendance/CohortAttendance";
-import TutorAttendance from "@/pages/dashboard/attendance/TutorAttendance";
+import AttendanceManagement from "@/pages/dashboard/AttendanceManagement";
 
 // Progress Pages
-import {
-  // CohortProgress,
-  TutorProgress,
-} from "@/pages/dashboard/progress";
+import ProgressManagement from "@/pages/dashboard/ProgressManagement";
 
 export const router = createBrowserRouter([
   {
@@ -156,7 +152,19 @@ export const router = createBrowserRouter([
               routePermissions[DASHBOARD_ROUTE_PATHS.attendanceManagement]
             }
           >
-            <TutorAttendance />
+            <AttendanceManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: `${DASHBOARD_ROUTE_PATHS.attendanceManagement}/cohort/:cohortId`,
+        element: (
+          <ProtectedRoute
+            requiredRole={
+              routePermissions[DASHBOARD_ROUTE_PATHS.attendanceManagement]
+            }
+          >
+            <AttendanceManagement />
           </ProtectedRoute>
         ),
       },
@@ -176,7 +184,17 @@ export const router = createBrowserRouter([
           <ProtectedRoute
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
           >
-            <TutorProgress />
+            <ProgressManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/progress/cohort/:cohortId",
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
+          >
+            <ProgressManagement />
           </ProtectedRoute>
         ),
       },

@@ -10,6 +10,7 @@ import programRouter from "./ProgramRoutes";
 import volunteerRouter from "./VolunteerRoutes";
 import progressRouter from "./ProgressRoutes";
 import baselineAssessmentRouter from "./BaselineAssessmentRoutes";
+import levelAssessmentRouter from "./LevelAssessmentRoutes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.use("/assessments", assessmentRouter);
 router.use("/attendance", attendanceRouter);
 router.use("/users", userRoutes);
 router.use("/baseline-assessments", baselineAssessmentRouter);
+router.use("/level-assessments", levelAssessmentRouter);
 router.use("/cohorts", cohortRouter);
 router.use("/programs", programRouter);
 router.use("/progress", progressRouter);

@@ -1,5 +1,7 @@
 import mongoose, { Document } from "mongoose";
 
+export type CohortStatus = 'active' | 'pending' | 'completed' | 'archived';
+
 export interface ICohort extends Document {
   name: string;
   schoolId: mongoose.Types.ObjectId;
@@ -8,6 +10,7 @@ export interface ICohort extends Document {
   currentLevel: number; // Current level the cohort is working on
   startDate: Date; // When the cohort started
   estimatedCompletionDate?: Date; // Calculated based on program timeline
+  status: CohortStatus; // Status of the cohort (active, pending, completed, archived)
   students: Array<{
     _id: string;
   }>;
@@ -40,6 +43,8 @@ export interface ICohort extends Document {
     expectedDaysForCurrentLevel: number; // Expected days based on program timeframe
     totalExpectedDays: number; // Total days for entire program
   };
+  // Holidays - dates when teaching doesn't happen (Sundays are automatically excluded)
+  holidays?: Date[]; // Array of holiday dates
   createdAt: Date;
   updatedAt: Date;
 }
@@ -113,6 +118,11 @@ const CohortSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  status: {
+    type: String,
+    enum: ['active', 'pending', 'completed', 'archived'],
+    default: 'active',
+  },
   estimatedCompletionDate: {
     type: Date,
     required: false,
@@ -130,6 +140,10 @@ const CohortSchema = new mongoose.Schema({
     type: TimeTrackingSchema,
     required: false, // Optional for backward compatibility
   },
+  holidays: [{
+    type: Date,
+    required: false,
+  }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

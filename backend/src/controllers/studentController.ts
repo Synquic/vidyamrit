@@ -283,20 +283,39 @@ export const getStudentCohortStatus = async (
       (student) => student.knowledgeLevel && student.knowledgeLevel.length > 0
     );
 
-    // Filter students who are in cohorts (have active cohort membership)
+    // Get all active cohorts for this school to verify cohort existence
+    const Cohort = require("../models/CohortModel").default;
+    const activeCohorts = await Cohort.find({ 
+      schoolId: schoolId,
+      status: 'active'
+    }).select('_id');
+
+    const activeCohortIds = new Set(activeCohorts.map((c: any) => c._id.toString()));
+
+    // Filter students who are in cohorts (have active cohort membership AND cohort exists and is active)
     const studentsInCohorts = studentsWithAssessments.filter(
       (student) =>
         student.cohort &&
         student.cohort.length > 0 &&
-        student.cohort.some((c) => !c.dateLeaved) // Has active cohort membership
+        student.cohort.some((c) => {
+          // Check if cohort membership is active (no dateLeaved) AND cohort exists and is active
+          const hasActiveMembership = !c.dateLeaved;
+          const cohortExists = c.cohortId && activeCohortIds.has(c.cohortId.toString());
+          return hasActiveMembership && cohortExists;
+        })
     );
 
-    // Students awaiting assignment (have assessments but not in cohorts)
+    // Students awaiting assignment (have assessments but not in active cohorts)
     const studentsAwaitingAssignment = studentsWithAssessments.filter(
       (student) =>
         !student.cohort ||
         student.cohort.length === 0 ||
-        !student.cohort.some((c) => !c.dateLeaved) // No active cohort membership
+        !student.cohort.some((c) => {
+          // Check if cohort membership is active AND cohort exists and is active
+          const hasActiveMembership = !c.dateLeaved;
+          const cohortExists = c.cohortId && activeCohortIds.has(c.cohortId.toString());
+          return hasActiveMembership && cohortExists;
+        })
     );
 
     res.json({
