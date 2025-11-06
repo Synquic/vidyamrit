@@ -264,7 +264,10 @@ export default function TutorProgress() {
                   {/* Enhanced Time Tracking Section */}
                   {summary.timeTracking ? (
                     <TimelineProgress
-                      timeTracking={summary.timeTracking}
+                      timeTracking={{
+                        ...summary.timeTracking,
+                        currentLevelTimeframe: summary.timeTracking.currentLevelTimeframe || undefined
+                      }}
                       programName={summary.cohort.program?.name}
                     />
                   ) : (

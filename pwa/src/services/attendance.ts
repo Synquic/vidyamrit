@@ -199,6 +199,7 @@ export interface CohortAttendanceData {
       roll_no: string;
       class: string;
     }>;
+    holidays?: string[];
   };
   attendance: {
     [date: string]: Array<{

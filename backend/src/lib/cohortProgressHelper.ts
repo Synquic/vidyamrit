@@ -31,7 +31,7 @@ export function calculateWeeksFromAttendance(attendanceDates: Date[]): number {
   
   // Count unique calendar weeks (Monday to Sunday)
   // A week is counted if there's at least one attendance day in that week
-  const weeksSet = new Set<number>();
+  const weeksSet = new Set<string>();
   
   uniqueDates.forEach((date) => {
     // Get week number based on year and week

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -14,8 +14,6 @@ import {
   getTutorAttendanceSummary, 
   getCohortAttendance,
   recordCohortAttendance,
-  TutorAttendanceSummary,
-  CohortAttendanceData,
   AttendanceStatus,
   CohortAttendanceRecord
 } from '@/services/attendance';
@@ -29,7 +27,6 @@ function AttendanceOverview() {
   const { t } = useTranslation();
   const { selectedSchool, isSchoolContextActive } = useSchoolContext();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const queryClient = useQueryClient();
 
   const schoolId = isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
 

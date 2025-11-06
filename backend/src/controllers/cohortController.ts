@@ -437,7 +437,7 @@ export const generateOptimalCohorts = async (
       },
     });
     const activeCohortStudentIds = new Set(
-      studentsInActiveCohorts.map((s) => s._id.toString())
+      studentsInActiveCohorts.map((s: any) => s._id.toString())
     );
 
     // Aggregate results across all programs

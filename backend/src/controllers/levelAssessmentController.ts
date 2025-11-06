@@ -29,8 +29,8 @@ export const getLevelAssessmentQuestions = async (req: AuthRequest, res: Respons
     }
 
     // Get program (if not already populated, fetch it)
-    let program = cohort.programId;
-    if (typeof program.toObject === 'function') {
+    let program: any = cohort.programId;
+    if (typeof (program as any)?.toObject === 'function') {
       // It's already a Mongoose document
     } else {
       program = await Program.findById(cohort.programId);
@@ -124,8 +124,8 @@ export const conductLevelAssessment = async (req: AuthRequest, res: Response) =>
     }
 
     // Get program
-    let program = cohort.programId;
-    if (typeof program.toObject === 'function') {
+    let program: any = cohort.programId;
+    if (typeof (program as any)?.toObject === 'function') {
       // It's already a Mongoose document
     } else {
       program = await Program.findById(cohort.programId);

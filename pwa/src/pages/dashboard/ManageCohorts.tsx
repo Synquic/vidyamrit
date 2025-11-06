@@ -215,10 +215,6 @@ function ManageCohorts() {
         ? ` ${data.totalPendingStudents} students are pending for later assignment.`
         : '';
       
-      const programBreakdown = data.programResults && data.programResults.length > 0
-        ? ` (${data.programResults.map(r => `${r.programSubject}: ${r.cohortsCreated}`).join(', ')})`
-        : '';
-      
       toast.success(
         `Successfully generated ${data.cohorts.length} active cohorts across ${data.programsProcessed} programs for ${data.studentsAssigned} students!${pendingMsg}`
       );
@@ -251,10 +247,12 @@ function ManageCohorts() {
 
   const handleEdit = (cohort: Cohort) => {
     setEditingCohort(cohort);
+    const schoolIdValue = typeof cohort.schoolId === "string" ? cohort.schoolId : cohort.schoolId._id;
+    const tutorIdValue = typeof cohort.tutorId === "string" ? cohort.tutorId : cohort.tutorId._id;
     setFormData({
       name: cohort.name,
-      schoolId: cohort.schoolId._id,
-      tutorId: cohort.tutorId._id,
+      schoolId: schoolIdValue,
+      tutorId: tutorIdValue,
       students: cohort.students,
     });
     setIsOpen(true);
@@ -502,7 +500,7 @@ function ManageCohorts() {
       )}
 
       {/* Pending Students Display */}
-      {generateCohortsMutation.data?.totalPendingStudents > 0 && (
+      {generateCohortsMutation.data && generateCohortsMutation.data.totalPendingStudents > 0 && (
         <div className="mb-6 p-4 border border-orange-200 bg-orange-50 rounded-lg">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -522,7 +520,7 @@ function ManageCohorts() {
           </p>
           <div className="space-y-3">
             {/* Group by program */}
-            {Array.from(new Set(generateCohortsMutation.data.pendingStudents.map(p => p.program))).map(programName => {
+            {generateCohortsMutation.data.pendingStudents && Array.from(new Set(generateCohortsMutation.data.pendingStudents.map(p => p.program))).map(programName => {
               const programPending = generateCohortsMutation.data.pendingStudents.filter(p => p.program === programName);
               return (
                 <div key={programName} className="bg-white rounded-md p-3 border border-orange-200">

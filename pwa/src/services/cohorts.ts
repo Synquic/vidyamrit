@@ -6,8 +6,8 @@ const baseUrl = `${apiUrl}/cohorts`;
 export interface Cohort {
   _id: string;
   name: string;
-  schoolId: string;
-  tutorId: string;
+  schoolId: string | { _id: string; name: string };
+  tutorId: string | { _id: string; name: string };
   programId?: string;
   currentLevel?: number;
   startDate?: string;

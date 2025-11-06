@@ -59,7 +59,7 @@ async function setupTestData() {
   } else {
     console.log('✅ Found existing test school:', school._id);
   }
-  TEST_CONFIG.SCHOOL_ID = school._id.toString();
+  TEST_CONFIG.SCHOOL_ID = (school._id as any).toString();
 
   // Find or create test tutor
   let tutor = await User.findOne({ email: 'test-tutor@attendance.com' });
@@ -129,7 +129,7 @@ async function setupTestData() {
   } else {
     console.log('✅ Found existing test program:', program._id);
   }
-  TEST_CONFIG.PROGRAM_ID = program._id.toString();
+  TEST_CONFIG.PROGRAM_ID = (program._id as any).toString();
 
   // Find or create test students
   const students = [];
@@ -193,14 +193,14 @@ async function setupTestData() {
     console.log('✅ Created test cohort:', cohort._id);
   } else {
     // Update existing cohort
-    cohort.students = students;
-    cohort.programId = program._id;
+    cohort.students = students as any;
+    cohort.programId = program._id as any;
     cohort.currentLevel = 1;
     cohort.attendance = [];
     await cohort.save();
     console.log('✅ Updated existing test cohort:', cohort._id);
   }
-  TEST_CONFIG.COHORT_ID = cohort._id.toString();
+  TEST_CONFIG.COHORT_ID = (cohort._id as any).toString();
 
   console.log('\n✅ Test data setup complete!\n');
   return { cohort, program, students };
