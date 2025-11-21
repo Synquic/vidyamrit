@@ -40,7 +40,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, BookOpen, Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Users, BookOpen, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function BaselineAssessmentsPage() {
@@ -48,6 +56,7 @@ export default function BaselineAssessmentsPage() {
   const { selectedSchool } = useSchoolContext();
   const [students, setStudents] = useState<Student[]>([]);
   const [todaysAssessments, setTodaysAssessments] = useState<Assessment[]>([]);
+  const [allAssessments, setAllAssessments] = useState<Assessment[]>([]);
   const [programs, setPrograms] = useState<IProgram[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +85,9 @@ export default function BaselineAssessmentsPage() {
     if (selectedSchool && selectedSchool._id) {
       fetchStudents();
       fetchTodaysAssessments();
+      if (selectedSchool._id) {
+        fetchAllAssessments(selectedSchool._id);
+      }
     }
   }, [selectedSchool]);
 
@@ -120,8 +132,10 @@ export default function BaselineAssessmentsPage() {
     try {
       const data = await getStudents(selectedSchool._id);
       setStudents(data);
+      return data;
     } catch {
       setError("Failed to fetch students");
+      return [];
     }
   };
 
@@ -139,9 +153,29 @@ export default function BaselineAssessmentsPage() {
       });
 
       setTodaysAssessments(todaysOnly);
+      return todaysOnly;
     } catch {
       // Don't show error for assessments, it's not critical
       setTodaysAssessments([]);
+      return [];
+    }
+  };
+
+  const fetchAllAssessments = async (schoolId: string) => {
+    try {
+      const assessments = await getAssessments();
+      // Filter assessments by selected school
+      const schoolAssessments = assessments.filter(
+        (assessment) => assessment.school === schoolId
+      );
+      setAllAssessments(schoolAssessments);
+      console.log(`Fetched ${schoolAssessments.length} assessments for school ${schoolId}`);
+      return schoolAssessments;
+    } catch (error) {
+      // Don't show error for assessments, it's not critical
+      console.error("Error fetching all assessments:", error);
+      setAllAssessments([]);
+      return [];
     }
   };
 
@@ -227,12 +261,65 @@ export default function BaselineAssessmentsPage() {
     setSelectedStudent(null); // Clear selection when modal closes
   };
 
-  const handleAssessmentComplete = () => {
+  const handleAssessmentComplete = async () => {
     // Refresh students data and today's assessments to get updated levels
-    fetchStudents();
-    fetchTodaysAssessments();
+    if (selectedSchool?._id) {
+      // Wait a moment for backend to process and ensure assessments are saved
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      
+      // Refresh all data - fetch students and today's assessments first (they update more quickly)
+      await Promise.all([
+        fetchStudents(),
+        fetchTodaysAssessments(),
+      ]);
+      
+      // Then fetch all assessments (historical data)
+      await fetchAllAssessments(selectedSchool._id);
+      
+      console.log("Assessment complete - data refreshed");
+    }
     setModalOpen(false);
     setSelectedStudent(null);
+  };
+
+  // Helper function to get baseline completion status for a student by subject
+  const getStudentBaselineStatus = (studentId: string, subject: string) => {
+    // First check todaysAssessments (most up-to-date for today's assessments)
+    const todayAssessments = todaysAssessments.filter(
+      (assessment) => 
+        assessment.student === studentId && 
+        assessment.subject.toLowerCase() === subject.toLowerCase()
+    );
+
+    // Then check allAssessments (for historical assessments)
+    const allTimeAssessments = allAssessments.filter(
+      (assessment) => 
+        assessment.student === studentId && 
+        assessment.subject.toLowerCase() === subject.toLowerCase()
+    );
+
+    // Combine both, prioritizing todaysAssessments
+    const allStudentAssessments = [...todayAssessments, ...allTimeAssessments];
+    
+    // Remove duplicates based on assessment _id
+    const uniqueAssessments = Array.from(
+      new Map(allStudentAssessments.map((a) => [a._id, a])).values()
+    );
+
+    if (uniqueAssessments.length === 0) {
+      return { completed: false, level: null, date: null };
+    }
+
+    // Get the latest assessment for this subject
+    const latestAssessment = uniqueAssessments.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )[0];
+
+    return {
+      completed: true,
+      level: latestAssessment.level,
+      date: latestAssessment.date,
+    };
   };
   
   return (
@@ -617,6 +704,97 @@ export default function BaselineAssessmentsPage() {
                         </div>
                       </CardContent>
                     </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Baseline Completion Table - Show all students with their program-wise baseline status */}
+          {selectedSchool?._id && students.length > 0 && programs.length > 0 && (
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Baseline Assessment Status
+                  </CardTitle>
+                  <CardDescription>
+                    Complete overview of all students and their baseline assessment completion by program
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[200px]">Student Name</TableHead>
+                          <TableHead className="w-[150px]">Roll Number</TableHead>
+                          {programs.map((program) => (
+                            <TableHead key={program._id} className="text-center min-w-[150px]">
+                              {program.name}
+                              <br />
+                              <span className="text-xs font-normal text-muted-foreground">
+                                ({program.subject})
+                              </span>
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {students.map((student) => {
+                          const SubjectStatusCell = ({ 
+                            status 
+                          }: { 
+                            status: { completed: boolean; level: number | null; date: string | null } 
+                          }) => {
+                            if (status.completed && status.level) {
+                              return (
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="flex items-center gap-1">
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                      Level {status.level}
+                                    </Badge>
+                                  </div>
+                                  {status.date && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(status.date).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="flex items-center justify-center gap-1">
+                                <XCircle className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-muted-foreground">Not Completed</span>
+                              </div>
+                            );
+                          };
+
+                          return (
+                            <TableRow key={student._id}>
+                              <TableCell className="font-medium">{student.name}</TableCell>
+                              <TableCell>{student.roll_no}</TableCell>
+                              {programs.map((program) => {
+                                const status = getStudentBaselineStatus(student._id, program.subject);
+                                return (
+                                  <TableCell key={program._id}>
+                                    <SubjectStatusCell status={status} />
+                                  </TableCell>
+                                );
+                              })}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {programs.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No active programs available. Please create programs first.
+                    </div>
                   )}
                 </CardContent>
               </Card>

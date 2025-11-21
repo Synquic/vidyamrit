@@ -292,7 +292,10 @@ const getCurrentQuestion = () => {
 
   const closeAll = async () => {
     if (modalState === "testing") await finalizeProgram();
-    onAssessmentComplete?.();
+    // Wait for assessment complete callback to finish refreshing data
+    if (onAssessmentComplete) {
+      await onAssessmentComplete();
+    }
     onClose();
   };
 
