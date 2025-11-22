@@ -116,8 +116,13 @@ export default function PublicNavbar() {
                 Stories
               </a>
               <div className="px-3 py-2">
-                <Button className="w-full bg-amber-500 hover:bg-amber-600 text-white">
-                  Support Now
+                <Button
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                  onClick={() => {
+                    window.location.pathname = "/login";
+                  }}
+                >
+                  Login
                 </Button>
               </div>
             </div>
