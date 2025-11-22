@@ -6,6 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router";
 import { NavigationItem } from "@/config/SidebarListAndRoleNavigation";
@@ -17,6 +18,14 @@ interface SidebarItemsProps {
 
 export function SidebarItems({ items }: SidebarItemsProps) {
   const location = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    // Close sidebar on mobile when a navigation item is clicked
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <SidebarGroup>
@@ -32,6 +41,7 @@ export function SidebarItems({ items }: SidebarItemsProps) {
                 <SidebarMenuButton asChild>
                   <Link
                     to={item.url}
+                    onClick={handleLinkClick}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-full shadow-md",
                       "bg-black text-white"
@@ -53,6 +63,7 @@ export function SidebarItems({ items }: SidebarItemsProps) {
               <SidebarMenuButton asChild>
                 <Link
                   to={item.url}
+                  onClick={handleLinkClick}
                   className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground"
                   title={item.description || item.title}
                 >
