@@ -4,6 +4,8 @@ import {
   createStudent,
   deleteStudent,
   getStudents,
+  getArchivedStudents,
+  restoreStudent,
   updateStudent,
   type Student,
   type CreateStudentDTO,
@@ -48,7 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Trash2, Edit } from "lucide-react";
+import { Plus, Loader2, Edit, Archive, RotateCcw } from "lucide-react";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 
 function ManageStudents() {
@@ -59,12 +61,14 @@ function ManageStudents() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
+  const [viewMode, setViewMode] = useState<"active" | "archived">("active");
   const [formData, setFormData] = useState<CreateStudentDTO>({
-    roll_no: "",
     name: "",
     age: 0,
     gender: "",
     caste: "",
+    mobileNumber: "",
+    aadharNumber: "",
     class: "",
     schoolId: selectedSchool?._id || "",
     contactInfo: [],
@@ -74,11 +78,18 @@ function ManageStudents() {
 
   const queryClient = useQueryClient();
 
-  // Fetch students filtered by selected school
+  // Fetch active students filtered by selected school
   const { data: students, isLoading: isLoadingStudents } = useQuery({
     queryKey: ["students", selectedSchool?._id],
     queryFn: () => getStudents(selectedSchool?._id),
-    enabled: !!selectedSchool?._id,
+    enabled: !!selectedSchool?._id && viewMode === "active",
+  });
+
+  // Fetch archived students filtered by selected school
+  const { data: archivedStudents, isLoading: isLoadingArchived } = useQuery({
+    queryKey: ["archivedStudents", selectedSchool?._id],
+    queryFn: () => getArchivedStudents(selectedSchool?._id),
+    enabled: !!selectedSchool?._id && viewMode === "archived",
   });
 
   // Create student mutation
@@ -126,17 +137,39 @@ function ManageStudents() {
     },
   });
 
-  // Delete student mutation
-  const deleteMutation = useMutation({
+  // Archive student mutation
+  const archiveMutation = useMutation({
     mutationFn: deleteStudent,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["archivedStudents"] });
       setIsDeleteDialogOpen(false);
-      toast.success("Student deleted successfully");
+      toast.success("Student archived successfully");
     },
     onError: (error: any) => {
       // Extract the error message from the server response
-      let errorMessage = "Failed to delete student";
+      let errorMessage = "Failed to archive student";
+
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+    },
+  });
+
+  // Restore student mutation
+  const restoreMutation = useMutation({
+    mutationFn: restoreStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["archivedStudents"] });
+      toast.success("Student restored successfully");
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to restore student";
 
       if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
@@ -156,17 +189,27 @@ function ManageStudents() {
 
     if (editingStudent) {
       const {
-        roll_no,
         name,
         age,
         gender,
         class: className,
         caste,
+        mobileNumber,
+        aadharNumber,
         schoolId,
       } = formData;
       updateMutation.mutate({
         id: editingStudent._id,
-        data: { roll_no, name, age, gender, class: className, caste, schoolId },
+        data: {
+          name,
+          age,
+          gender,
+          class: className,
+          caste,
+          mobileNumber,
+          aadharNumber,
+          schoolId,
+        },
       });
     } else {
       createMutation.mutate(formData);
@@ -176,11 +219,12 @@ function ManageStudents() {
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
     setFormData({
-      roll_no: student.roll_no,
       name: student.name,
       age: student.age,
       gender: student.gender,
-      caste: student.caste,
+      caste: student.caste || "",
+      mobileNumber: student.mobileNumber || "",
+      aadharNumber: student.aadharNumber || "",
       class: student.class,
       schoolId: student.schoolId._id,
       contactInfo: student.contactInfo || [],
@@ -194,11 +238,12 @@ function ManageStudents() {
     setIsOpen(false);
     setEditingStudent(null);
     setFormData({
-      roll_no: "",
       name: "",
       age: 0,
       gender: "",
       caste: "",
+      mobileNumber: "",
+      aadharNumber: "",
       class: "",
       schoolId: selectedSchool?._id || "",
       contactInfo: [],
@@ -207,9 +252,13 @@ function ManageStudents() {
     });
   };
 
-  const handleDelete = async () => {
+  const handleArchive = async () => {
     if (!deletingStudent?._id) return;
-    await deleteMutation.mutateAsync(deletingStudent._id);
+    await archiveMutation.mutateAsync(deletingStudent._id);
+  };
+
+  const handleRestore = async (student: Student) => {
+    await restoreMutation.mutateAsync(student._id);
   };
 
   const getCurrentLevel = (student: Student): number => {
@@ -219,7 +268,10 @@ function ManageStudents() {
     return student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
   };
 
-  if (isLoadingStudents) {
+  const isLoading =
+    viewMode === "active" ? isLoadingStudents : isLoadingArchived;
+
+  if (isLoading) {
     return (
       <div className="flex h-[200px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -253,24 +305,49 @@ function ManageStudents() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Manage Students</h1>
-          <p className="text-muted-foreground">
-            Create and manage students for your schools
-          </p>
+      <div className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Manage Students</h1>
+            <p className="text-muted-foreground">
+              Create and manage students for your schools
+            </p>
+          </div>
+          {viewMode === "active" && (
+            <Button
+              onClick={() => setIsOpen(true)}
+              className="w-full md:w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Student
+            </Button>
+          )}
         </div>
-        <Button onClick={() => setIsOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Student
-        </Button>
+        <div className="mt-4 flex justify-start">
+          <div className="flex border rounded-md">
+            <Button
+              variant={viewMode === "active" ? "default" : "ghost"}
+              onClick={() => setViewMode("active")}
+              className="rounded-r-none"
+            >
+              Active Students
+            </Button>
+            <Button
+              variant={viewMode === "archived" ? "default" : "ghost"}
+              onClick={() => setViewMode("archived")}
+              className="rounded-l-none"
+            >
+              <Archive className="mr-2 h-4 w-4" />
+              Archived
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-md border overflow-auto max-h-[60vh]">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Aadhar Number</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
@@ -281,62 +358,111 @@ function ManageStudents() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students?.map((student) => (
-              <TableRow key={student._id}>
-                <TableCell>{student.roll_no}</TableCell>
-                <TableCell>{student.name}</TableCell>
-                <TableCell>{student.age}</TableCell>
-                <TableCell>{student.gender}</TableCell>
-                <TableCell>{student.caste || "N/A"}</TableCell>
-                <TableCell>{student.class}</TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <Badge
-                      variant={
-                        getCurrentLevel(student) > 0 ? "default" : "secondary"
-                      }
-                    >
-                      Level {getCurrentLevel(student)}
-                    </Badge>
-                    {student.knowledgeLevel?.length > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        {student.knowledgeLevel.length} assessments
+            {viewMode === "active"
+              ? // Active students
+                students?.map((student) => (
+                  <TableRow key={student._id}>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>{student.age}</TableCell>
+                    <TableCell>{student.gender}</TableCell>
+                    <TableCell>{student.caste || "N/A"}</TableCell>
+                    <TableCell>{student.class}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge
+                          variant={
+                            getCurrentLevel(student) > 0
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          Level {getCurrentLevel(student)}
+                        </Badge>
+                        {student.knowledgeLevel?.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            {student.knowledgeLevel.length} assessments
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {/* <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleStartAssessment(student)}
-                      className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
-                    >
-                      <Target className="h-4 w-4 mr-1" />
-                      Assess
-                    </Button> */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(student)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setDeletingStudent(student);
-                        setIsDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(student)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setDeletingStudent(student);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              : // Archived students
+                archivedStudents?.map((student) => (
+                  <TableRow key={student._id}>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>{student.age}</TableCell>
+                    <TableCell>{student.gender}</TableCell>
+                    <TableCell>{student.caste || "N/A"}</TableCell>
+                    <TableCell>{student.class}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge
+                          variant={
+                            getCurrentLevel(student) > 0
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          Level {getCurrentLevel(student)}
+                        </Badge>
+                        {student.knowledgeLevel?.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            {student.knowledgeLevel.length} assessments
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRestore(student)}
+                          disabled={restoreMutation.isPending}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-1" />
+                          Restore
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            {((viewMode === "active" && (!students || students.length === 0)) ||
+              (viewMode === "archived" &&
+                (!archivedStudents || archivedStudents.length === 0))) && (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  {viewMode === "active"
+                    ? "No active students found"
+                    : "No archived students found"}
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>
@@ -354,7 +480,6 @@ function ManageStudents() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -366,20 +491,38 @@ function ManageStudents() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="roll_no">Aadhar Number</Label>
+              <Label htmlFor="aadharNumber">Aadhar Number (Optional)</Label>
               <Input
-                id="roll_no"
-                value={formData.roll_no}
+                id="aadharNumber"
+                value={formData.aadharNumber || ""}
                 placeholder="Enter student aadhar number"
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, roll_no: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    aadharNumber: e.target.value,
+                  }))
                 }
-                disabled={!!editingStudent}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="age">Age</Label>
+            <div className="space-y-2">
+              <Label htmlFor="mobileNumber">Mobile Number (Optional)</Label>
+              <Input
+                id="mobileNumber"
+                value={formData.mobileNumber || ""}
+                placeholder="Enter student mobile number"
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    mobileNumber: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 md:gap-4">
+              <div className="space-y-2 min-w-0">
+                <Label htmlFor="age" className="text-xs">
+                  Age
+                </Label>
                 <Input
                   id="age"
                   type="number"
@@ -390,17 +533,20 @@ function ManageStudents() {
                       age: Number(e.target.value),
                     }))
                   }
+                  className="w-full"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+              <div className="space-y-2 min-w-0">
+                <Label htmlFor="gender" className="text-xs">
+                  Gender
+                </Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, gender: value }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full min-w-0">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -410,16 +556,18 @@ function ManageStudents() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="caste">Category</Label>
+              <div className="space-y-2 min-w-0">
+                <Label htmlFor="caste" className="text-xs">
+                  Category (Optional)
+                </Label>
                 <Select
-                  value={formData.caste}
+                  value={formData.caste || ""}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, caste: value }))
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select caste" />
+                  <SelectTrigger className="w-full min-w-0">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="st">ST</SelectItem>
@@ -477,16 +625,25 @@ function ManageStudents() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Archive Student?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              student "{deletingStudent?.name}" and remove them from any
-              associated cohorts.
+              This will archive the student "{deletingStudent?.name}". They will
+              be moved to the archived section and can be restored later. The
+              student will be removed from active view but their data will be
+              preserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleArchive}
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Archive
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -17,12 +17,14 @@ export interface IProgressHistory {
 }
 
 export interface IStudent extends Document {
-  roll_no: string;
+  roll_no?: string;
+  aadharNumber?: string;
   name: string;
   age: number;
   gender: string;
   class: string;
-  caste: string;
+  caste?: string;
+  mobileNumber?: string;
   school: mongoose.Types.ObjectId;
   contactInfo: IGuardianInfo[];
   knowledgeLevel: IKnowledgeLevel[];
@@ -45,6 +47,10 @@ export interface IStudent extends Document {
   lastAssessmentDate?: Date;
   totalAssessments: number;
   averagePerformance: number;
+
+  // Archive flag
+  isArchived: boolean;
+  archivedAt?: Date;
 
   createdAt: Date;
   updatedAt: Date;
@@ -101,12 +107,14 @@ const ProgressHistorySchema = new mongoose.Schema({
 });
 
 const StudentSchema = new mongoose.Schema({
-  roll_no: { type: String, required: true },
+  roll_no: { type: String, required: false },
+  aadharNumber: { type: String, required: false },
   name: { type: String, required: true },
   age: { type: Number, required: true },
   gender: { type: String, required: true },
   class: { type: String, required: true },
-  caste: { type: String, required: true },
+  caste: { type: String, required: false },
+  mobileNumber: { type: String, required: false },
   school: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "School",
@@ -186,12 +194,17 @@ const StudentSchema = new mongoose.Schema({
   totalAssessments: { type: Number, default: 0 },
   averagePerformance: { type: Number, default: 0, min: 0, max: 5 },
 
+  // Archive flag
+  isArchived: { type: Boolean, default: false },
+  archivedAt: { type: Date },
+
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
 
 // Indexes for efficient queries
 StudentSchema.index({ school: 1, class: 1 });
+// Unique index for roll_no and school combination
 StudentSchema.index({ roll_no: 1, school: 1 }, { unique: true });
 StudentSchema.index({ "currentProgressFlags.hindi": 1 });
 StudentSchema.index({ "currentProgressFlags.math": 1 });

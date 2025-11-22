@@ -10,6 +10,8 @@ import {
   deleteStudent,
   getStudentLevel,
   getStudentCohortStatus,
+  getArchivedStudents,
+  restoreStudent,
 } from "../controllers/studentController";
 
 const studentRouter = Router();
@@ -54,8 +56,20 @@ studentRouter.put(
 studentRouter.delete(
   "/:id",
   authMiddleware,
-  roleMiddleware(UserRole.SUPER_ADMIN),
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   deleteStudent
-); // Delete student by MongoDB _id
+); // Archive student (soft delete)
+studentRouter.get(
+  "/archived/all",
+  authMiddleware,
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  getArchivedStudents
+); // Get all archived students
+studentRouter.post(
+  "/:id/restore",
+  authMiddleware,
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  restoreStudent
+); // Restore archived student
 
 export default studentRouter;

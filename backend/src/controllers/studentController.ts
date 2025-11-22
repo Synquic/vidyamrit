@@ -11,12 +11,13 @@ import {
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
     const {
-      roll_no,
       name,
       age,
       gender,
       class: className,
       caste,
+      mobileNumber,
+      aadharNumber,
       schoolId,
       contactInfo = [],
       knowledgeLevel = [],
@@ -30,24 +31,47 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     if (!finalSchoolId) {
       return res.status(400).json({ error: "School ID is required" });
     }
-    // Check if student already exists in this school
-    const existingStudent = await Student.findOne({
-      roll_no,
-      school: finalSchoolId, // Use 'school' field as expected by the model
-    });
-    if (existingStudent) {
-      return res.status(400).json({
-        error: "Student with this aadhar number already exists in this school",
+    // Always auto-generate unique roll number
+    const schoolShort = finalSchoolId.toString().slice(-6);
+    
+    // Ensure uniqueness by checking if it exists
+    let isUnique = false;
+    let finalRollNo = "";
+    let attempts = 0;
+    while (!isUnique && attempts < 10) {
+      const timestamp = Date.now().toString().slice(-6);
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      finalRollNo = `STU-${schoolShort}-${timestamp}-${random}`;
+      
+      const existingStudent = await Student.findOne({
+        roll_no: finalRollNo,
+        school: finalSchoolId,
+      });
+      if (!existingStudent) {
+        isUnique = true;
+      } else {
+        // Wait a bit and try again with new timestamp
+        await new Promise(resolve => setTimeout(resolve, 1));
+        attempts++;
+      }
+    }
+    
+    if (!isUnique) {
+      return res.status(500).json({
+        error: "Failed to generate unique roll number. Please try again.",
       });
     }
+    
     // Create student in MongoDB
     const student = new Student({
-      roll_no,
+      roll_no: finalRollNo,
+      aadharNumber: aadharNumber || undefined,
       name,
       age,
       gender,
       class: className,
-      caste,
+      caste: caste || undefined,
+      mobileNumber: mobileNumber || undefined,
       school: finalSchoolId, // Use 'school' field as expected by the model
       contactInfo,
       knowledgeLevel,
@@ -91,6 +115,8 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     }
 
     // Fetch students from database with applied filters
+    // Exclude archived students from the main list
+    filter.isArchived = { $ne: true };
     const students = await Student.find(filter)
       .select("-__v") // Exclude __v field
       .populate("school", "name"); // Populate school name
@@ -121,7 +147,7 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
 export const getStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const query: any = { _id: id };
+    const query: any = { _id: id, isArchived: { $ne: true } };
     // If not super admin, only allow fetching students from same school
     if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
       query.school = req.user.schoolId; // Use 'school' field as expected by the model
@@ -154,13 +180,15 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       query.school = req.user.schoolId; // Use 'school' field as expected by the model
     }
     // Only allow updating fields that exist in StudentModel
+    // Note: roll_no is auto-generated and cannot be updated
     const allowedFields = [
-      "roll_no",
       "name",
       "age",
       "gender",
       "class",
       "caste",
+      "mobileNumber",
+      "aadharNumber",
       "school", // Use 'school' field as expected by the model
       "contactInfo",
       "knowledgeLevel",
@@ -173,7 +201,12 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
         if (key === "school" && updateFields.schoolId !== undefined) {
           filteredUpdate[key] = updateFields.schoolId;
         } else if (updateFields[key] !== undefined) {
-          filteredUpdate[key] = updateFields[key];
+          // Handle optional fields - set to undefined if empty string
+          if ((key === "caste" || key === "mobileNumber" || key === "aadharNumber") && updateFields[key] === "") {
+            filteredUpdate[key] = undefined;
+          } else {
+            filteredUpdate[key] = updateFields[key];
+          }
         }
       }
     }
@@ -199,6 +232,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Archive student (soft delete)
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -206,14 +240,120 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
       query.school = req.user.schoolId; // Use 'school' field as expected by the model
     }
-    const deletedStudent = await Student.findOneAndDelete(query);
-    if (!deletedStudent) {
+    // Archive the student instead of deleting
+    const archivedStudent = await Student.findOneAndUpdate(
+      query,
+      { 
+        isArchived: true,
+        archivedAt: new Date(),
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).populate("school", "name");
+    
+    if (!archivedStudent) {
       return res.status(404).json({ error: "Student not found" });
     }
-    res.json({ message: "Student deleted successfully" });
+    
+    // Transform the response to match frontend expectations
+    const response = archivedStudent.toObject() as any;
+    response.schoolId = response.school;
+    delete response.school;
+    
+    res.json({ 
+      message: "Student archived successfully",
+      student: response
+    });
   } catch (error) {
-    console.error("Error deleting student:", error);
-    res.status(500).json({ error: "Failed to delete student" });
+    console.error("Error archiving student:", error);
+    res.status(500).json({ error: "Failed to archive student" });
+  }
+};
+
+// Get archived students
+export const getArchivedStudents = async (req: AuthRequest, res: Response) => {
+  try {
+    console.log("➡️ Fetching archived students");
+    const { schoolId } = req.query;
+    const filter: any = { isArchived: true };
+
+    // Determine which archived students to fetch based on user role and query params
+    if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+      // If the user is not a super admin, restrict to their school
+      filter.school = req.user.schoolId;
+      console.log(
+        `User ${req.user._id} (${req.user.role}) requesting archived students from school ${req.user.schoolId}`
+      );
+    } else if (schoolId) {
+      // If super admin and schoolId is provided in query, filter by that school
+      filter.school = schoolId;
+      console.log(`Super admin requesting archived students from school ${schoolId}`);
+    } else {
+      // Super admin requesting all archived students (no school filter)
+      console.log("Super admin requesting all archived students");
+    }
+
+    // Fetch archived students from database
+    const students = await Student.find(filter)
+      .select("-__v")
+      .populate("school", "name")
+      .sort({ archivedAt: -1 }); // Sort by most recently archived first
+
+    // Transform the response to match frontend expectations
+    const transformedStudents = students.map((student) => {
+      const studentObj = student.toObject() as any;
+      studentObj.schoolId = studentObj.school;
+      delete studentObj.school;
+      return studentObj;
+    });
+
+    console.log(
+      `Found ${students.length} archived students for filter:`,
+      JSON.stringify(filter)
+    );
+
+    res.json(transformedStudents);
+  } catch (error) {
+    console.error("Error fetching archived students:", error);
+    res.status(500).json({ error: "Failed to fetch archived students" });
+  }
+};
+
+// Restore archived student
+export const restoreStudent = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const query: any = { _id: id, isArchived: true };
+    if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+      query.school = req.user.schoolId;
+    }
+    
+    const restoredStudent = await Student.findOneAndUpdate(
+      query,
+      { 
+        isArchived: false,
+        archivedAt: undefined,
+        updatedAt: new Date()
+      },
+      { new: true }
+    ).populate("school", "name");
+    
+    if (!restoredStudent) {
+      return res.status(404).json({ error: "Archived student not found" });
+    }
+    
+    // Transform the response to match frontend expectations
+    const response = restoredStudent.toObject() as any;
+    response.schoolId = response.school;
+    delete response.school;
+    
+    res.json({ 
+      message: "Student restored successfully",
+      student: response
+    });
+  } catch (error) {
+    console.error("Error restoring student:", error);
+    res.status(500).json({ error: "Failed to restore student" });
   }
 };
 
