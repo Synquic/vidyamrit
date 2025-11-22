@@ -54,6 +54,7 @@ function ManageSchools() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [deletingSchool, setDeletingSchool] = useState<School | null>(null);
+  const [confirmDeleteText, setConfirmDeleteText] = useState("");
   const [formData, setFormData] = useState<
     Omit<School, "_id" | "createdAt" | "updatedAt"> & {
       pointOfContacts?: Array<{ name: string; phone: string }>;
@@ -146,7 +147,12 @@ function ManageSchools() {
 
   const handleDelete = async () => {
     if (!deletingSchool?._id) return;
+    if (confirmDeleteText !== deletingSchool.name) {
+      toast.error("Confirmation text does not match school name");
+      return;
+    }
     await deleteMutation.mutateAsync(deletingSchool._id);
+    setConfirmDeleteText("");
   };
 
   const handleCloseDialog = () => {
@@ -311,6 +317,7 @@ function ManageSchools() {
                       size="sm"
                       onClick={() => {
                         setDeletingSchool(school);
+                        setConfirmDeleteText("");
                         setIsDeleteDialogOpen(true);
                       }}
                     >
@@ -645,19 +652,52 @@ function ManageSchools() {
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        onOpenChange={(open: boolean) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setConfirmDeleteText("");
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the
-              school.
+              school "{deletingSchool?.name}".
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="confirm-delete" className="text-sm font-medium">
+              Type the school's name to confirm: <span className="font-semibold">"{deletingSchool?.name}"</span>
+            </Label>
+            <Input
+              id="confirm-delete"
+              value={confirmDeleteText}
+              onChange={(e) => setConfirmDeleteText(e.target.value)}
+              placeholder="Enter school name"
+              className="mt-2"
+            />
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel
+              onClick={() => setConfirmDeleteText("")}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={
+                deleteMutation.isPending ||
+                confirmDeleteText !== deletingSchool?.name
+              }
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

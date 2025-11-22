@@ -62,6 +62,7 @@ function ManageStudents() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
+  const [confirmArchiveText, setConfirmArchiveText] = useState("");
   const [formData, setFormData] = useState<CreateStudentDTO>({
     name: "",
     age: 0,
@@ -254,7 +255,12 @@ function ManageStudents() {
 
   const handleArchive = async () => {
     if (!deletingStudent?._id) return;
+    if (confirmArchiveText !== deletingStudent.name) {
+      toast.error("Confirmation text does not match student name");
+      return;
+    }
     await archiveMutation.mutateAsync(deletingStudent._id);
+    setConfirmArchiveText("");
   };
 
   const handleRestore = async (student: Student) => {
@@ -399,6 +405,7 @@ function ManageStudents() {
                           size="sm"
                           onClick={() => {
                             setDeletingStudent(student);
+                            setConfirmArchiveText("");
                             setIsDeleteDialogOpen(true);
                           }}
                         >
@@ -621,7 +628,12 @@ function ManageStudents() {
 
       <AlertDialog
         open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        onOpenChange={(open: boolean) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setConfirmArchiveText("");
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -633,11 +645,30 @@ function ManageStudents() {
               preserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="confirm-archive" className="text-sm font-medium">
+              Type the student's name to confirm:{" "}
+              <span className="font-semibold">"{deletingStudent?.name}"</span>
+            </Label>
+            <Input
+              id="confirm-archive"
+              value={confirmArchiveText}
+              onChange={(e) => setConfirmArchiveText(e.target.value)}
+              placeholder="Enter student name"
+              className="mt-2"
+            />
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmArchiveText("")}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleArchive}
-              disabled={archiveMutation.isPending}
+              disabled={
+                archiveMutation.isPending ||
+                confirmArchiveText !== deletingStudent?.name
+              }
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {archiveMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
