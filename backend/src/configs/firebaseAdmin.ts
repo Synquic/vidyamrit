@@ -9,14 +9,36 @@ dotenv.config();
 
 let serviceAccount: any;
 
-// Priority 1: Try reading from environment variable (JSON string)
+// Priority 1: Try reading from environment variable (JSON string or base64-encoded JSON)
 if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     try {
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        logger.info("Firebase service account loaded from environment variable.");
+        let keyValue = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
+        
+        // Try to decode as base64 first (safer for .env files)
+        try {
+            const decoded = Buffer.from(keyValue, 'base64').toString('utf-8');
+            // If base64 decode succeeds and looks like JSON, use it
+            if (decoded.trim().startsWith('{')) {
+                serviceAccount = JSON.parse(decoded);
+                logger.info("Firebase service account loaded from base64-encoded environment variable.");
+            } else {
+                // Not base64, try as plain JSON
+                throw new Error('Not base64');
+            }
+        } catch (base64Error) {
+            // Not base64, try parsing as plain JSON string
+            // Remove surrounding quotes if present (dotenv might add them)
+            if ((keyValue.startsWith('"') && keyValue.endsWith('"')) || 
+                (keyValue.startsWith("'") && keyValue.endsWith("'"))) {
+                keyValue = keyValue.slice(1, -1);
+            }
+            serviceAccount = JSON.parse(keyValue);
+            logger.info("Firebase service account loaded from environment variable.");
+        }
     } catch (error) {
         logger.error(`Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY from environment: ${error}`);
-        throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY JSON in environment variable`);
+        logger.error(`Value preview (first 100 chars): ${process.env.FIREBASE_SERVICE_ACCOUNT_KEY?.substring(0, 100)}`);
+        throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY in environment variable. Use base64-encoded JSON or properly escaped JSON string.`);
     }
 }
 // Priority 2: Try reading from file path
