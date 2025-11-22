@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "main",
+    "new_view_implemented",
+    "vishal_patidar"
+  ],
+  "parent": {
+    "main": null,
+    "new_view_implemented": "main",
+    "vishal_patidar": "main"
+  },
+  "order": [
+    "main",
+    "new_view_implemented",
+    "vishal_patidar"
+  ]
+}
