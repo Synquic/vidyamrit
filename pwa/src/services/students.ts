@@ -36,6 +36,10 @@ export interface Student {
     dateJoined: string;
     dateLeaved?: string;
   }>;
+  // Subject-specific levels
+  hindi_level?: number;
+  math_level?: number;
+  english_level?: number;
 }
 
 export interface StudentLevel {

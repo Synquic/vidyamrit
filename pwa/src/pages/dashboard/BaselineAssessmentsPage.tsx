@@ -48,7 +48,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Users, BookOpen, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Plus,
+  Users,
+  BookOpen,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function BaselineAssessmentsPage() {
@@ -64,11 +71,12 @@ export default function BaselineAssessmentsPage() {
   const [createStudentOpen, setCreateStudentOpen] = useState(false);
   const [newStudent, setNewStudent] = useState<Partial<CreateStudentDTO>>({
     name: "",
-    roll_no: "",
     age: 0,
     gender: "",
     class: "",
     caste: "",
+    mobileNumber: "",
+    aadharNumber: "",
     schoolId: "",
     contactInfo: [],
     knowledgeLevel: [],
@@ -169,7 +177,9 @@ export default function BaselineAssessmentsPage() {
         (assessment) => assessment.school === schoolId
       );
       setAllAssessments(schoolAssessments);
-      console.log(`Fetched ${schoolAssessments.length} assessments for school ${schoolId}`);
+      console.log(
+        `Fetched ${schoolAssessments.length} assessments for school ${schoolId}`
+      );
       return schoolAssessments;
     } catch (error) {
       // Don't show error for assessments, it's not critical
@@ -187,7 +197,6 @@ export default function BaselineAssessmentsPage() {
 
     if (
       !newStudent.name ||
-      !newStudent.roll_no ||
       !newStudent.age ||
       !newStudent.gender ||
       !newStudent.class
@@ -209,11 +218,12 @@ export default function BaselineAssessmentsPage() {
       // Reset form and close dialog
       setNewStudent({
         name: "",
-        roll_no: "",
         age: 0,
         gender: "",
         class: "",
         caste: "",
+        mobileNumber: "",
+        aadharNumber: "",
         schoolId: selectedSchool._id,
         contactInfo: [],
         knowledgeLevel: [],
@@ -266,16 +276,13 @@ export default function BaselineAssessmentsPage() {
     if (selectedSchool?._id) {
       // Wait a moment for backend to process and ensure assessments are saved
       await new Promise((resolve) => setTimeout(resolve, 600));
-      
+
       // Refresh all data - fetch students and today's assessments first (they update more quickly)
-      await Promise.all([
-        fetchStudents(),
-        fetchTodaysAssessments(),
-      ]);
-      
+      await Promise.all([fetchStudents(), fetchTodaysAssessments()]);
+
       // Then fetch all assessments (historical data)
       await fetchAllAssessments(selectedSchool._id);
-      
+
       console.log("Assessment complete - data refreshed");
     }
     setModalOpen(false);
@@ -284,44 +291,87 @@ export default function BaselineAssessmentsPage() {
 
   // Helper function to get baseline completion status for a student by subject
   const getStudentBaselineStatus = (studentId: string, subject: string) => {
+    // Find the student object
+    const student = students.find((s) => s._id === studentId);
+
     // First check todaysAssessments (most up-to-date for today's assessments)
     const todayAssessments = todaysAssessments.filter(
-      (assessment) => 
-        assessment.student === studentId && 
+      (assessment) =>
+        assessment.student === studentId &&
         assessment.subject.toLowerCase() === subject.toLowerCase()
     );
 
     // Then check allAssessments (for historical assessments)
     const allTimeAssessments = allAssessments.filter(
-      (assessment) => 
-        assessment.student === studentId && 
+      (assessment) =>
+        assessment.student === studentId &&
         assessment.subject.toLowerCase() === subject.toLowerCase()
     );
 
     // Combine both, prioritizing todaysAssessments
     const allStudentAssessments = [...todayAssessments, ...allTimeAssessments];
-    
+
     // Remove duplicates based on assessment _id
     const uniqueAssessments = Array.from(
       new Map(allStudentAssessments.map((a) => [a._id, a])).values()
     );
 
-    if (uniqueAssessments.length === 0) {
-      return { completed: false, level: null, date: null };
+    // Console log for table data
+    console.log("=== TABLE DATA ===");
+    console.log("Student ID:", studentId);
+    console.log("Subject:", subject);
+    console.log("Student found:", student ? student.name : "NOT FOUND");
+    console.log("Today's assessments for this subject:", todayAssessments);
+    console.log("All assessments for this subject:", allTimeAssessments);
+    console.log("Unique assessments:", uniqueAssessments);
+    if (student) {
+      console.log("Student hindi_level:", student.hindi_level);
+      console.log("Student math_level:", student.math_level);
+      console.log("Student english_level:", student.english_level);
+      console.log("Student knowledgeLevel:", student.knowledgeLevel);
+    }
+    console.log("=========================");
+
+    // If there are completed assessments, return the latest one
+    if (uniqueAssessments.length > 0) {
+      // Get the latest assessment for this subject
+      const latestAssessment = uniqueAssessments.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0];
+
+      const result = {
+        completed: true,
+        level: latestAssessment.level,
+        date: latestAssessment.date,
+      };
+      console.log("Returning assessment result:", result);
+      return result;
     }
 
-    // Get the latest assessment for this subject
-    const latestAssessment = uniqueAssessments.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0];
+    // If no assessment found, check knowledgeLevel array as fallback (like dropdown does)
+    // Note: knowledgeLevel doesn't have subject info, so we show it for all subjects when no assessment exists
+    if (
+      student &&
+      student.knowledgeLevel &&
+      student.knowledgeLevel.length > 0
+    ) {
+      const latestLevel =
+        student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
+      const result = {
+        completed: false,
+        level: latestLevel,
+        date: null,
+      };
+      console.log("Returning knowledgeLevel fallback result:", result);
+      return result;
+    }
 
-    return {
-      completed: true,
-      level: latestAssessment.level,
-      date: latestAssessment.date,
-    };
+    // No level found at all
+    const result = { completed: false, level: null, date: null };
+    console.log("Returning no level result:", result);
+    return result;
   };
-  
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
@@ -339,7 +389,7 @@ export default function BaselineAssessmentsPage() {
                 Create Student
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Student</DialogTitle>
                 <DialogDescription>
@@ -358,19 +408,38 @@ export default function BaselineAssessmentsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="roll_no">Aadhar Number</Label>
+                  <Label htmlFor="aadharNumber">Aadhar Number (Optional)</Label>
                   <Input
-                    id="roll_no"
-                    value={newStudent.roll_no || ""}
+                    id="aadharNumber"
+                    value={newStudent.aadharNumber || ""}
                     placeholder="Enter student aadhar number"
                     onChange={(e) =>
-                      setNewStudent({ ...newStudent, roll_no: e.target.value })
+                      setNewStudent({
+                        ...newStudent,
+                        aadharNumber: e.target.value,
+                      })
                     }
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="age">Age</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="mobileNumber">Mobile Number (Optional)</Label>
+                  <Input
+                    id="mobileNumber"
+                    value={newStudent.mobileNumber || ""}
+                    placeholder="Enter student mobile number"
+                    onChange={(e) =>
+                      setNewStudent({
+                        ...newStudent,
+                        mobileNumber: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 md:gap-4">
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="age" className="text-xs">
+                      Age
+                    </Label>
                     <Input
                       id="age"
                       type="number"
@@ -381,17 +450,20 @@ export default function BaselineAssessmentsPage() {
                           age: Number(e.target.value),
                         })
                       }
+                      className="w-full"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="gender">Gender</Label>
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="gender" className="text-xs">
+                      Gender
+                    </Label>
                     <Select
                       value={newStudent.gender || ""}
                       onValueChange={(value) =>
                         setNewStudent({ ...newStudent, gender: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full min-w-0">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
@@ -401,16 +473,18 @@ export default function BaselineAssessmentsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="caste">Category</Label>
+                  <div className="space-y-2 min-w-0">
+                    <Label htmlFor="caste" className="text-xs">
+                      Category (Optional)
+                    </Label>
                     <Select
                       value={newStudent.caste || ""}
                       onValueChange={(value) =>
                         setNewStudent({ ...newStudent, caste: value })
                       }
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select caste" />
+                      <SelectTrigger className="w-full min-w-0">
+                        <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="st">ST</SelectItem>
@@ -446,7 +520,10 @@ export default function BaselineAssessmentsPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setCreateStudentOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setCreateStudentOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button onClick={handleCreateStudent} disabled={isCreating}>
@@ -583,6 +660,26 @@ export default function BaselineAssessmentsPage() {
                                   ].level
                                 : null;
 
+                            // Console log for dropdown data
+                            console.log("=== DROPDOWN DATA ===");
+                            console.log("Student:", student.name);
+                            console.log("Student ID:", student._id);
+                            console.log(
+                              "knowledgeLevel array:",
+                              student.knowledgeLevel
+                            );
+                            console.log(
+                              "Latest level from knowledgeLevel:",
+                              latestLevel
+                            );
+                            console.log("hindi_level:", student.hindi_level);
+                            console.log("math_level:", student.math_level);
+                            console.log(
+                              "english_level:",
+                              student.english_level
+                            );
+                            console.log("=========================");
+
                             return (
                               <SelectItem
                                 key={student._id}
@@ -711,95 +808,201 @@ export default function BaselineAssessmentsPage() {
           )}
 
           {/* Baseline Completion Table - Show all students with their program-wise baseline status */}
-          {selectedSchool?._id && students.length > 0 && programs.length > 0 && (
-            <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BookOpen className="mr-2 h-5 w-5" />
-                    Baseline Assessment Status
-                  </CardTitle>
-                  <CardDescription>
-                    Complete overview of all students and their baseline assessment completion by program
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[200px]">Student Name</TableHead>
-                          <TableHead className="w-[150px]">Roll Number</TableHead>
-                          {programs.map((program) => (
-                            <TableHead key={program._id} className="text-center min-w-[150px]">
-                              {program.name}
-                              <br />
-                              <span className="text-xs font-normal text-muted-foreground">
-                                ({program.subject})
-                              </span>
+          {selectedSchool?._id &&
+            students.length > 0 &&
+            programs.length > 0 && (
+              <div className="lg:col-span-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <BookOpen className="mr-2 h-5 w-5" />
+                      Baseline Assessment Status
+                    </CardTitle>
+                    <CardDescription>
+                      Complete overview of all students and their baseline
+                      assessment completion by program
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[200px]">
+                              Student Name
                             </TableHead>
-                          ))}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {students.map((student) => {
-                          const SubjectStatusCell = ({ 
-                            status 
-                          }: { 
-                            status: { completed: boolean; level: number | null; date: string | null } 
-                          }) => {
-                            if (status.completed && status.level) {
-                              return (
+                            <TableHead className="w-[150px]">
+                              Roll Number
+                            </TableHead>
+                            {programs.map((program) => (
+                              <TableHead
+                                key={program._id}
+                                className="text-center min-w-[180px]"
+                              >
                                 <div className="flex flex-col items-center gap-1">
-                                  <div className="flex items-center gap-1">
-                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                    <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
-                                      Level {status.level}
-                                    </Badge>
+                                  <span className="font-semibold capitalize">
+                                    {program.subject}
+                                  </span>
+                                  <span className="text-xs font-normal text-muted-foreground">
+                                    {program.name}
+                                  </span>
+                                </div>
+                              </TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {students.map((student) => {
+                            // Log all student data once per student
+                            console.log("=== STUDENT TABLE ROW ===");
+                            console.log(
+                              "Student:",
+                              student.name,
+                              "(ID:",
+                              student._id + ")"
+                            );
+                            console.log("Programs count:", programs.length);
+                            programs.forEach((program) => {
+                              console.log(
+                                `  - Program: ${program.name}, Subject: ${program.subject}`
+                              );
+                            });
+                            console.log("Student subject levels:", {
+                              hindi: student.hindi_level,
+                              math: student.math_level,
+                              english: student.english_level,
+                            });
+                            console.log(
+                              "Student knowledgeLevel:",
+                              student.knowledgeLevel
+                            );
+                            console.log("===========================");
+
+                            const SubjectStatusCell = ({
+                              status,
+                              subject,
+                            }: {
+                              status: {
+                                completed: boolean;
+                                level: number | null;
+                                date: string | null;
+                              };
+                              subject: string;
+                            }) => {
+                              // If assessment is completed, show with green checkmark
+                              if (status.completed && status.level) {
+                                return (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                      <div className="flex flex-col items-center">
+                                        <Badge
+                                          variant="default"
+                                          className="bg-green-100 text-green-800 border-green-300 text-sm font-semibold px-3 py-1"
+                                        >
+                                          Level {status.level}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground mt-1 capitalize">
+                                          {subject}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {status.date && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {new Date(
+                                          status.date
+                                        ).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                    )}
                                   </div>
-                                  {status.date && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {new Date(status.date).toLocaleDateString()}
+                                );
+                              }
+
+                              // If level exists but no assessment completed, show level with different styling
+                              if (status.level && !status.completed) {
+                                return (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex flex-col items-center">
+                                        <Badge
+                                          variant="secondary"
+                                          className="bg-blue-100 text-blue-800 border-blue-300 text-sm font-semibold px-3 py-1"
+                                        >
+                                          Level {status.level}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground mt-1 capitalize">
+                                          {subject}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground italic">
+                                      No assessment yet
                                     </span>
-                                  )}
+                                  </div>
+                                );
+                              }
+
+                              // No level found at all
+                              return (
+                                <div className="flex flex-col items-center justify-center gap-1">
+                                  <XCircle className="h-5 w-5 text-gray-400" />
+                                  <span className="text-sm text-muted-foreground">
+                                    Not Completed
+                                  </span>
+                                  <span className="text-xs text-muted-foreground capitalize">
+                                    {subject}
+                                  </span>
                                 </div>
                               );
-                            }
-                            return (
-                              <div className="flex items-center justify-center gap-1">
-                                <XCircle className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm text-muted-foreground">Not Completed</span>
-                              </div>
-                            );
-                          };
+                            };
 
-                          return (
-                            <TableRow key={student._id}>
-                              <TableCell className="font-medium">{student.name}</TableCell>
-                              <TableCell>{student.roll_no}</TableCell>
-                              {programs.map((program) => {
-                                const status = getStudentBaselineStatus(student._id, program.subject);
-                                return (
-                                  <TableCell key={program._id}>
-                                    <SubjectStatusCell status={status} />
-                                  </TableCell>
-                                );
-                              })}
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  {programs.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No active programs available. Please create programs first.
+                            return (
+                              <TableRow key={student._id}>
+                                <TableCell className="font-medium">
+                                  {student.name}
+                                </TableCell>
+                                <TableCell>{student.roll_no}</TableCell>
+                                {programs.map((program) => {
+                                  const status = getStudentBaselineStatus(
+                                    student._id,
+                                    program.subject
+                                  );
+                                  console.log(
+                                    `Table cell for ${student.name} - ${program.subject}:`,
+                                    status
+                                  );
+                                  return (
+                                    <TableCell
+                                      key={program._id}
+                                      className="text-center"
+                                    >
+                                      <SubjectStatusCell
+                                        status={status}
+                                        subject={program.subject}
+                                      />
+                                    </TableCell>
+                                  );
+                                })}
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                    {programs.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No active programs available. Please create programs
+                        first.
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
           {/* Assessment Info - Only show if school is selected and we have students */}
           {selectedSchool?._id && students.length > 0 && (
