@@ -7,17 +7,38 @@ import logger from '../utils/logger';
 
 dotenv.config();
 
-// Resolve path relative to backend root directory
-const serviceAccountPath: string = process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH 
-    ? join(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH)
-    : join(__dirname, '../../firebaseServiceAccountKey.json');
+let serviceAccount: any;
 
-if (!existsSync(serviceAccountPath)) {
-    logger.error(`Service account file not found at path: ${serviceAccountPath}`);
-    throw new Error(`Service account file not found at path: ${serviceAccountPath}`);
+// Priority 1: Try reading from environment variable (JSON string)
+if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+        logger.info("Firebase service account loaded from environment variable.");
+    } catch (error) {
+        logger.error(`Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY from environment: ${error}`);
+        throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY JSON in environment variable`);
+    }
 }
-
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf-8"));
+// Priority 2: Try reading from file path
+else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH) {
+    const serviceAccountPath = join(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_KEY_PATH);
+    if (!existsSync(serviceAccountPath)) {
+        logger.error(`Service account file not found at path: ${serviceAccountPath}`);
+        throw new Error(`Service account file not found at path: ${serviceAccountPath}`);
+    }
+    serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf-8"));
+    logger.info(`Firebase service account loaded from file: ${serviceAccountPath}`);
+}
+// Priority 3: Fallback to default path
+else {
+    const serviceAccountPath = join(__dirname, '../../firebaseServiceAccountKey.json');
+    if (!existsSync(serviceAccountPath)) {
+        logger.error(`Service account file not found at path: ${serviceAccountPath}`);
+        throw new Error(`Service account file not found at path: ${serviceAccountPath}. Please set FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_SERVICE_ACCOUNT_KEY_PATH`);
+    }
+    serviceAccount = JSON.parse(readFileSync(serviceAccountPath, "utf-8"));
+    logger.info(`Firebase service account loaded from default path: ${serviceAccountPath}`);
+}
 
 let app: App;
 try {

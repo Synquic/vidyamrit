@@ -22,6 +22,7 @@ env:
   # Backend ENV
   PORT: ${{ secrets.PORT }}
   MONGO_URI: ${{ secrets.MONGO_URI }}
+  FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
   FIREBASE_SERVICE_ACCOUNT_KEY_PATH: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY_PATH }}
   MAIL_USER: ${{ secrets.MAIL_USER }}
   MAIL_PASS: ${{ secrets.MAIL_PASS }}
@@ -75,6 +76,7 @@ jobs:
           cat <<EOF > .env
           PORT=${PORT}
           MONGO_URI=${MONGO_URI}
+          FIREBASE_SERVICE_ACCOUNT_KEY=${FIREBASE_SERVICE_ACCOUNT_KEY}
           FIREBASE_SERVICE_ACCOUNT_KEY_PATH=${FIREBASE_SERVICE_ACCOUNT_KEY_PATH}
           MAIL_USER=${MAIL_USER}
           MAIL_PASS=${MAIL_PASS}
@@ -126,19 +128,14 @@ jobs:
             cd /home/ubuntu/vidyamrit_prod/deploy
 
             echo "🔥 Creating backend env"
-            cat <<EOF > backend/.env
-            PORT=${{ secrets.PORT }}
-            MONGO_URI=${{ secrets.MONGO_URI }}
-            FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/home/ubuntu/vidyamrit_prod/deploy/backend/firebaseServiceAccountKey.json
-            MAIL_USER=${{ secrets.MAIL_USER }}
-            MAIL_PASS=${{ secrets.MAIL_PASS }}
-            CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            LOGGER_PATH=${{ secrets.LOGGER_PATH }}
-            EOF
-
-            echo "🔑 Linking Firebase key"
-            ln -sf /home/ubuntu/secrets/firebaseServiceAccountKey.json /home/ubuntu/vidyamrit_prod/deploy/backend/firebaseServiceAccountKey.json
+            echo "PORT=${{ secrets.PORT }}" > backend/.env
+            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> backend/.env
+            echo "FIREBASE_SERVICE_ACCOUNT_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" >> backend/.env
+            echo "MAIL_USER=${{ secrets.MAIL_USER }}" >> backend/.env
+            echo "MAIL_PASS=${{ secrets.MAIL_PASS }}" >> backend/.env
+            echo "CORS_ORIGIN=${{ secrets.CORS_ORIGIN }}" >> backend/.env
+            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> backend/.env
+            echo "LOGGER_PATH=${{ secrets.LOGGER_PATH }}" >> backend/.env
 
             echo "🚀 Starting backend via PM2"
             pm2 restart backend-app || pm2 start /home/ubuntu/vidyamrit_prod/deploy/backend/dist/index.js --name backend-app
