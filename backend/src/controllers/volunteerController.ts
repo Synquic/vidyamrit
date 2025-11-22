@@ -15,7 +15,7 @@ export const createVolunteer = async (req: AuthRequest, res: Response) => {
 
     // Generate unique email for this volunteer account
     const timestamp = Date.now();
-    const volunteerEmail = `volunteer-${schoolId}-${timestamp}@vidyamrit.volunteer`;
+    const volunteerEmail = `${timestamp.toString().slice(-4)}@vidyamrit.volunteer`;
     const volunteerPassword = "volunteer123"; // Default password (can be customized)
 
     // Calculate expiration time
