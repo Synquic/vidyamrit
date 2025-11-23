@@ -156,15 +156,19 @@ function AttendanceOverview() {
             .map((summary) => (
             <Card key={summary.cohort._id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center justify-between">
-                  <span className="truncate">{summary.cohort.name}</span>
-                  <Badge variant="outline" className="ml-2">
-                    {summary.attendance.totalStudents} students
-                  </Badge>
-                </CardTitle>
-                <p className="text-sm text-gray-600">
-                  {summary.cohort.school?.name || 'School not assigned'}
-                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-gray-600 font-medium">
+                      {summary.cohort.school?.name || 'School not assigned'}
+                    </p>
+                    <Badge variant="outline" className="flex-shrink-0">
+                      {summary.attendance.totalStudents} students
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-lg">
+                    <span className="break-words">{summary.cohort.name}</span>
+                  </CardTitle>
+                </div>
               </CardHeader>
               
               <CardContent className="space-y-4">

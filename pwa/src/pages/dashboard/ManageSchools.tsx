@@ -37,6 +37,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -271,94 +279,72 @@ function ManageSchools() {
           </Card>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {schools.map((school) => {
-            const initials = school.name
-              ? school.name
-                  .split(" ")
-                  .map((s) => s[0])
-                  .slice(0, 2)
-                  .join("")
-              : "S";
-            const headerClasses =
-              school.type === "government"
-                ? "bg-gradient-to-r from-sky-600 to-sky-500 text-white"
-                : "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white";
-
-            return (
-              <Card key={school._id} className="overflow-hidden shadow-lg">
-                <div className={`p-4 flex items-center justify-between ${headerClasses}`}>
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="h-12 w-12 rounded-md bg-white/20 flex items-center justify-center text-lg font-semibold flex-shrink-0">
-                      {initials}
+        <div className="rounded-md border overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>School Name</TableHead>
+                <TableHead>UDISE Code</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Level</TableHead>
+                <TableHead>Block</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead>State</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>PIN Code</TableHead>
+                <TableHead>Established</TableHead>
+                <TableHead>Point of Contact</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {schools.map((school) => (
+                <TableRow key={school._id}>
+                  <TableCell className="font-medium">{school.name}</TableCell>
+                  <TableCell>{school.udise_code || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="capitalize">
+                      {school.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="capitalize">{school.level || "-"}</TableCell>
+                  <TableCell>{school.block || "-"}</TableCell>
+                  <TableCell>{school.city}</TableCell>
+                  <TableCell>{school.state}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">
+                    {school.address || "-"}
+                  </TableCell>
+                  <TableCell>{school.pinCode || "-"}</TableCell>
+                  <TableCell>{school.establishedYear || "-"}</TableCell>
+                  <TableCell>{school.pointOfContact || "-"}</TableCell>
+                  <TableCell>{school.phone || "-"}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(school)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDeletingSchool(school);
+                          setConfirmDeleteText("");
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="text-lg font-semibold leading-tight truncate">{school.name}</div>
-                        {school.block && (
-                          <span className="text-xs opacity-90 px-2 py-0.5 bg-white/20 rounded border border-white/30">
-                            {school.block}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm opacity-90 mt-0.5">{school.city} • <span className="uppercase">{school.level}</span></div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(school)}
-                    >
-                      <Pencil className="h-4 w-4 text-white" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setDeletingSchool(school);
-                        setConfirmDeleteText("");
-                        setIsDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-white" />
-                    </Button>
-                  </div>
-                </div>
-                <CardContent className="p-4 bg-white">
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground">
-                      {school.address}, {school.city}, {school.state} - {school.pinCode}
-                    </div>
-                    <div className="flex flex-wrap gap-4 items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">UDISE</span>
-                        <span className="text-sm font-medium">{school.udise_code}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Type</span>
-                        <Badge variant="secondary" className="capitalize">{school.type}</Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Established</span>
-                        <span className="text-sm font-medium">{school.establishedYear}</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Point of Contact</div>
-                        <div className="text-sm font-medium">{school.pointOfContact || "-"}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Mobile</div>
-                        <div className="text-sm font-medium">{school.phone || "-"}</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
 

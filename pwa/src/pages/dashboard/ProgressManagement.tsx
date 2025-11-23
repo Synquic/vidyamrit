@@ -18,6 +18,14 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   getTutorProgressSummary,
   getCohortProgress,
   getProgressStatusDescription,
@@ -139,27 +147,29 @@ function ProgressOverview() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Cohort Overview
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+          <span>Cohort Overview</span>
         </h2>
-        <p className="text-gray-600 text-sm mt-1">
+        <p className="text-gray-600 text-xs sm:text-sm mt-1">
           Monitor student progress across all cohorts
         </p>
       </div>
 
       {/* Overall Summary */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total Students</p>
-                <p className="text-2xl font-bold text-blue-600">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  Total Students
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600">
                   {totalStudents}
                 </p>
               </div>
@@ -168,12 +178,14 @@ function ProgressOverview() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">On Track</p>
-                <p className="text-2xl font-bold text-green-600">
+              <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  On Track
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600">
                   {overallProgressCounts.green}
                 </p>
               </div>
@@ -182,12 +194,14 @@ function ProgressOverview() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="text-sm text-gray-600">Need Support</p>
-                <p className="text-2xl font-bold text-yellow-600">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  Need Support
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-yellow-600">
                   {overallProgressCounts.yellow + overallProgressCounts.orange}
                 </p>
               </div>
@@ -196,12 +210,14 @@ function ProgressOverview() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <Timer className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-gray-600">Assessment Soon</p>
-                <p className="text-2xl font-bold text-orange-600">
+              <Timer className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  Assessment Soon
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-600">
                   {timeMetrics.cohortsNearingAssessment}
                 </p>
               </div>
@@ -210,12 +226,14 @@ function ProgressOverview() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <div>
-                <p className="text-sm text-gray-600">Urgent Attention</p>
-                <p className="text-2xl font-bold text-red-600">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  Urgent Attention
+                </p>
+                <p className="text-xl sm:text-2xl font-bold text-red-600">
                   {overallProgressCounts.red}
                 </p>
               </div>
@@ -227,13 +245,13 @@ function ProgressOverview() {
       {/* Time-based Overview */}
       {timeMetrics.totalCohorts > 0 && (
         <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-indigo-600" />
-              Program Timeline Overview
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600 flex-shrink-0" />
+              <span className="truncate">Program Timeline Overview</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="text-center">
                 <p className="text-xl sm:text-2xl font-bold text-indigo-600">
@@ -264,7 +282,7 @@ function ProgressOverview() {
         </Card>
       )}
 
-      {/* Cohort Progress Cards */}
+      {/* Cohort Progress Table */}
       {progressSummary.length === 0 ? (
         <Card>
           <CardContent className="text-center py-8">
@@ -276,243 +294,177 @@ function ProgressOverview() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {progressSummary.map((summary) => {
-            const progressPercentage =
-              summary.summary.totalStudents > 0
-                ? (summary.summary.progressCounts.green /
-                    summary.summary.totalStudents) *
-                  100
-                : 0;
+        <div className="rounded-md border overflow-x-auto -mx-2 sm:mx-0">
+          <div className="min-w-full inline-block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px] sm:min-w-[200px]">
+                    Cohort
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell min-w-[150px]">
+                    School
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell min-w-[120px]">
+                    Program
+                  </TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    Students
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">Level</TableHead>
+                  <TableHead className="hidden lg:table-cell min-w-[120px]">
+                    Progress
+                  </TableHead>
+                  <TableHead className="min-w-[100px]">Status</TableHead>
+                  <TableHead className="text-right min-w-[80px]">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {progressSummary.map((summary) => {
+                  const progressPercentage =
+                    summary.summary.totalStudents > 0
+                      ? (summary.summary.progressCounts.green /
+                          summary.summary.totalStudents) *
+                        100
+                      : 0;
 
-            return (
-              <Card
-                key={summary.cohort._id}
-                className="hover:shadow-md transition-shadow"
-              >
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <span className="truncate">{summary.cohort.name}</span>
-                    <Badge
-                      variant="outline"
-                      className="ml-0 sm:ml-2 self-start sm:self-auto"
-                    >
-                      {summary.summary.totalStudents} students
-                    </Badge>
-                  </CardTitle>
-                  <div className="space-y-1 mt-2">
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">
-                      {summary.cohort.school?.name || "School not assigned"}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {summary.cohort.program?.subject || "No Program"}{" "}
-                        Program
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        {summary.cohort.program?.totalLevels || 0} Levels
-                      </span>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Enhanced Time Tracking Section */}
-                  {summary.timeTracking ? (
-                    <TimelineProgress
-                      timeTracking={{
-                        ...summary.timeTracking,
-                        currentLevelTimeframe:
-                          summary.timeTracking.currentLevelTimeframe ||
-                          undefined,
-                      }}
-                      programName={summary.cohort.program?.name}
-                    />
-                  ) : (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-                      <p className="text-sm text-gray-600">
-                        ⏱️ Enhanced time tracking available when program is
-                        assigned
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Level Progress Section */}
-                  {summary.levelProgress && summary.cohort.program && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-700">
-                            Level {summary.cohort.currentLevel || 1} Progress
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {summary.levelProgress.weeksCompleted.toFixed(1)} /{" "}
-                          {summary.levelProgress.weeksRequired} weeks
-                        </Badge>
-                      </div>
-
-                      {/* Level Progress Bar */}
-                      <div className="space-y-1">
-                        <Progress
-                          value={summary.levelProgress.completionPercentage}
-                          className="h-3"
-                        />
-                        <div className="flex justify-between text-xs text-gray-600">
-                          <span>
-                            {summary.levelProgress.completionPercentage.toFixed(
-                              0
-                            )}
-                            % Complete
-                          </span>
-                          {!summary.levelProgress.isReadyForAssessment &&
-                            summary.levelProgress.daysRemaining && (
-                              <span>
-                                {summary.levelProgress.daysRemaining} teaching
-                                days remaining
-                              </span>
-                            )}
-                        </div>
-                      </div>
-
-                      {/* Assessment Readiness Alert */}
-                      {summary.levelProgress.isReadyForAssessment ? (
-                        <Alert className="border-green-200 bg-green-50">
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          <AlertTitle className="text-green-800">
-                            Ready for Assessment
-                          </AlertTitle>
-                          <AlertDescription className="text-green-700 text-sm">
-                            This cohort has completed Level{" "}
-                            {summary.cohort.currentLevel || 1}. Conduct a
-                            level-specific assessment to verify student mastery
-                            before progressing to the next level.
-                          </AlertDescription>
-                          <div className="mt-2">
-                            <Link to={`/progress/cohort/${summary.cohort._id}`}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-green-300 text-green-700 hover:bg-green-100"
-                              >
-                                View Cohort Details
-                              </Button>
-                            </Link>
+                  return (
+                    <TableRow key={summary.cohort._id}>
+                      <TableCell className="min-w-[180px] sm:min-w-[200px]">
+                        <div className="space-y-1">
+                          <div className="font-medium text-sm sm:text-base truncate">
+                            {summary.cohort.name}
                           </div>
-                        </Alert>
-                      ) : summary.levelProgress.completionPercentage >= 80 ? (
-                        <Alert className="border-orange-200 bg-orange-50">
-                          <Clock className="h-4 w-4 text-orange-600" />
-                          <AlertTitle className="text-orange-800">
-                            Assessment Approaching
-                          </AlertTitle>
-                          <AlertDescription className="text-orange-700 text-sm">
-                            This cohort is{" "}
-                            {summary.levelProgress.completionPercentage.toFixed(
-                              0
-                            )}
-                            % through Level {summary.cohort.currentLevel || 1}.
-                            Assessment will be due soon.
-                          </AlertDescription>
-                        </Alert>
-                      ) : null}
-                    </div>
-                  )}
-
-                  {/* Progress Bar */}
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-600">Students on track</span>
-                      <span className="font-medium">
-                        {progressPercentage.toFixed(0)}%
-                      </span>
-                    </div>
-                    <Progress value={progressPercentage} className="h-2" />
-                  </div>
-
-                  {/* Status Distribution */}
-                  <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {getStatusIcon("green")}
-                      <span className="truncate">
-                        Green: {summary.summary.progressCounts.green}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {getStatusIcon("yellow")}
-                      <span className="truncate">
-                        Yellow: {summary.summary.progressCounts.yellow}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {getStatusIcon("orange")}
-                      <span className="truncate">
-                        Orange: {summary.summary.progressCounts.orange}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {getStatusIcon("red")}
-                      <span className="truncate">
-                        Red: {summary.summary.progressCounts.red}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Level Distribution */}
-                  {Object.keys(summary.summary.levelDistribution).length >
-                    0 && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        Level Distribution
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {Object.entries(summary.summary.levelDistribution).map(
-                          ([level, count]) => (
-                            <Badge
-                              key={level}
-                              variant="secondary"
-                              className="text-xs"
-                            >
-                              L{level}: {count}
+                          <div className="text-xs text-muted-foreground md:hidden truncate">
+                            {summary.cohort.school?.name ||
+                              "School not assigned"}
+                          </div>
+                          <div className="flex flex-wrap gap-1 md:hidden">
+                            <Badge variant="secondary" className="text-xs">
+                              {summary.cohort.program?.subject || "No Program"}
                             </Badge>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Attention Alert */}
-                  {summary.summary.studentsNeedingAttention > 0 && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                        <span className="text-sm text-yellow-700">
-                          {summary.summary.studentsNeedingAttention} students
-                          need attention
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Button */}
-                  <Button
-                    asChild
-                    className="w-full"
-                    variant={
-                      summary.summary.studentsNeedingAttention > 0
-                        ? "default"
-                        : "outline"
-                    }
-                  >
-                    <Link to={`/progress/cohort/${summary.cohort._id}`}>
-                      {t("progress.viewDetails")}
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                            <span className="text-xs text-muted-foreground">
+                              {summary.summary.totalStudents} students
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <div className="text-sm truncate max-w-[150px]">
+                          {summary.cohort.school?.name || "School not assigned"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <div className="space-y-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {summary.cohort.program?.subject || "No Program"}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground">
+                            {summary.cohort.program?.totalLevels || 0} Levels
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="text-sm font-medium">
+                          {summary.summary.totalStudents}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">
+                            Level {summary.cohort.currentLevel || 1}
+                          </div>
+                          {summary.levelProgress && (
+                            <div className="text-xs text-muted-foreground">
+                              {summary.levelProgress.completionPercentage.toFixed(
+                                0
+                              )}
+                              % complete
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <div className="space-y-1 min-w-[100px]">
+                          <Progress
+                            value={progressPercentage}
+                            className="h-2"
+                          />
+                          <div className="text-xs text-muted-foreground">
+                            {progressPercentage.toFixed(0)}% on track
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="min-w-[100px]">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon("green")}
+                            <span className="text-xs">
+                              {summary.summary.progressCounts.green}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon("yellow")}
+                            <span className="text-xs">
+                              {summary.summary.progressCounts.yellow}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon("orange")}
+                            <span className="text-xs">
+                              {summary.summary.progressCounts.orange}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {getStatusIcon("red")}
+                            <span className="text-xs">
+                              {summary.summary.progressCounts.red}
+                            </span>
+                          </div>
+                          {summary.summary.studentsNeedingAttention > 0 && (
+                            <Badge
+                              variant="destructive"
+                              className="text-xs mt-1 w-fit"
+                            >
+                              {summary.summary.studentsNeedingAttention} need
+                              attention
+                            </Badge>
+                          )}
+                          {summary.levelProgress?.isReadyForAssessment && (
+                            <Badge
+                              variant="default"
+                              className="text-xs mt-1 w-fit bg-green-600"
+                            >
+                              Ready for Assessment
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right min-w-[80px]">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant={
+                            summary.summary.studentsNeedingAttention > 0
+                              ? "default"
+                              : "outline"
+                          }
+                          className="w-full sm:w-auto"
+                        >
+                          <Link to={`/progress/cohort/${summary.cohort._id}`}>
+                            <span className="hidden sm:inline">View</span>
+                            <span className="sm:hidden">→</span>
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </div>
@@ -639,29 +591,29 @@ function CohortProgressDetail() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/progress/tutor")}
-          className="p-2 self-start sm:self-auto"
+          className="p-2 self-start sm:self-auto -ml-2 sm:ml-0"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex flex-wrap items-center gap-2">
-            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 flex flex-wrap items-center gap-2">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 flex-shrink-0" />
             <span className="truncate">{cohortData.cohort.name} Progress</span>
           </h1>
           <div className="space-y-1 mt-1">
-            <p className="text-sm sm:text-base text-gray-600 truncate">
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 truncate">
               {cohortData.cohort.school?.name || "School not assigned"} •{" "}
               {cohortData.studentsProgress.length} students
             </p>
             {cohortData.cohort.program && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <Badge variant="default" className="text-xs">
                   {cohortData.cohort.program.subject} Program
                 </Badge>
@@ -678,7 +630,7 @@ function CohortProgressDetail() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
@@ -747,10 +699,12 @@ function CohortProgressDetail() {
       {/* Level Progress and Assessment Readiness */}
       {assessmentReadiness && cohortData.cohort.program && (
         <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Target className="h-5 w-5 text-blue-600" />
-              Level {assessmentReadiness.currentLevel} Progress
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+              <span className="truncate">
+                Level {assessmentReadiness.currentLevel} Progress
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -785,11 +739,11 @@ function CohortProgressDetail() {
 
             {assessmentReadiness.isReadyForAssessment ? (
               <Alert className="border-green-200 bg-green-50">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">
+                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                <AlertTitle className="text-green-800 text-sm sm:text-base">
                   Ready for Level Assessment
                 </AlertTitle>
-                <AlertDescription className="text-green-700 text-sm">
+                <AlertDescription className="text-green-700 text-xs sm:text-sm">
                   This cohort has completed Level{" "}
                   {assessmentReadiness.currentLevel}. Conduct a level-specific
                   assessment to verify student mastery.
@@ -800,10 +754,10 @@ function CohortProgressDetail() {
                     </span>
                   )}
                 </AlertDescription>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
                   <Button
                     size="sm"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                     onClick={() => {
                       // Navigate to assessment page - you'll need to create this route
                       toast.info("Level assessment feature coming soon");
@@ -814,7 +768,7 @@ function CohortProgressDetail() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-green-300 text-green-700 hover:bg-green-100"
+                    className="border-green-300 text-green-700 hover:bg-green-100 w-full sm:w-auto"
                     onClick={() => {
                       // Show assessment details
                       toast.info(
@@ -829,11 +783,11 @@ function CohortProgressDetail() {
               </Alert>
             ) : assessmentReadiness.completionPercentage >= 80 ? (
               <Alert className="border-orange-200 bg-orange-50">
-                <Clock className="h-4 w-4 text-orange-600" />
-                <AlertTitle className="text-orange-800">
+                <Clock className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                <AlertTitle className="text-orange-800 text-sm sm:text-base">
                   Assessment Approaching
                 </AlertTitle>
-                <AlertDescription className="text-orange-700 text-sm">
+                <AlertDescription className="text-orange-700 text-xs sm:text-sm">
                   This cohort is{" "}
                   {assessmentReadiness.completionPercentage.toFixed(0)}% through
                   Level {assessmentReadiness.currentLevel}. Assessment will be
@@ -881,13 +835,19 @@ function CohortProgressDetail() {
 
       {/* Level Distribution */}
       <Card>
-        <CardHeader>
-          <CardTitle>Level Distribution</CardTitle>
+        <CardHeader className="pb-3 sm:pb-6">
+          <CardTitle className="text-base sm:text-lg">
+            Level Distribution
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {Object.entries(levelDistribution).map(([level, count]) => (
-              <Badge key={level} variant="secondary" className="px-3 py-1">
+              <Badge
+                key={level}
+                variant="secondary"
+                className="px-2 sm:px-3 py-1 text-xs sm:text-sm"
+              >
                 Level {level}: {count} students
               </Badge>
             ))}
@@ -896,8 +856,8 @@ function CohortProgressDetail() {
       </Card>
 
       {/* Student Progress List */}
-      <div className="space-y-3">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+      <div className="space-y-2 sm:space-y-3">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 px-1">
           Student Progress
         </h2>
         {cohortData.studentsProgress.map((studentData) => {
@@ -918,24 +878,24 @@ function CohortProgressDetail() {
                   : "border-gray-200"
               }`}
             >
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div className="flex-shrink-0">
                       {getStatusIcon(progress.status)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-gray-900 truncate">
+                      <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate">
                         {student.name}
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">
+                      <p className="text-xs text-gray-600 truncate">
                         Roll No: {student.roll_no} • Class: {student.class}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
+                    <div className="text-left sm:text-right">
                       <p className="text-xs sm:text-sm font-medium">
                         Level {progress.currentLevel}
                       </p>
@@ -957,13 +917,13 @@ function CohortProgressDetail() {
                 </div>
 
                 {/* Status Description */}
-                <div className="mt-3 p-2 bg-gray-50 rounded text-xs sm:text-sm text-gray-600">
+                <div className="mt-2 sm:mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
                   {getProgressStatusDescription(progress.status)}
                 </div>
 
                 {/* Last Update */}
                 {progress.lastUpdated && (
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-1.5 sm:mt-2 text-xs text-gray-500">
                     Last updated:{" "}
                     {new Date(progress.lastUpdated).toLocaleDateString()}
                   </div>
@@ -988,14 +948,14 @@ export default function ProgressManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
       {/* Main Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+        <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 flex-shrink-0" />
           <span>{t("progress.title")}</span>
         </h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">
+        <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1">
           {t("progress.subtitle")}
         </p>
       </div>
