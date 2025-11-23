@@ -117,6 +117,7 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
     const validStudents = students.filter((s) => s.schoolId && s.schoolId._id);
 
     schools.forEach((school) => {
+      if (!school._id) return;
       const schoolStudents = validStudents.filter(
         (s) => s.schoolId && s.schoolId._id === school._id
       );
@@ -213,7 +214,7 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
         }
       });
 
-      if (Object.keys(classes).length > 0) {
+      if (Object.keys(classes).length > 0 && school._id) {
         grouped[school._id] = {
           school,
           classes,
@@ -287,6 +288,8 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
           <div className="space-y-4">
             {Object.values(groupedData).map((schoolData) => {
               const schoolKey = schoolData.school._id;
+              if (!schoolKey) return null;
+              
               const isSchoolExpanded = expandedSchools.has(schoolKey);
 
               // Get student's latest level info per subject helper
@@ -411,6 +414,7 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
                   <Collapsible
                     open={isSchoolExpanded}
                     onOpenChange={(open) => {
+                      if (!schoolKey) return;
                       const newSet = new Set(expandedSchools);
                       if (open) {
                         newSet.add(schoolKey);
@@ -466,10 +470,12 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
                                   open={isClassExpanded}
                                   onOpenChange={(open) => {
                                     const newSet = new Set(expandedClasses);
-                                    if (open) {
-                                      newSet.add(classKey);
-                                    } else {
-                                      newSet.delete(classKey);
+                                    if (classKey) {
+                                      if (open) {
+                                        newSet.add(classKey);
+                                      } else {
+                                        newSet.delete(classKey);
+                                      }
                                     }
                                     setExpandedClasses(newSet);
                                   }}
