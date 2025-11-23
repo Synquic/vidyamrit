@@ -399,10 +399,13 @@ export const generateOptimalCohorts = async (
     // Get all students from the school who have completed assessments
     const students: Array<{ 
       _id: any; 
-      knowledgeLevel: Array<{ level: number }>;
-      hindi_level?: number;
-      math_level?: number;
-      english_level?: number;
+      knowledgeLevel: Array<{ 
+        program: any;
+        programName: string;
+        subject: string;
+        level: number;
+        date: Date;
+      }>;
     }> = await Student.find({
       school: schoolId,
     });
@@ -462,16 +465,16 @@ export const generateOptimalCohorts = async (
     for (const program of allPrograms) {
       console.log(`Processing program: ${program.name} (${program.subject})`);
 
-      // Get students with assessment data for this program's subject
-      // Use subject-specific level field if available, otherwise use knowledgeLevel
+      // Get students with assessment data for this program
+      // Check if student has knowledgeLevel entry for this program
       const studentsForProgram = students.filter((student) => {
-        // Check if student has level data for this subject
-        const subjectLower = program.subject.toLowerCase();
-        if (subjectLower === 'hindi' && student.hindi_level) return true;
-        if (subjectLower === 'math' && student.math_level) return true;
-        if (subjectLower === 'english' && student.english_level) return true;
-        // Fallback to knowledgeLevel if subject-specific not available
-        return student.knowledgeLevel && student.knowledgeLevel.length > 0;
+        if (!student.knowledgeLevel || student.knowledgeLevel.length === 0) {
+          return false;
+        }
+        // Check if student has knowledgeLevel entry matching this program
+        return student.knowledgeLevel.some(
+          (kl) => kl.program && kl.program.toString() === program._id.toString()
+        );
       });
 
       if (studentsForProgram.length === 0) {
@@ -489,22 +492,21 @@ export const generateOptimalCohorts = async (
         continue;
       }
 
-      // Group students by their level for this subject
+      // Group students by their level for this program
       const levelGroups: { [key: number]: string[] } = {};
       awaitingStudents.forEach((student) => {
-        const subjectLower = program.subject.toLowerCase();
         let studentLevel: number | undefined;
 
-        // Get level from subject-specific field
-        if (subjectLower === 'hindi' && student.hindi_level) {
-          studentLevel = student.hindi_level;
-        } else if (subjectLower === 'math' && student.math_level) {
-          studentLevel = student.math_level;
-        } else if (subjectLower === 'english' && student.english_level) {
-          studentLevel = student.english_level;
-        } else if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
-          // Fallback to knowledgeLevel
-          studentLevel = student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
+        // Get level from knowledgeLevel entry matching this program
+        if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
+          // Find the most recent knowledgeLevel entry for this program
+          const programKnowledgeLevels = student.knowledgeLevel
+            .filter((kl) => kl.program && kl.program.toString() === program._id.toString())
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          if (programKnowledgeLevels.length > 0) {
+            studentLevel = programKnowledgeLevels[0].level;
+          }
         }
 
         if (studentLevel !== undefined) {

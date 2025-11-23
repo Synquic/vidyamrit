@@ -459,7 +459,7 @@ export async function aggregateStudentMetrics(
               }
             : null,
           knowledgeLevel: student.knowledgeLevel || [],
-          currentProgressFlags: student.currentProgressFlags || {},
+          // Removed currentProgressFlags field
           isArchived: student.isArchived || false,
           createdAt: student.createdAt,
         };
@@ -832,7 +832,7 @@ export async function aggregateProgressData(
           studentQuery.school = { $in: allowedSchools };
         }
         const students = await Student.find(studentQuery)
-          .select("name knowledgeLevel currentProgressFlags")
+          .select("name knowledgeLevel")
           .lean();
         result.student = students.map((s: any) => ({
           studentId: s._id,
@@ -841,7 +841,7 @@ export async function aggregateProgressData(
             s.knowledgeLevel && s.knowledgeLevel.length > 0
               ? s.knowledgeLevel[s.knowledgeLevel.length - 1].level
               : 0,
-          progressFlags: s.currentProgressFlags,
+          // Removed currentProgressFlags field
         }));
         break;
 

@@ -43,6 +43,7 @@ interface Props {
   onClose: () => void;
   student?: Student | null;
   programs?: IProgram[];
+  preSelectedProgramId?: string; // Program ID to auto-start
   onAssessmentComplete?: () => void;
 }
 
@@ -51,6 +52,7 @@ export function BaselineAssessmentModal({
   onClose,
   student,
   programs = [],
+  preSelectedProgramId,
   onAssessmentComplete,
 }: Props) {
   const { user } = useAuth();
@@ -87,6 +89,26 @@ export function BaselineAssessmentModal({
     setProgramResults({});
     setShuffledCache({});
   }, [isOpen]);
+
+  // Auto-start pre-selected program
+  useEffect(() => {
+    if (!isOpen || !preSelectedProgramId || !student || programs.length === 0) return;
+    if (currentProgramIndex >= 0) return; // Already started a program
+    
+    const programIndex = programs.findIndex(
+      (p) => p._id === preSelectedProgramId
+    );
+    
+    if (programIndex >= 0) {
+      // Small delay to ensure state is reset first
+      const timer = setTimeout(() => {
+        startProgram(programIndex);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, preSelectedProgramId]);
 
   const getActiveProgram = () => {
     if (currentProgramIndex < 0) return null;
@@ -234,6 +256,7 @@ const getCurrentQuestion = () => {
         mentor: user?.id || '',
         subject: active.subject,
         level: result.level,
+        program: active._id, // Add program ID
       });
       toast.success(`${active.name}: Level ${result.level} saved`);
     } catch (e) {

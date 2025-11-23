@@ -66,6 +66,7 @@ export default function BaselineAssessmentsPage() {
   const [allAssessments, setAllAssessments] = useState<Assessment[]>([]);
   const [programs, setPrograms] = useState<IProgram[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [createStudentOpen, setCreateStudentOpen] = useState(false);
@@ -83,6 +84,7 @@ export default function BaselineAssessmentsPage() {
     cohort: [],
   });
   const [isCreating, setIsCreating] = useState(false);
+  console.log(allAssessments);
 
   useEffect(() => {
     fetchPrograms();
@@ -269,6 +271,13 @@ export default function BaselineAssessmentsPage() {
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedStudent(null); // Clear selection when modal closes
+    setSelectedProgramId(undefined); // Clear pre-selected program
+  };
+
+  const handleAssessNow = (student: Student, programId: string) => {
+    setSelectedStudent(student);
+    setSelectedProgramId(programId);
+    setModalOpen(true);
   };
 
   const handleAssessmentComplete = async () => {
@@ -289,87 +298,66 @@ export default function BaselineAssessmentsPage() {
     setSelectedStudent(null);
   };
 
-  // Helper function to get baseline completion status for a student by subject
-  const getStudentBaselineStatus = (studentId: string, subject: string) => {
+  // Helper function to check if student was assessed today for a specific program
+  // const isStudentAssessedTodayForProgram = (student: Student, programId: string) => {
+  //   if (!student.knowledgeLevel || student.knowledgeLevel.length === 0) {
+  //     return false;
+  //   }
+
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
+  //   const tomorrow = new Date(today);
+  //   tomorrow.setDate(tomorrow.getDate() + 1);
+
+  //   // Check if student has knowledgeLevel entry for this program assessed today
+  //   return student.knowledgeLevel.some((kl) => {
+  //     if (kl.program && kl.program.toString() === programId) {
+  //       const assessmentDate = new Date(kl.date);
+  //       return assessmentDate >= today && assessmentDate < tomorrow;
+  //     }
+  //     return false;
+  //   });
+  // };
+
+  // Helper function to get baseline completion status for a student by program
+  const getStudentBaselineStatus = (studentId: string, programId: string) => {
     // Find the student object
     const student = students.find((s) => s._id === studentId);
 
-    // First check todaysAssessments (most up-to-date for today's assessments)
-    const todayAssessments = todaysAssessments.filter(
-      (assessment) =>
-        assessment.student === studentId &&
-        assessment.subject.toLowerCase() === subject.toLowerCase()
-    );
-
-    // Then check allAssessments (for historical assessments)
-    const allTimeAssessments = allAssessments.filter(
-      (assessment) =>
-        assessment.student === studentId &&
-        assessment.subject.toLowerCase() === subject.toLowerCase()
-    );
-
-    // Combine both, prioritizing todaysAssessments
-    const allStudentAssessments = [...todayAssessments, ...allTimeAssessments];
-
-    // Remove duplicates based on assessment _id
-    const uniqueAssessments = Array.from(
-      new Map(allStudentAssessments.map((a) => [a._id, a])).values()
-    );
-
-    // Console log for table data
-    console.log("=== TABLE DATA ===");
-    console.log("Student ID:", studentId);
-    console.log("Subject:", subject);
-    console.log("Student found:", student ? student.name : "NOT FOUND");
-    console.log("Today's assessments for this subject:", todayAssessments);
-    console.log("All assessments for this subject:", allTimeAssessments);
-    console.log("Unique assessments:", uniqueAssessments);
-    if (student) {
-      console.log("Student hindi_level:", student.hindi_level);
-      console.log("Student math_level:", student.math_level);
-      console.log("Student english_level:", student.english_level);
-      console.log("Student knowledgeLevel:", student.knowledgeLevel);
-    }
-    console.log("=========================");
-
-    // If there are completed assessments, return the latest one
-    if (uniqueAssessments.length > 0) {
-      // Get the latest assessment for this subject
-      const latestAssessment = uniqueAssessments.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      )[0];
-
-      const result = {
-        completed: true,
-        level: latestAssessment.level,
-        date: latestAssessment.date,
-      };
-      console.log("Returning assessment result:", result);
-      return result;
+    if (!student) {
+      return { completed: false, level: null, date: null, assessedToday: false };
     }
 
-    // If no assessment found, check knowledgeLevel array as fallback (like dropdown does)
-    // Note: knowledgeLevel doesn't have subject info, so we show it for all subjects when no assessment exists
-    if (
-      student &&
-      student.knowledgeLevel &&
-      student.knowledgeLevel.length > 0
-    ) {
-      const latestLevel =
-        student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
-      const result = {
-        completed: false,
-        level: latestLevel,
-        date: null,
-      };
-      console.log("Returning knowledgeLevel fallback result:", result);
-      return result;
+    // Find knowledgeLevel entry for this specific program
+    const programKnowledgeLevels = student.knowledgeLevel
+      ? student.knowledgeLevel.filter(
+          (kl) => kl.program && kl.program.toString() === programId
+        )
+      : [];
+
+    if (programKnowledgeLevels.length === 0) {
+      return { completed: false, level: null, date: null, assessedToday: false };
     }
 
-    // No level found at all
-    const result = { completed: false, level: null, date: null };
-    console.log("Returning no level result:", result);
-    return result;
+    // Get the most recent assessment for this program
+    const latestAssessment = programKnowledgeLevels.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )[0];
+
+    // Check if assessed today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const assessmentDate = new Date(latestAssessment.date);
+    const assessedToday = assessmentDate >= today && assessmentDate < tomorrow;
+
+    return {
+      completed: true,
+      level: latestAssessment.level,
+      date: latestAssessment.date,
+      assessedToday,
+    };
   };
 
   return (
@@ -627,20 +615,6 @@ export default function BaselineAssessmentsPage() {
                         value={selectedStudent?._id || ""}
                         onValueChange={(value) => {
                           const student = students.find((s) => s._id === value);
-                          console.log("=== STUDENT SELECTION DEBUG ===");
-                          console.log("Selected student ID:", value);
-                          console.log("Found student:", student);
-                          console.log(
-                            "Student object:",
-                            JSON.stringify(student, null, 2)
-                          );
-                          console.log("Student schoolId:", student?.schoolId);
-                          console.log(
-                            "Student schoolId._id:",
-                            student?.schoolId?._id
-                          );
-                          console.log("================================");
-
                           setSelectedStudent(student || null);
                           if (student) setModalOpen(true);
                         }}
@@ -650,78 +624,12 @@ export default function BaselineAssessmentsPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {students.map((student) => {
-                            const isAssessedToday =
-                              isStudentAssessedToday(student);
-                            const latestLevel =
-                              student.knowledgeLevel &&
-                              student.knowledgeLevel.length > 0
-                                ? student.knowledgeLevel[
-                                    student.knowledgeLevel.length - 1
-                                  ].level
-                                : null;
-
-                            // Console log for dropdown data
-                            console.log("=== DROPDOWN DATA ===");
-                            console.log("Student:", student.name);
-                            console.log("Student ID:", student._id);
-                            console.log(
-                              "knowledgeLevel array:",
-                              student.knowledgeLevel
-                            );
-                            console.log(
-                              "Latest level from knowledgeLevel:",
-                              latestLevel
-                            );
-                            console.log("hindi_level:", student.hindi_level);
-                            console.log("math_level:", student.math_level);
-                            console.log(
-                              "english_level:",
-                              student.english_level
-                            );
-                            console.log("=========================");
-
                             return (
                               <SelectItem
                                 key={student._id}
                                 value={student._id}
-                                className={
-                                  isAssessedToday
-                                    ? "bg-green-100 hover:bg-green-200"
-                                    : ""
-                                }
                               >
-                                <div className="flex items-center justify-between w-full">
-                                  <span
-                                    className={
-                                      isAssessedToday ? "text-green-800" : ""
-                                    }
-                                  >
-                                    {student.name} (Roll: {student.roll_no})
-                                    {isAssessedToday && " ✓"}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    {latestLevel && (
-                                      <Badge
-                                        variant={
-                                          isAssessedToday
-                                            ? "default"
-                                            : "secondary"
-                                        }
-                                        className="ml-2"
-                                      >
-                                        Level {latestLevel}
-                                      </Badge>
-                                    )}
-                                    {isAssessedToday && (
-                                      <Badge
-                                        variant="outline"
-                                        className="bg-green-200 text-green-800 border-green-300"
-                                      >
-                                        Assessed Today
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
+                                {student.name} (Roll: {student.roll_no})
                               </SelectItem>
                             );
                           })}
@@ -853,57 +761,44 @@ export default function BaselineAssessmentsPage() {
                         </TableHeader>
                         <TableBody>
                           {students.map((student) => {
-                            // Log all student data once per student
-                            console.log("=== STUDENT TABLE ROW ===");
-                            console.log(
-                              "Student:",
-                              student.name,
-                              "(ID:",
-                              student._id + ")"
-                            );
-                            console.log("Programs count:", programs.length);
-                            programs.forEach((program) => {
-                              console.log(
-                                `  - Program: ${program.name}, Subject: ${program.subject}`
-                              );
-                            });
-                            console.log("Student subject levels:", {
-                              hindi: student.hindi_level,
-                              math: student.math_level,
-                              english: student.english_level,
-                            });
-                            console.log(
-                              "Student knowledgeLevel:",
-                              student.knowledgeLevel
-                            );
-                            console.log("===========================");
 
-                            const SubjectStatusCell = ({
+                            const ProgramStatusCell = ({
                               status,
-                              subject,
+                              program,
+                              student,
                             }: {
                               status: {
                                 completed: boolean;
                                 level: number | null;
                                 date: string | null;
+                                assessedToday: boolean;
                               };
-                              subject: string;
+                              program: IProgram;
+                              student: Student;
                             }) => {
-                              // If assessment is completed, show with green checkmark
+                              // If assessment is completed, show with appropriate styling
                               if (status.completed && status.level) {
                                 return (
-                                  <div className="flex flex-col items-center gap-2">
+                                  <div className={`flex flex-col items-center gap-2 p-2 rounded ${status.assessedToday ? 'bg-green-50 border border-green-200' : ''}`}>
                                     <div className="flex items-center gap-2">
-                                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                      {status.assessedToday ? (
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                      ) : (
+                                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                                      )}
                                       <div className="flex flex-col items-center">
                                         <Badge
-                                          variant="default"
-                                          className="bg-green-100 text-green-800 border-green-300 text-sm font-semibold px-3 py-1"
+                                          variant={status.assessedToday ? "default" : "secondary"}
+                                          className={`text-sm font-semibold px-3 py-1 ${
+                                            status.assessedToday
+                                              ? "bg-green-100 text-green-800 border-green-300"
+                                              : "bg-blue-100 text-blue-800 border-blue-300"
+                                          }`}
                                         >
                                           Level {status.level}
                                         </Badge>
                                         <span className="text-xs text-muted-foreground mt-1 capitalize">
-                                          {subject}
+                                          {program.subject}
                                         </span>
                                       </div>
                                     </div>
@@ -918,44 +813,30 @@ export default function BaselineAssessmentsPage() {
                                         })}
                                       </span>
                                     )}
+                                    {status.assessedToday && (
+                                      <span className="text-xs font-medium text-green-700">
+                                        Assessed Today
+                                      </span>
+                                    )}
                                   </div>
                                 );
                               }
 
-                              // If level exists but no assessment completed, show level with different styling
-                              if (status.level && !status.completed) {
-                                return (
-                                  <div className="flex flex-col items-center gap-2">
-                                    <div className="flex items-center gap-2">
-                                      <div className="flex flex-col items-center">
-                                        <Badge
-                                          variant="secondary"
-                                          className="bg-blue-100 text-blue-800 border-blue-300 text-sm font-semibold px-3 py-1"
-                                        >
-                                          Level {status.level}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground mt-1 capitalize">
-                                          {subject}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground italic">
-                                      No assessment yet
-                                    </span>
-                                  </div>
-                                );
-                              }
-
-                              // No level found at all
+                              // No assessment found - show Assess Now button
                               return (
-                                <div className="flex flex-col items-center justify-center gap-1">
+                                <div className="flex flex-col items-center justify-center gap-2 p-2">
                                   <XCircle className="h-5 w-5 text-gray-400" />
                                   <span className="text-sm text-muted-foreground">
                                     Not Completed
                                   </span>
-                                  <span className="text-xs text-muted-foreground capitalize">
-                                    {subject}
-                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleAssessNow(student, program._id)}
+                                    className="mt-1"
+                                  >
+                                    Assess Now
+                                  </Button>
                                 </div>
                               );
                             };
@@ -969,20 +850,17 @@ export default function BaselineAssessmentsPage() {
                                 {programs.map((program) => {
                                   const status = getStudentBaselineStatus(
                                     student._id,
-                                    program.subject
-                                  );
-                                  console.log(
-                                    `Table cell for ${student.name} - ${program.subject}:`,
-                                    status
+                                    program._id
                                   );
                                   return (
                                     <TableCell
                                       key={program._id}
-                                      className="text-center"
+                                      className={`text-center ${status.assessedToday ? 'bg-green-50' : ''}`}
                                     >
-                                      <SubjectStatusCell
+                                      <ProgramStatusCell
                                         status={status}
-                                        subject={program.subject}
+                                        program={program}
+                                        student={student}
                                       />
                                     </TableCell>
                                   );
@@ -1054,6 +932,7 @@ export default function BaselineAssessmentsPage() {
           onClose={handleCloseModal}
           student={selectedStudent}
           programs={programs}
+          preSelectedProgramId={selectedProgramId}
           onAssessmentComplete={handleAssessmentComplete}
         />
       )}

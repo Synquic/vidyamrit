@@ -28,6 +28,9 @@ export interface Student {
     phone_no?: string;
   }>;
   knowledgeLevel: Array<{
+    program: string; // Program ObjectId
+    programName: string; // Subject value from program (e.g., "Hindi")
+    subject: string; // Subject value
     level: number;
     date: string;
   }>;
@@ -36,10 +39,6 @@ export interface Student {
     dateJoined: string;
     dateLeaved?: string;
   }>;
-  // Subject-specific levels
-  hindi_level?: number;
-  math_level?: number;
-  english_level?: number;
 }
 
 export interface StudentLevel {
@@ -47,7 +46,6 @@ export interface StudentLevel {
   studentName: string;
   currentLevel: number;
   lastAssessmentDate: string | null;
-  totalAssessments: number;
   levelHistory: Array<{
     level: number;
     date: string;

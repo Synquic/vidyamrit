@@ -703,92 +703,92 @@ function convertTimeframe(
 // };
 
 // Static method to create sample assessment questions for a level
-ProgramSchema.statics.createSampleQuestions = function (
-  levelNumber: number,
-  subject: string
-): IAssessmentQuestion[] {
-  const questions: IAssessmentQuestion[] = [];
+// ProgramSchema.statics.createSampleQuestions = function (
+//   levelNumber: number,
+//   subject: string
+// ): IAssessmentQuestion[] {
+//   const questions: IAssessmentQuestion[] = [];
 
-  if (
-    subject.toLowerCase() === "hindi" ||
-    subject.toLowerCase() === "english"
-  ) {
-    // Sample questions based on level and subject
-    if (levelNumber === 1) {
-      // Level 1: Character/Letter Recognition
-      questions.push({
-        questionText: "Which of these is the correct letter 'अ'?",
-        questionType: QuestionType.MULTIPLE_CHOICE,
-        options: ["अ", "आ", "इ", "ई"],
-        correctOptionIndex: 0,
-        points: 1,
-        isRequired: true,
-      });
+//   if (
+//     subject.toLowerCase() === "hindi" ||
+//     subject.toLowerCase() === "english"
+//   ) {
+//     // Sample questions based on level and subject
+//     if (levelNumber === 1) {
+//       // Level 1: Character/Letter Recognition
+//       questions.push({
+//         questionText: "Which of these is the correct letter 'अ'?",
+//         questionType: QuestionType.MULTIPLE_CHOICE,
+//         options: ["अ", "आ", "इ", "ई"],
+//         correctOptionIndex: 0,
+//         points: 1,
+//         isRequired: true,
+//       });
 
-      questions.push({
-        questionText: "What sound does this letter make: 'क'?",
-        questionType: QuestionType.ONE_WORD_ANSWER,
-        acceptedAnswers: ["क", "ka", "k"],
-        points: 1,
-        isRequired: true,
-      });
+//       questions.push({
+//         questionText: "What sound does this letter make: 'क'?",
+//         questionType: QuestionType.ONE_WORD_ANSWER,
+//         acceptedAnswers: ["क", "ka", "k"],
+//         points: 1,
+//         isRequired: true,
+//       });
 
-      questions.push({
-        questionText:
-          "Ask the student to read these 5 letters aloud and mark their pronunciation",
-        questionType: QuestionType.VERBAL_EVALUATION,
-        points: 2,
-        isRequired: true,
-      });
-    } else if (levelNumber === 2) {
-      // Level 2: Blending
-      questions.push({
-        questionText: "What word is formed by blending 'क' + 'अ'?",
-        questionType: QuestionType.MULTIPLE_CHOICE,
-        options: ["का", "कि", "कु", "के"],
-        correctOptionIndex: 0,
-        points: 1,
-        isRequired: true,
-      });
+//       questions.push({
+//         questionText:
+//           "Ask the student to read these 5 letters aloud and mark their pronunciation",
+//         questionType: QuestionType.VERBAL_EVALUATION,
+//         points: 2,
+//         isRequired: true,
+//       });
+//     } else if (levelNumber === 2) {
+//       // Level 2: Blending
+//       questions.push({
+//         questionText: "What word is formed by blending 'क' + 'अ'?",
+//         questionType: QuestionType.MULTIPLE_CHOICE,
+//         options: ["का", "कि", "कु", "के"],
+//         correctOptionIndex: 0,
+//         points: 1,
+//         isRequired: true,
+//       });
 
-      questions.push({
-        questionText: "Write the word that sounds like 'ma-ma'",
-        questionType: QuestionType.ONE_WORD_ANSWER,
-        acceptedAnswers: ["मम", "mama", "मामा"],
-        points: 1,
-        isRequired: true,
-      });
-    }
-  } else if (subject.toLowerCase() === "math") {
-    if (levelNumber === 1) {
-      questions.push({
-        questionText: "What is 2 + 3?",
-        questionType: QuestionType.MULTIPLE_CHOICE,
-        options: ["4", "5", "6", "7"],
-        correctOptionIndex: 1,
-        points: 1,
-        isRequired: true,
-      });
+//       questions.push({
+//         questionText: "Write the word that sounds like 'ma-ma'",
+//         questionType: QuestionType.ONE_WORD_ANSWER,
+//         acceptedAnswers: ["मम", "mama", "मामा"],
+//         points: 1,
+//         isRequired: true,
+//       });
+//     }
+//   } else if (subject.toLowerCase() === "math") {
+//     if (levelNumber === 1) {
+//       questions.push({
+//         questionText: "What is 2 + 3?",
+//         questionType: QuestionType.MULTIPLE_CHOICE,
+//         options: ["4", "5", "6", "7"],
+//         correctOptionIndex: 1,
+//         points: 1,
+//         isRequired: true,
+//       });
 
-      questions.push({
-        questionText: "Count and write how many dots you see: • • • • •",
-        questionType: QuestionType.ONE_WORD_ANSWER,
-        acceptedAnswers: ["5", "five", "पांच"],
-        points: 1,
-        isRequired: true,
-      });
+//       questions.push({
+//         questionText: "Count and write how many dots you see: • • • • •",
+//         questionType: QuestionType.ONE_WORD_ANSWER,
+//         acceptedAnswers: ["5", "five", "पांच"],
+//         points: 1,
+//         isRequired: true,
+//       });
 
-      questions.push({
-        questionText: "Ask student to count from 1 to 10 verbally",
-        questionType: QuestionType.VERBAL_EVALUATION,
-        points: 2,
-        isRequired: true,
-      });
-    }
-  }
+//       questions.push({
+//         questionText: "Ask student to count from 1 to 10 verbally",
+//         questionType: QuestionType.VERBAL_EVALUATION,
+//         points: 2,
+//         isRequired: true,
+//       });
+//     }
+//   }
 
-  return questions;
-};
+//   return questions;
+// };
 
 export const Program = mongoose.model<IProgram>("Program", ProgramSchema);
 export default Program;

@@ -384,7 +384,7 @@ export const getStudentLevel = async (req: AuthRequest, res: Response) => {
       studentName: student.name,
       currentLevel: currentLevel ? currentLevel.level : 0,
       lastAssessmentDate: currentLevel ? currentLevel.date : null,
-      totalAssessments: student.knowledgeLevel.length,
+      // Removed totalAssessments field - use knowledgeLevel.length if needed
       levelHistory: student.knowledgeLevel,
     });
   } catch (error) {

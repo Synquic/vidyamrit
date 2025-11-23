@@ -3,6 +3,7 @@ import { AuthRequest } from "../types/auth";
 import Assessment from "../models/AssessmentModel";
 import Student from "../models/StudentModel";
 import Cohort from "../models/CohortModel";
+import Program from "../models/ProgramModel";
 import mongoose from "mongoose";
 
 // Get all assessments
@@ -51,7 +52,7 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
     console.log("Request headers auth:", req.headers.authorization);
     console.log("===================================");
 
-    const { student: studentId, school: schoolId, subject, level } = req.body;
+    const { student: studentId, school: schoolId, subject, level, program: programId } = req.body;
     let { mentor: mentorId } = req.body;
 
     // If mentor is not provided, use the authenticated user's MongoDB _id
@@ -65,12 +66,28 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Mentor ID is required" });
     }
 
+    // Fetch program to get subject (programName)
+    let program = null;
+    let programSubject = subject; // Fallback to provided subject if program not found
+    
+    if (programId) {
+      program = await Program.findById(programId);
+      if (program) {
+        programSubject = program.subject; // Use subject from program
+        console.log("Found program:", program.name, "Subject:", programSubject);
+      } else {
+        console.warn("Program not found with ID:", programId, "Using provided subject:", subject);
+      }
+    } else {
+      console.warn("Program ID not provided in request body");
+    }
+
     // Create the assessment
     const assessment = new Assessment({
       student: studentId,
       school: schoolId,
       mentor: mentorId,
-      subject,
+      subject: programSubject,
       level,
       date: new Date(),
     });
@@ -85,14 +102,23 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "Student not found" });
     }
 
-    // Add the new knowledge level to the student
+    // Add the new knowledge level to the student with program information
+    if (!programId) {
+      return res.status(400).json({ 
+        error: "Program ID is required to update student knowledge level" 
+      });
+    }
+
     student.knowledgeLevel.push({
+      program: new mongoose.Types.ObjectId(programId),
+      programName: programSubject, // Subject value from program
+      subject: programSubject, // Same as programName for consistency
       level: level,
       date: new Date(),
     });
 
     await student.save();
-    console.log("Updated student knowledge level:", studentId, "Level:", level);
+    console.log("Updated student knowledge level:", studentId, "Program:", programId, "Level:", level);
 
     // No longer automatically creating cohorts - students will await cohort assignment
 

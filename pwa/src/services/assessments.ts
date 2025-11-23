@@ -18,6 +18,7 @@ export interface CreateAssessmentDTO {
     mentor: string;
     subject: string;
     level: number;
+    program: string; // Program ID
     date?: string;
 }
 

@@ -30,23 +30,11 @@ export interface IStudent extends Document {
   knowledgeLevel: IKnowledgeLevel[];
   cohort: ICohort[];
 
-  // Assessment levels
-  hindi_level?: number;
-  math_level?: number;
-  english_level?: number;
-
   // Progress flags
-  currentProgressFlags: {
-    hindi?: ProgressFlag;
-    math?: ProgressFlag;
-    english?: ProgressFlag;
-  };
   progressHistory: IProgressHistory[];
 
   // Additional tracking
   lastAssessmentDate?: Date;
-  totalAssessments: number;
-  averagePerformance: number;
 
   // Archive flag
   isArchived: boolean;
@@ -64,6 +52,9 @@ export interface IGuardianInfo {
 }
 
 export interface IKnowledgeLevel {
+  program: mongoose.Types.ObjectId; // Reference to Program
+  programName: string; // Subject value from program (e.g., "Hindi")
+  subject: string; // Subject value (same as programName for consistency)
   level: number;
   date: Date;
 }
@@ -130,6 +121,13 @@ const StudentSchema = new mongoose.Schema({
   ],
   knowledgeLevel: [
     {
+      program: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Program",
+        required: true,
+      },
+      programName: { type: String, required: true, trim: true },
+      subject: { type: String, required: true, trim: true },
       level: { type: Number, required: true },
       date: { type: Date, required: true },
     },
@@ -146,53 +144,11 @@ const StudentSchema = new mongoose.Schema({
     },
   ],
 
-  // Assessment levels
-  hindi_level: { type: Number, min: 1, max: 5, default: 1 },
-  math_level: { type: Number, min: 1, max: 5, default: 1 },
-  english_level: { type: Number, min: 1, max: 5, default: 1 },
-
   // Progress flags
-  currentProgressFlags: {
-    hindi: {
-      type: String,
-      enum: [
-        "improving",
-        "struggling",
-        "excelling",
-        "average",
-        "needs_attention",
-      ],
-      default: "average",
-    },
-    math: {
-      type: String,
-      enum: [
-        "improving",
-        "struggling",
-        "excelling",
-        "average",
-        "needs_attention",
-      ],
-      default: "average",
-    },
-    english: {
-      type: String,
-      enum: [
-        "improving",
-        "struggling",
-        "excelling",
-        "average",
-        "needs_attention",
-      ],
-      default: "average",
-    },
-  },
   progressHistory: [ProgressHistorySchema],
 
   // Additional tracking
   lastAssessmentDate: { type: Date },
-  totalAssessments: { type: Number, default: 0 },
-  averagePerformance: { type: Number, default: 0, min: 0, max: 5 },
 
   // Archive flag
   isArchived: { type: Boolean, default: false },
@@ -206,9 +162,9 @@ const StudentSchema = new mongoose.Schema({
 StudentSchema.index({ school: 1, class: 1 });
 // Unique index for roll_no and school combination
 StudentSchema.index({ roll_no: 1, school: 1 }, { unique: true });
-StudentSchema.index({ "currentProgressFlags.hindi": 1 });
-StudentSchema.index({ "currentProgressFlags.math": 1 });
-StudentSchema.index({ "currentProgressFlags.english": 1 });
+// Index for knowledgeLevel queries
+StudentSchema.index({ "knowledgeLevel.program": 1 });
+StudentSchema.index({ "knowledgeLevel.subject": 1 });
 
 // Pre-save middleware to update timestamps
 StudentSchema.pre("save", function (next) {
