@@ -10,7 +10,7 @@ import {
   Calendar,
   TrendingUp,
   Eye,
-  // BarChart3, // Temporarily hidden - Reports & Analytics
+  BarChart3,
   // Settings   // Temporarily hidden - School Admin Management
 } from "lucide-react";
 
@@ -94,6 +94,13 @@ export const navigationItems: NavigationItem[] = [
     icon: Eye,
     allowedRoles: [UserRole.SUPER_ADMIN],
     description: "Create and manage custom views for stakeholders",
+  },
+  {
+    title: "Reports",
+    url: DASHBOARD_ROUTE_PATHS.reports,
+    icon: BarChart3,
+    allowedRoles: [UserRole.SUPER_ADMIN],
+    description: "View and generate reports",
   },
 ];
 

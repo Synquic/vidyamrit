@@ -4,10 +4,10 @@ const baseUrl = `${apiUrl}/assessments`;
 
 export interface Assessment {
     _id: string;
-    student: string;
-    school: string;
-    mentor: string;
-    subject: 'hindi' | 'math' | 'english';
+    student: string | { _id: string; name?: string; roll_no?: string };
+    school: string | { _id: string; name?: string };
+    mentor: string | { _id: string; name?: string };
+    subject: string; // Changed from union type to string to support any subject
     level: number;
     date: string;
 }

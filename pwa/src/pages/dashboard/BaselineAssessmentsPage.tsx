@@ -66,7 +66,9 @@ export default function BaselineAssessmentsPage() {
   const [allAssessments, setAllAssessments] = useState<Assessment[]>([]);
   const [programs, setPrograms] = useState<IProgram[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
+  const [selectedProgramId, setSelectedProgramId] = useState<
+    string | undefined
+  >(undefined);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [createStudentOpen, setCreateStudentOpen] = useState(false);
@@ -99,14 +101,19 @@ export default function BaselineAssessmentsPage() {
         fetchAllAssessments(selectedSchool._id);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSchool]);
 
   // Function to check if a student was assessed today
   const isStudentAssessedToday = (student: Student) => {
     // Check by todaysAssessments first
-    const assessedInTodaysAssessments = todaysAssessments.some(
-      (assessment) => assessment.student === student._id
-    );
+    const assessedInTodaysAssessments = todaysAssessments.some((assessment) => {
+      const assessmentStudentId =
+        typeof assessment.student === "string"
+          ? assessment.student
+          : (assessment.student as { _id?: string })?._id || assessment.student;
+      return assessmentStudentId === student._id;
+    });
 
     if (assessedInTodaysAssessments) return true;
 
@@ -117,11 +124,29 @@ export default function BaselineAssessmentsPage() {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const latestAssessment =
-        student.knowledgeLevel[student.knowledgeLevel.length - 1];
-      const assessmentDate = new Date(latestAssessment.date);
+      // Check new structure first
+      const hasNewStructure = student.knowledgeLevel.some(
+        (kl) => kl && "program" in kl && "subject" in kl && kl.date
+      );
 
-      return assessmentDate >= today && assessmentDate < tomorrow;
+      if (hasNewStructure) {
+        // Check if any assessment was done today (new structure)
+        return student.knowledgeLevel.some((kl) => {
+          if (kl && kl.date) {
+            const assessmentDate = new Date(kl.date);
+            return assessmentDate >= today && assessmentDate < tomorrow;
+          }
+          return false;
+        });
+      } else {
+        // Old structure - check latest assessment
+        const latestAssessment =
+          student.knowledgeLevel[student.knowledgeLevel.length - 1];
+        if (latestAssessment && latestAssessment.date) {
+          const assessmentDate = new Date(latestAssessment.date);
+          return assessmentDate >= today && assessmentDate < tomorrow;
+        }
+      }
     }
 
     return false;
@@ -175,9 +200,14 @@ export default function BaselineAssessmentsPage() {
     try {
       const assessments = await getAssessments();
       // Filter assessments by selected school
-      const schoolAssessments = assessments.filter(
-        (assessment) => assessment.school === schoolId
-      );
+      // Handle both string and object school references
+      const schoolAssessments = assessments.filter((assessment) => {
+        const assessmentSchoolId =
+          typeof assessment.school === "string"
+            ? assessment.school
+            : (assessment.school as { _id?: string })?._id || assessment.school;
+        return assessmentSchoolId === schoolId;
+      });
       setAllAssessments(schoolAssessments);
       console.log(
         `Fetched ${schoolAssessments.length} assessments for school ${schoolId}`
@@ -243,13 +273,18 @@ export default function BaselineAssessmentsPage() {
       toast(`Starting baseline for ${created.name}...`, { duration: 1000 });
       setSelectedStudent(created);
       setModalOpen(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Extract the error message from the server response
       let errorMessage = "Failed to create student";
 
-      if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.message) {
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { error?: string } };
+        };
+        if (axiosError.response?.data?.error) {
+          errorMessage = axiosError.response.data.error;
+        }
+      } else if (error instanceof Error) {
         errorMessage = error.message;
       }
 
@@ -325,39 +360,120 @@ export default function BaselineAssessmentsPage() {
     const student = students.find((s) => s._id === studentId);
 
     if (!student) {
-      return { completed: false, level: null, date: null, assessedToday: false };
+      return {
+        completed: false,
+        level: null,
+        date: null,
+        assessedToday: false,
+      };
     }
 
-    // Find knowledgeLevel entry for this specific program
-    const programKnowledgeLevels = student.knowledgeLevel
-      ? student.knowledgeLevel.filter(
-          (kl) => kl.program && kl.program.toString() === programId
-        )
-      : [];
+    // Priority 1: Check for new data structure (with program, subject)
+    if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
+      // Check if student has new structure
+      const hasNewStructure = student.knowledgeLevel.some(
+        (kl) =>
+          kl && "program" in kl && "subject" in kl && kl.program && kl.subject
+      );
 
-    if (programKnowledgeLevels.length === 0) {
-      return { completed: false, level: null, date: null, assessedToday: false };
+      if (hasNewStructure) {
+        // Use new structure - find knowledgeLevel entry for this specific program
+        const programKnowledgeLevels = student.knowledgeLevel.filter(
+          (kl) =>
+            kl &&
+            "program" in kl &&
+            kl.program &&
+            String(kl.program) === programId
+        );
+
+        if (programKnowledgeLevels.length > 0) {
+          // Get the most recent assessment for this program
+          const latestAssessment = programKnowledgeLevels.sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          )[0];
+
+          // Check if assessed today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const assessmentDate = new Date(latestAssessment.date);
+          const assessedToday =
+            assessmentDate >= today && assessmentDate < tomorrow;
+
+          return {
+            completed: true,
+            level: latestAssessment.level,
+            date: latestAssessment.date,
+            assessedToday,
+          };
+        }
+      }
     }
 
-    // Get the most recent assessment for this program
-    const latestAssessment = programKnowledgeLevels.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )[0];
+    // Priority 2: Fallback to old structure - use Assessment model
+    // Check if student has old knowledgeLevel structure (just level and date, no program/subject)
+    const hasOldStructure =
+      student.knowledgeLevel &&
+      student.knowledgeLevel.some(
+        (kl) =>
+          kl &&
+          "level" in kl &&
+          "date" in kl &&
+          !("program" in kl) &&
+          !("subject" in kl)
+      );
 
-    // Check if assessed today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const assessmentDate = new Date(latestAssessment.date);
-    const assessedToday = assessmentDate >= today && assessmentDate < tomorrow;
+    if (hasOldStructure) {
+      // Find the program to get its subject
+      const program = programs.find((p) => p._id === programId);
+      if (!program) {
+        return {
+          completed: false,
+          level: null,
+          date: null,
+          assessedToday: false,
+        };
+      }
 
-    return {
-      completed: true,
-      level: latestAssessment.level,
-      date: latestAssessment.date,
-      assessedToday,
-    };
+      // Fetch assessments for this student and program subject from Assessment model
+      const studentAssessments = allAssessments.filter((assessment) => {
+        const assessmentStudentId =
+          typeof assessment.student === "string"
+            ? assessment.student
+            : (assessment.student as { _id?: string })?._id ||
+              assessment.student;
+        return (
+          assessmentStudentId === student._id &&
+          assessment.subject.toLowerCase() === program.subject.toLowerCase()
+        );
+      });
+
+      if (studentAssessments.length > 0) {
+        // Get the most recent assessment
+        const latestAssessment = studentAssessments.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        )[0];
+
+        // Check if assessed today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const assessmentDate = new Date(latestAssessment.date);
+        const assessedToday =
+          assessmentDate >= today && assessmentDate < tomorrow;
+
+        return {
+          completed: true,
+          level: latestAssessment.level,
+          date: latestAssessment.date,
+          assessedToday,
+        };
+      }
+    }
+
+    return { completed: false, level: null, date: null, assessedToday: false };
   };
 
   return (
@@ -625,10 +741,7 @@ export default function BaselineAssessmentsPage() {
                         <SelectContent>
                           {students.map((student) => {
                             return (
-                              <SelectItem
-                                key={student._id}
-                                value={student._id}
-                              >
+                              <SelectItem key={student._id} value={student._id}>
                                 {student.name} (Roll: {student.roll_no})
                               </SelectItem>
                             );
@@ -761,7 +874,6 @@ export default function BaselineAssessmentsPage() {
                         </TableHeader>
                         <TableBody>
                           {students.map((student) => {
-
                             const ProgramStatusCell = ({
                               status,
                               program,
@@ -779,7 +891,13 @@ export default function BaselineAssessmentsPage() {
                               // If assessment is completed, show with appropriate styling
                               if (status.completed && status.level) {
                                 return (
-                                  <div className={`flex flex-col items-center gap-2 p-2 rounded ${status.assessedToday ? 'bg-green-50 border border-green-200' : ''}`}>
+                                  <div
+                                    className={`flex flex-col items-center gap-2 p-2 rounded ${
+                                      status.assessedToday
+                                        ? "bg-green-50 border border-green-200"
+                                        : ""
+                                    }`}
+                                  >
                                     <div className="flex items-center gap-2">
                                       {status.assessedToday ? (
                                         <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -788,7 +906,11 @@ export default function BaselineAssessmentsPage() {
                                       )}
                                       <div className="flex flex-col items-center">
                                         <Badge
-                                          variant={status.assessedToday ? "default" : "secondary"}
+                                          variant={
+                                            status.assessedToday
+                                              ? "default"
+                                              : "secondary"
+                                          }
                                           className={`text-sm font-semibold px-3 py-1 ${
                                             status.assessedToday
                                               ? "bg-green-100 text-green-800 border-green-300"
@@ -832,7 +954,9 @@ export default function BaselineAssessmentsPage() {
                                   <Button
                                     size="sm"
                                     variant="default"
-                                    onClick={() => handleAssessNow(student, program._id)}
+                                    onClick={() =>
+                                      handleAssessNow(student, program._id)
+                                    }
                                     className="mt-1"
                                   >
                                     Assess Now
@@ -855,7 +979,11 @@ export default function BaselineAssessmentsPage() {
                                   return (
                                     <TableCell
                                       key={program._id}
-                                      className={`text-center ${status.assessedToday ? 'bg-green-50' : ''}`}
+                                      className={`text-center ${
+                                        status.assessedToday
+                                          ? "bg-green-50"
+                                          : ""
+                                      }`}
                                     >
                                       <ProgramStatusCell
                                         status={status}

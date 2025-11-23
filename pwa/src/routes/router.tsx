@@ -40,6 +40,9 @@ import ProgressManagement from "@/pages/dashboard/ProgressManagement";
 // View Pages
 import ViewDashboard from "@/pages/dashboard/ViewDashboard";
 
+// Reports Pages
+import ReportsPage from "@/pages/dashboard/ReportsPage";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -203,6 +206,16 @@ export const router = createBrowserRouter([
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.views]}
           >
             <ManageViews />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.reports,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.reports]}
+          >
+            <ReportsPage />
           </ProtectedRoute>
         ),
       },
