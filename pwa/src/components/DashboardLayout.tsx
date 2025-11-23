@@ -44,23 +44,32 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       {!isViewUser && <AppSidebar />}
       <SidebarInset className={isViewUser ? "w-full" : ""}>
-        <header className="flex h-15 shrink-0 items-center gap-2 border-b px-4">
-          {!isViewUser && <SidebarTrigger className="-ml-1" />}
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-4 shadow-sm">
           {!isViewUser && (
-            <Separator orientation="vertical" className="mr-2 h-4" />
+            <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors" />
+          )}
+          {!isViewUser && (
+            <Separator orientation="vertical" className="mr-2 h-6" />
           )}
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
                 <BreadcrumbLink asChild>
-                  <Link to="/dashboard">{t("Admin Dashboard")}</Link>
+                  <Link
+                    to="/dashboard"
+                    className="font-semibold hover:text-primary transition-colors"
+                  >
+                    {t("Admin Dashboard")}
+                  </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               {location.pathname !== "/dashboard" && (
                 <>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{t(getBreadcrumbTitle())}</BreadcrumbPage>
+                    <BreadcrumbPage className="font-medium">
+                      {t(getBreadcrumbTitle())}
+                    </BreadcrumbPage>
                   </BreadcrumbItem>
                 </>
               )}
@@ -70,14 +79,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <Notifications />
           <LanguageToggleButton />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
-        <footer className="border-t px-4 py-0 text-xs text-muted-foreground text-center">
+        <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 bg-gradient-to-br from-background via-background to-muted/20 min-h-0">
+          {children}
+        </div>
+        <footer className="border-t bg-gradient-to-r from-background to-muted/30 px-4 py-3 text-xs text-muted-foreground text-center backdrop-blur-sm">
           © {new Date().getFullYear()} Parashwanath Enterprises. Made by{" "}
           <a
             href="https://synquic.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-green-500 hover:underline"
+            className="font-semibold text-primary hover:text-primary/80 hover:underline transition-colors"
           >
             Synquic
           </a>
