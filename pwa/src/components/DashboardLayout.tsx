@@ -79,7 +79,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <Notifications />
           <LanguageToggleButton />
         </header>
-        <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 bg-gradient-to-br from-background via-background to-muted/20 min-h-0">
+        <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 min-h-0">
           {children}
         </div>
         <footer className="border-t bg-gradient-to-r from-background to-muted/30 px-4 py-3 text-xs text-muted-foreground text-center backdrop-blur-sm">
