@@ -16,7 +16,7 @@ export const updateStudentProgress = async (req: AuthRequest, res: Response) => 
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to update progress for this cohort" });
     }
 
@@ -108,7 +108,7 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view progress for this cohort" });
     }
 
@@ -383,7 +383,7 @@ export const getStudentsReadyForAssessment = async (req: AuthRequest, res: Respo
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view this cohort" });
     }
 
@@ -463,7 +463,7 @@ export const getStudentProgressHistory = async (req: AuthRequest, res: Response)
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view this cohort" });
     }
 
@@ -512,7 +512,7 @@ export const recordAttendanceProgress = async (req: AuthRequest, res: Response) 
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to record attendance for this cohort" });
     }
 
@@ -621,7 +621,7 @@ export const getCohortTimeline = async (req: AuthRequest, res: Response) => {
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view this cohort timeline" });
     }
 

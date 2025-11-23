@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Cohort from "../models/CohortModel";
 import Student from "../models/StudentModel";
 import User from "../models/UserModel";
+import Program from "../models/ProgramModel";
+import { IProgram } from "../models/ProgramModel";
 import { AuthRequest } from "../types/auth";
 import { UserRole } from "../configs/roles";
 import { generateCohortPlan, LevelInput, GenerationStrategy, GenerationResult } from "../lib/CohortGenerationAlgo";
@@ -141,7 +144,7 @@ export const toggleCohortHoliday = async (req: AuthRequest, res: Response) => {
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to modify this cohort" });
     }
 
@@ -203,7 +206,7 @@ export const checkAssessmentReadiness = async (req: AuthRequest, res: Response) 
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view this cohort" });
     }
 
@@ -413,10 +416,10 @@ export const previewOptimalCohorts = async (
         }
       });
 
-      programsToProcess = foundPrograms.map(program => ({
+      programsToProcess = foundPrograms.map((program: IProgram) => ({
         ...program.toObject(),
-        maxCohorts: maxCohortsMap.get(program._id.toString()) || 0
-      })).filter(p => p.maxCohorts > 0);
+        maxCohorts: maxCohortsMap.get((program._id as mongoose.Types.ObjectId).toString()) || 0
+      })).filter((p: { maxCohorts: number; _id: any }) => p.maxCohorts > 0);
     } else {
       const allPrograms = await Program.find({ isActive: true });
       
@@ -424,7 +427,7 @@ export const previewOptimalCohorts = async (
         return res.status(400).json({ error: "No active programs found." });
       }
 
-      programsToProcess = allPrograms.map(program => ({
+      programsToProcess = allPrograms.map((program: IProgram) => ({
         ...program.toObject(),
         maxCohorts: capacity
       }));
@@ -670,10 +673,10 @@ export const generateOptimalCohorts = async (
       });
 
       // Attach maxCohorts to each program
-      programsToProcess = foundPrograms.map(program => ({
+      programsToProcess = foundPrograms.map((program: IProgram) => ({
         ...program.toObject(),
-        maxCohorts: maxCohortsMap.get(program._id.toString()) || 0
-      })).filter(p => p.maxCohorts > 0);
+        maxCohorts: maxCohortsMap.get((program._id as mongoose.Types.ObjectId).toString()) || 0
+      })).filter((p: { maxCohorts: number; _id: any }) => p.maxCohorts > 0);
 
       if (programsToProcess.length === 0) {
         return res.status(400).json({ error: "No programs with valid maxCohorts configuration" });
@@ -686,7 +689,7 @@ export const generateOptimalCohorts = async (
         return res.status(400).json({ error: "No active programs found. Please create at least one active program." });
       }
 
-      programsToProcess = allPrograms.map(program => ({
+      programsToProcess = allPrograms.map((program: IProgram) => ({
         ...program.toObject(),
         maxCohorts: capacity
       }));

@@ -20,7 +20,7 @@ export const scheduleBaselineAssessment = async (req: AuthRequest, res: Response
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to schedule assessments for this cohort" });
     }
 
@@ -109,7 +109,7 @@ export const conductBaselineAssessment = async (req: AuthRequest, res: Response)
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to conduct assessments for this cohort" });
     }
 
@@ -244,7 +244,7 @@ export const getStudentAssessmentHistory = async (req: AuthRequest, res: Respons
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    if (cohort.tutorId && cohort.tutorId.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view assessments for this cohort" });
     }
 

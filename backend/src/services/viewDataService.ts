@@ -152,7 +152,7 @@ export async function aggregateSchoolMetrics(
     }
 
     // Add detailed list of schools
-    if (config.showDetails !== false) {
+    if ((config as any).showDetails !== false) {
       const detailedSchools = await Promise.all(
         schools.map(async (school: any) => {
           // Get student count
@@ -262,7 +262,7 @@ export async function aggregateTutorMetrics(
   result.engaged = engagedTutors.length;
 
   // Add detailed list of tutors
-  if (config.showDetails !== false) {
+  if ((config as any).showDetails !== false) {
     const detailedTutors = await Promise.all(
       tutors.map(async (tutor: any) => {
         // Get school info if available
@@ -345,11 +345,11 @@ export async function aggregateStudentMetrics(
     }
     const additionalSchools = await School.find(additionalSchoolFilter).distinct(
       "_id"
-    );
+    ) as mongoose.Types.ObjectId[];
     if (query.school) {
       query.school = {
         $in: (query.school as any).$in.filter((id: mongoose.Types.ObjectId) =>
-          additionalSchools.some((sid) => sid.equals(id))
+          additionalSchools.some((sid: mongoose.Types.ObjectId) => sid.equals(id))
         ),
       };
     } else {
@@ -378,7 +378,7 @@ export async function aggregateStudentMetrics(
   }
 
   // Add detailed list of students
-  if (config.showDetails !== false) {
+  if ((config as any).showDetails !== false) {
     const students = await Student.find(query)
       .populate("school", "name block state city type")
       .lean()
@@ -453,9 +453,9 @@ export async function aggregateStudentMetrics(
           latestAssessment: latestAssessment
             ? {
                 assessmentId: latestAssessment._id.toString(),
-                type: latestAssessment.type,
+                subject: latestAssessment.subject,
                 level: latestAssessment.level,
-                date: latestAssessment.createdAt,
+                date: latestAssessment.date,
               }
             : null,
           knowledgeLevel: student.knowledgeLevel || [],
@@ -508,7 +508,7 @@ export async function aggregateCohortMetrics(
   });
 
   // Add detailed list of cohorts
-  if (config.showDetails !== false) {
+  if ((config as any).showDetails !== false) {
     const cohorts = await Cohort.find(query)
       .populate("schoolId", "name block state city type")
       .populate("tutorId", "name email phoneNo")
@@ -686,7 +686,7 @@ export async function aggregateAssessmentMetrics(
   }
 
   // Add detailed list of assessments
-  if (config.showDetails !== false) {
+  if ((config as any).showDetails !== false) {
     const assessments = await Assessment.find(query)
       .populate("school", "name block state city")
       .populate("student", "name roll_no class age gender")
