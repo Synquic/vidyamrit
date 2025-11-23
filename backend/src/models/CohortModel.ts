@@ -5,7 +5,7 @@ export type CohortStatus = 'active' | 'pending' | 'completed' | 'archived';
 export interface ICohort extends Document {
   name: string;
   schoolId: mongoose.Types.ObjectId;
-  tutorId: mongoose.Types.ObjectId;
+  tutorId?: mongoose.Types.ObjectId; // Made optional
   programId?: mongoose.Types.ObjectId; // Reference to program
   currentLevel: number; // Current level the cohort is working on
   startDate: Date; // When the cohort started
@@ -94,9 +94,10 @@ const CohortSchema = new mongoose.Schema({
   tutorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+    required: false, // Made optional - cohorts can exist without tutors
     validate: {
-      validator: async function (value: mongoose.Types.ObjectId) {
+      validator: async function (value: mongoose.Types.ObjectId | null | undefined) {
+        if (!value) return true; // Allow null/undefined
         const User = mongoose.model("User");
         const user = await User.findById(value);
         return user && ["tutor", "super_admin"].includes(user.role);

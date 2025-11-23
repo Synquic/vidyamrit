@@ -7,7 +7,7 @@ export interface Cohort {
   _id: string;
   name: string;
   schoolId: string | { _id: string; name: string };
-  tutorId: string | { _id: string; name: string };
+  tutorId?: string | { _id: string; name: string } | null; // Made optional
   programId?: string;
   currentLevel?: number;
   startDate?: string;
@@ -20,7 +20,7 @@ export interface Cohort {
 export interface CreateCohortDTO {
   name: string;
   schoolId: string;
-  tutorId: string;
+  tutorId?: string; // Made optional
   students: string[];
   programId?: string;
   currentLevel?: number;
@@ -83,12 +83,62 @@ export const deleteCohort = async (id: string): Promise<void> => {
   await authAxios.delete(`${baseUrl}/${id}`);
 };
 
+export interface ProgramCohortConfig {
+  programId: string;
+  maxCohorts: number;
+}
+
+export interface PreviewCohort {
+  name: string;
+  programId: string;
+  programName: string;
+  programSubject: string;
+  currentLevel: number;
+  tutorId: string | null;
+  tutorName: string | null;
+  students: string[];
+  studentNames: string[];
+}
+
+export interface PreviewCohortsResponse {
+  previewCohorts: PreviewCohort[];
+  totalCohorts: number;
+  totalStudents: number;
+}
+
+export interface CreateCohortsFromPlanRequest {
+  schoolId: string;
+  cohorts: Array<{
+    name: string;
+    programId: string;
+    currentLevel: number;
+    tutorId?: string | null;
+    students: string[];
+  }>;
+}
+
+export const previewOptimalCohorts = async (data: {
+  schoolId: string;
+  strategy?: 'high-first' | 'low-first';
+  capacityLimit?: number;
+  programs?: ProgramCohortConfig[];
+}): Promise<PreviewCohortsResponse> => {
+  const response = await authAxios.post(`${baseUrl}/preview-optimal`, data);
+  return response.data;
+};
+
 export const generateOptimalCohorts = async (data: {
   schoolId: string;
   strategy?: 'high-first' | 'low-first';
   capacityLimit?: number;
+  programs?: ProgramCohortConfig[]; // New: per-program cohort limits
 }): Promise<GenerateCohortsResponse> => {
   const response = await authAxios.post(`${baseUrl}/generate-optimal`, data);
+  return response.data;
+};
+
+export const createCohortsFromPlan = async (data: CreateCohortsFromPlanRequest): Promise<GenerateCohortsResponse> => {
+  const response = await authAxios.post(`${baseUrl}/create-from-plan`, data);
   return response.data;
 };
 

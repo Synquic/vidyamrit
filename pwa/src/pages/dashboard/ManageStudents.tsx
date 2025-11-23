@@ -11,6 +11,8 @@ import {
   type CreateStudentDTO,
   type UpdateStudentDTO,
 } from "@/services/students";
+import { getAssessments, type Assessment } from "@/services/assessments";
+import { programsService } from "@/services/programs";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +93,37 @@ function ManageStudents() {
     queryKey: ["archivedStudents", selectedSchool?._id],
     queryFn: () => getArchivedStudents(selectedSchool?._id),
     enabled: !!selectedSchool?._id && viewMode === "archived",
+  });
+
+  // Fetch programs
+  const { data: programsResponse } = useQuery({
+    queryKey: ["programs"],
+    queryFn: () => programsService.getPrograms({ isActive: "true" }),
+  });
+
+  const programs = programsResponse?.programs || [];
+
+  // Fetch all assessments for fallback to old data structure
+  const { data: allAssessments = [] } = useQuery({
+    queryKey: ["allAssessments", selectedSchool?._id],
+    queryFn: async () => {
+      try {
+        const assessments = await getAssessments();
+        // Filter by school if selectedSchool is available
+        if (selectedSchool?._id) {
+          return assessments.filter((assessment) => {
+            const schoolId = typeof assessment.school === "string" 
+              ? assessment.school 
+              : (assessment.school as { _id?: string })?._id || assessment.school;
+            return schoolId === selectedSchool._id;
+          });
+        }
+        return assessments;
+      } catch {
+        return [];
+      }
+    },
+    enabled: !!selectedSchool?._id,
   });
 
   // Create student mutation
@@ -267,11 +300,99 @@ function ManageStudents() {
     await restoreMutation.mutateAsync(student._id);
   };
 
-  const getCurrentLevel = (student: Student): number => {
-    if (!student.knowledgeLevel || student.knowledgeLevel.length === 0) {
-      return 0;
+  // Helper function to get student level info for all programs (similar to StudentLevelsReport)
+  interface StudentLevelInfo {
+    subject: string;
+    programName: string;
+    level: number;
+    date: string;
+    programId: string;
+  }
+
+  const getStudentLevelInfo = (student: Student): StudentLevelInfo[] => {
+    const subjectLevels: Record<string, StudentLevelInfo> = {};
+
+    // Priority 1: Check new data structure (knowledgeLevel with program and subject)
+    if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
+      let hasNewStructure = false;
+
+      student.knowledgeLevel.forEach((kl: any) => {
+        if (kl && kl.program && kl.subject && kl.level && kl.date) {
+          hasNewStructure = true;
+          const subject = kl.subject;
+          const programId = typeof kl.program === "string" ? kl.program : kl.program.toString();
+          
+          // Only keep the latest assessment per subject
+          if (!subjectLevels[subject] || new Date(kl.date) > new Date(subjectLevels[subject].date)) {
+            subjectLevels[subject] = {
+              subject: subject,
+              programName: kl.programName || subject,
+              level: typeof kl.level === "number" ? kl.level : parseInt(kl.level) || 0,
+              date: typeof kl.date === "string" ? kl.date : new Date(kl.date).toISOString(),
+              programId: programId,
+            };
+          }
+        }
+      });
+
+      // If we found new structure data, return it
+      if (hasNewStructure) {
+        return Object.values(subjectLevels).sort((a, b) => 
+          a.subject.localeCompare(b.subject)
+        );
+      }
     }
-    return student.knowledgeLevel[student.knowledgeLevel.length - 1].level;
+
+    // Priority 2: Fallback to old structure - use Assessment model
+    // Check if student has old knowledgeLevel structure (just level and date)
+    const hasOldStructure = student.knowledgeLevel && student.knowledgeLevel.some(
+      (kl: any) => kl && kl.level && kl.date && !kl.program && !kl.subject
+    );
+
+    if (hasOldStructure) {
+      // Fetch assessments for this student from Assessment model
+      const studentAssessments = allAssessments.filter(
+        (assessment) => {
+          const assessmentStudentId = typeof assessment.student === "string"
+            ? assessment.student
+            : (assessment.student as { _id?: string })?._id || assessment.student;
+          return assessmentStudentId === student._id;
+        }
+      );
+
+      // Group assessments by subject and get latest level per subject
+      const assessmentBySubject: Record<string, Assessment> = {};
+      studentAssessments.forEach((assessment) => {
+        const subject = assessment.subject;
+        if (
+          !assessmentBySubject[subject] ||
+          new Date(assessment.date) > new Date(assessmentBySubject[subject].date)
+        ) {
+          assessmentBySubject[subject] = assessment;
+        }
+      });
+
+      // Convert to StudentLevelInfo format
+      Object.values(assessmentBySubject).forEach((assessment) => {
+        const subject = assessment.subject;
+        // Find the program for this subject
+        const program = programs.find((p) => p.subject.toLowerCase() === subject.toLowerCase());
+        
+        if (program) {
+          subjectLevels[subject] = {
+            subject: subject,
+            programName: program.name,
+            level: assessment.level,
+            date: assessment.date,
+            programId: program._id,
+          };
+        }
+      });
+    }
+
+    return Object.values(subjectLevels).sort((a, b) => 
+      a.subject.localeCompare(b.subject)
+    );
   };
 
   const isLoading =
@@ -374,21 +495,31 @@ function ManageStudents() {
                     <TableCell>{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        <Badge
-                          variant={
-                            getCurrentLevel(student) > 0
-                              ? "default"
-                              : "secondary"
+                      <div className="space-y-2">
+                        {(() => {
+                          const levelInfo = getStudentLevelInfo(student);
+                          if (levelInfo.length === 0) {
+                            return (
+                              <div className="space-y-1">
+                                <Badge variant="secondary">Not Assessed</Badge>
+                              </div>
+                            );
                           }
-                        >
-                          Level {getCurrentLevel(student)}
-                        </Badge>
-                        {student.knowledgeLevel?.length > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            {student.knowledgeLevel.length} assessments
-                          </div>
-                        )}
+                          return (
+                            <div className="space-y-1">
+                              {levelInfo.map((info, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <Badge variant="default" className="text-xs">
+                                    {info.subject}: L{info.level}
+                                  </Badge>
+                                </div>
+                              ))}
+                              <div className="text-xs text-muted-foreground">
+                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} assessed
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -424,21 +555,31 @@ function ManageStudents() {
                     <TableCell>{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        <Badge
-                          variant={
-                            getCurrentLevel(student) > 0
-                              ? "default"
-                              : "secondary"
+                      <div className="space-y-2">
+                        {(() => {
+                          const levelInfo = getStudentLevelInfo(student);
+                          if (levelInfo.length === 0) {
+                            return (
+                              <div className="space-y-1">
+                                <Badge variant="secondary">Not Assessed</Badge>
+                              </div>
+                            );
                           }
-                        >
-                          Level {getCurrentLevel(student)}
-                        </Badge>
-                        {student.knowledgeLevel?.length > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            {student.knowledgeLevel.length} assessments
-                          </div>
-                        )}
+                          return (
+                            <div className="space-y-1">
+                              {levelInfo.map((info, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                  <Badge variant="default" className="text-xs">
+                                    {info.subject}: L{info.level}
+                                  </Badge>
+                                </div>
+                              ))}
+                              <div className="text-xs text-muted-foreground">
+                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} assessed
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell>

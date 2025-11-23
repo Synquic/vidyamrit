@@ -8,6 +8,8 @@ import {
   addStudentToCohort,
   addStudentToDefaultCohort,
   generateOptimalCohorts,
+  previewOptimalCohorts,
+  createCohortsFromPlan,
   checkAssessmentReadiness,
   toggleCohortHoliday,
 } from "../controllers/cohortController";
@@ -56,11 +58,25 @@ cohortRouter.post(
   addStudentToDefaultCohort
 );
 
+// Preview optimal cohorts (without creating them)
+cohortRouter.post(
+  "/preview-optimal",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  previewOptimalCohorts
+);
+
 // Generate optimal cohorts using algorithm
 cohortRouter.post(
   "/generate-optimal",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   generateOptimalCohorts
+);
+
+// Create cohorts from approved plan
+cohortRouter.post(
+  "/create-from-plan",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  createCohortsFromPlan
 );
 
 // Check if cohort is ready for level-up assessment
