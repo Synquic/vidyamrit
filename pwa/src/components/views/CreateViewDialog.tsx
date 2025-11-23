@@ -207,7 +207,10 @@ export function CreateViewDialog({
       newErrors.stakeholderType = "Stakeholder type is required";
     }
 
-    if (formData.stakeholderType === "custom" && !formData.customStakeholderType?.trim()) {
+    if (
+      formData.stakeholderType === "custom" &&
+      !formData.customStakeholderType?.trim()
+    ) {
       newErrors.customStakeholderType = "Custom stakeholder type is required";
     }
 
@@ -581,8 +584,7 @@ export function CreateViewDialog({
                       <Checkbox
                         id="students-showTotal"
                         checked={
-                          formData.config.sections.students?.showTotal !==
-                          false
+                          formData.config.sections.students?.showTotal !== false
                         }
                         onCheckedChange={(checked) =>
                           updateSection("students", {
@@ -596,7 +598,8 @@ export function CreateViewDialog({
                       <Checkbox
                         id="students-showActive"
                         checked={
-                          formData.config.sections.students?.showActive !== false
+                          formData.config.sections.students?.showActive !==
+                          false
                         }
                         onCheckedChange={(checked) =>
                           updateSection("students", {
@@ -619,9 +622,7 @@ export function CreateViewDialog({
                           })
                         }
                       />
-                      <Label htmlFor="students-showDropped">
-                        Show Dropped
-                      </Label>
+                      <Label htmlFor="students-showDropped">Show Dropped</Label>
                     </div>
                   </div>
                 )}
@@ -634,9 +635,7 @@ export function CreateViewDialog({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="section-cohorts"
-                    checked={
-                      formData.config.sections.cohorts?.enabled || false
-                    }
+                    checked={formData.config.sections.cohorts?.enabled || false}
                     onCheckedChange={(checked) =>
                       toggleSection("cohorts", checked as boolean)
                     }
@@ -783,10 +782,7 @@ export function CreateViewDialog({
                       toggleSection("attendance", checked as boolean)
                     }
                   />
-                  <Label
-                    htmlFor="section-attendance"
-                    className="font-semibold"
-                  >
+                  <Label htmlFor="section-attendance" className="font-semibold">
                     Attendance Tracking
                   </Label>
                 </div>
@@ -849,7 +845,10 @@ export function CreateViewDialog({
                 {schools && schools.length > 0 ? (
                   <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
                     {schools.map((school) => (
-                      <div key={school._id} className="flex items-center space-x-2">
+                      <div
+                        key={school._id}
+                        className="flex items-center space-x-2"
+                      >
                         <Checkbox
                           id={`school-${school._id}`}
                           checked={
@@ -933,40 +932,43 @@ export function CreateViewDialog({
                 <Label>Allowed States (leave empty for all)</Label>
                 {schools && schools.length > 0 ? (
                   <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
-                    {Array.from(
-                      new Set(schools.map((s) => s.state))
-                    ).map((state) => (
-                      <div key={state} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`state-${state}`}
-                          checked={
-                            formData.config.access.allowedStates?.includes(
-                              state
-                            ) || false
-                          }
-                          onCheckedChange={(checked) => {
-                            const current =
-                              formData.config.access.allowedStates || [];
-                            const newStates = checked
-                              ? [...current, state]
-                              : current.filter((s) => s !== state);
-                            setFormData((prev) => ({
-                              ...prev,
-                              config: {
-                                ...prev.config,
-                                access: {
-                                  ...prev.config.access,
-                                  allowedStates: newStates,
+                    {Array.from(new Set(schools.map((s) => s.state))).map(
+                      (state) => (
+                        <div
+                          key={state}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={`state-${state}`}
+                            checked={
+                              formData.config.access.allowedStates?.includes(
+                                state
+                              ) || false
+                            }
+                            onCheckedChange={(checked) => {
+                              const current =
+                                formData.config.access.allowedStates || [];
+                              const newStates = checked
+                                ? [...current, state]
+                                : current.filter((s) => s !== state);
+                              setFormData((prev) => ({
+                                ...prev,
+                                config: {
+                                  ...prev.config,
+                                  access: {
+                                    ...prev.config.access,
+                                    allowedStates: newStates,
+                                  },
                                 },
-                              },
-                            }));
-                          }}
-                        />
-                        <Label htmlFor={`state-${state}`} className="text-sm">
-                          {state}
-                        </Label>
-                      </div>
-                    ))}
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`state-${state}`} className="text-sm">
+                            {state}
+                          </Label>
+                        </div>
+                      )
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -990,4 +992,3 @@ export function CreateViewDialog({
     </Dialog>
   );
 }
-

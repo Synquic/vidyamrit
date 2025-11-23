@@ -70,12 +70,10 @@ export function BaselineAssessmentModal({
   const [correctAnswersForProgram, setCorrectAnswersForProgram] = useState(0);
   const [showQuickComplete, setShowQuickComplete] = useState(false);
 
-  // algorithm refs
-  const levelQuestionsAnswered = useRef(0);
-  const levelCorrectAnswers = useRef(0);
-  const oscillationCycles = useRef(0);
-  const lastDirection = useRef<"up" | "down" | null>(null);
-  const lastSuccessfulLevel = useRef(0);
+  // algorithm refs - new 5-question batch system
+  const levelQuestionsAnswered = useRef(0); // 0-10 questions per level
+  const levelCorrectAnswers = useRef(0); // correct answers in current level
+  const levelWrongAnswers = useRef(0); // wrong answers in current level (max 3)
 
   // shuffle question cache
   const [shuffledCache, setShuffledCache] = useState<Record<string, any>>({});
@@ -146,10 +144,14 @@ const getCurrentQuestion = () => {
     return null;
   }
 
+  // Show questions sequentially: 0-4 (batch 1), then 5-9 (batch 2)
   const idx = levelQuestionsAnswered.current;
-  if (idx < 3) return shuffled[idx];
+  if (idx < shuffled.length) {
+    return shuffled[idx];
+  }
 
-  return shuffled[3] ?? shuffled[2];
+  // If we've answered all available questions, end
+  return null;
 };
 
 
@@ -165,62 +167,62 @@ const getCurrentQuestion = () => {
     setTotalQuestions(0);
     setCorrectAnswersForProgram(0);
 
+    // Reset level counters
     levelQuestionsAnswered.current = 0;
     levelCorrectAnswers.current = 0;
-    oscillationCycles.current = 0;
-    lastDirection.current = null;
-    lastSuccessfulLevel.current = 0;
+    levelWrongAnswers.current = 0;
 
     toast.success(`Starting ${programs[i].name}`);
   };
 
   const evaluateLevel = async () => {
-    const score = levelCorrectAnswers.current;
+    const correct = levelCorrectAnswers.current;
+    const wrong = levelWrongAnswers.current;
+    const answered = levelQuestionsAnswered.current;
     const active = getActiveProgram();
     if (!active) return;
 
-    if (score >= 3) {
-      // promote
-      if (currentLevel > lastSuccessfulLevel.current) {
-        oscillationCycles.current = 0;
-      }
-      lastSuccessfulLevel.current = currentLevel;
-      lastDirection.current = "up";
-      setCurrentLevel((l) => l + 1);
-    } else {
-      // demote or end
-      if (currentLevel === 0 && score === 0) {
-        await finalizeProgram();
-        return;
-      }
-
-      if (lastDirection.current === "up") oscillationCycles.current++;
-      lastDirection.current = "down";
-
-      setCurrentLevel((l) => Math.max(0, l - 1));
-
-      if (oscillationCycles.current >= 2) {
-        setCurrentLevel(lastSuccessfulLevel.current);
-        await finalizeProgram();
-        return;
-      }
-    }
-
-    levelQuestionsAnswered.current = 0;
-    levelCorrectAnswers.current = 0;
-
-    if (totalQuestions >= 40) {
+    // Termination condition 1: 3 wrong answers in current level → end test
+    if (wrong >= 3) {
       await finalizeProgram();
+      return;
     }
+
+    // Termination condition 2: Level 0 with 0 correct → end test
+    if (currentLevel === 0 && correct === 0 && answered >= 5) {
+      await finalizeProgram();
+      return;
+    }
+
+    // Promotion condition: 5 correct answers → move to next level
+    if (correct >= 5) {
+      setCurrentLevel((l) => l + 1);
+      // Reset counters for new level
+      levelQuestionsAnswered.current = 0;
+      levelCorrectAnswers.current = 0;
+      levelWrongAnswers.current = 0;
+      setShowQuickComplete(false);
+      return;
+    }
+
+    // After 10 questions without 5 correct → stay at level and end test
+    if (answered >= 10) {
+      await finalizeProgram();
+      return;
+    }
+
+    // If we've answered a batch of 5, check if we should continue
+    // (This is handled in handleAnswer, but we keep this for safety)
   };
 
   const finalizeProgram = async () => {
     const active = getActiveProgram();
     if (!active) return;
 
+    // Use currentLevel (no demotion, so this is the level student reached)
     const result: TestResult = {
       subject: active.subject,
-      level: lastSuccessfulLevel.current + 1,
+      level: currentLevel + 1, // Convert to 1-indexed for display
       totalQuestions,
       correctAnswers: correctAnswersForProgram,
     };
@@ -254,28 +256,48 @@ const getCurrentQuestion = () => {
     setShowFeedback(true);
 
     setTotalQuestions((n) => n + 1);
+    levelQuestionsAnswered.current++;
+
     if (correct) {
       levelCorrectAnswers.current++;
       setCorrectAnswersForProgram((c) => c + 1);
+    } else {
+      levelWrongAnswers.current++;
     }
 
-    levelQuestionsAnswered.current++;
+    // Update quick complete button visibility
+    setShowQuickComplete(levelQuestionsAnswered.current >= 5);
 
     setTimeout(async () => {
       setShowFeedback(false);
       setOneWordInput("");
 
-      // 2/3 -> ask 4th
-      if (
-        levelQuestionsAnswered.current === 3 &&
-        levelCorrectAnswers.current === 2
-      ) {
-        levelQuestionsAnswered.current = 3;
+      const answered = levelQuestionsAnswered.current;
+      const correct = levelCorrectAnswers.current;
+      const wrong = levelWrongAnswers.current;
+
+      // Check termination: 3 wrong in current level
+      if (wrong >= 3) {
+        await evaluateLevel();
         return;
       }
 
-      if (levelQuestionsAnswered.current >= 3) {
+      // Check promotion: 5 correct → promote immediately
+      if (correct >= 5) {
         await evaluateLevel();
+        return;
+      }
+
+      // After each batch of 5 questions, evaluate
+      if (answered === 5 || answered === 10) {
+        await evaluateLevel();
+        return;
+      }
+
+      // If we've reached 10 questions without 5 correct, end
+      if (answered >= 10) {
+        await evaluateLevel();
+        return;
       }
     }, 600);
   };
@@ -283,10 +305,6 @@ const getCurrentQuestion = () => {
   const active = getActiveProgram();
   const question = getCurrentQuestion();
   const qt = mapQuestionType(question?.questionType);
-
-  useEffect(() => {
-    setShowQuickComplete(totalQuestions >= 3);
-  }, [totalQuestions]);
 
   if (!isOpen) return null;
 
@@ -375,7 +393,15 @@ const getCurrentQuestion = () => {
               <div>
                 <div className="flex justify-between mb-2">
                   <Badge>Level {currentLevel + 1}</Badge>
-                  <Badge>Q{totalQuestions + 1}</Badge>
+                  <div className="flex gap-2">
+                    <Badge>
+                      Q{levelQuestionsAnswered.current + 1}
+                      {levelQuestionsAnswered.current < 5 ? "/5" : "/10"}
+                    </Badge>
+                    <Badge variant="outline">
+                      ✓ {levelCorrectAnswers.current} | ✗ {levelWrongAnswers.current}
+                    </Badge>
+                  </div>
                 </div>
 
                 <Card>
