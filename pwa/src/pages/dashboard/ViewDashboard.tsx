@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMyViewData } from "@/services/views";
 import { useAuth } from "@/hooks/useAuth";
+import { logout } from "@/services/auth";
+import { AUTH_ROUTE_PATHS } from "@/routes";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -26,10 +29,20 @@ import {
   ClipboardList,
   TrendingUp,
   Calendar,
+  LogOut,
 } from "lucide-react";
 
 function ViewDashboard() {
   const { user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = AUTH_ROUTE_PATHS.logout;
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
 
   const {
     data: viewData,
@@ -81,11 +94,22 @@ function ViewDashboard() {
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">{viewData.viewName}</h1>
-          {user && (
-            <p className="text-muted-foreground mt-1">Welcome, {user.name}</p>
-          )}
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{viewData.viewName}</h1>
+            {user && (
+              <p className="text-muted-foreground mt-1">Welcome, {user.name}</p>
+            )}
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
         </div>
 
         {/* Metrics Cards */}
