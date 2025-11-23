@@ -1,9 +1,19 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { AuthContext } from "../../contexts/AuthContext";
 import { UserRole } from "@/types/user";
+import { DASHBOARD_ROUTE_PATHS } from "@/routes";
 
 function DashboardPage() {
   const { user, loading } = useContext(AuthContext) || {};
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect view users to their dashboard
+    if (user && (user.role as string) === "view_user") {
+      navigate(DASHBOARD_ROUTE_PATHS.viewDashboard, { replace: true });
+    }
+  }, [user, navigate]);
 
   if (loading) {
     return <div>Loading...</div>;

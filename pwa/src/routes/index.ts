@@ -26,6 +26,8 @@ export const DASHBOARD_ROUTE_PATHS = {
   attendanceManagement: "/attendance",
   tutorProgress: "/progress/tutor",
   schools: "/schools",
+  views: "/views",
+  viewDashboard: "/view-dashboard",
   //
   // schoolAdmin: "/school-admins",
   //

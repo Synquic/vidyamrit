@@ -6,6 +6,7 @@ const roleHierarchy: Record<UserRoleType, UserRoleType[]> = {
   super_admin: ["super_admin", "tutor", "volunteer"],
   tutor: ["tutor"],
   volunteer: ["volunteer"],
+  view_user: ["view_user"],
 };
 
 export const useRoleAccess = () => {

@@ -29,12 +29,16 @@ import ManageVolunteers from "@/pages/dashboard/ManageVolunteers";
 import BaselineAssessmentsPage from "@/pages/dashboard/BaselineAssessmentsPage";
 import ManageTutors from "@/pages/dashboard/ManageTutors";
 import ManagePrograms from "@/pages/dashboard/ManagePrograms";
+import ManageViews from "@/pages/dashboard/ManageViews";
 
 // Attendance Pages
 import AttendanceManagement from "@/pages/dashboard/AttendanceManagement";
 
 // Progress Pages
 import ProgressManagement from "@/pages/dashboard/ProgressManagement";
+
+// View Pages
+import ViewDashboard from "@/pages/dashboard/ViewDashboard";
 
 export const router = createBrowserRouter([
   {
@@ -79,6 +83,10 @@ export const router = createBrowserRouter([
       {
         path: DASHBOARD_ROUTE_PATHS.dashboard,
         element: <DashboardPage />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.viewDashboard,
+        element: <ViewDashboard />,
       },
       {
         path: DASHBOARD_ROUTE_PATHS.students,
@@ -185,6 +193,16 @@ export const router = createBrowserRouter([
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
           >
             <ProgressManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.views,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.views]}
+          >
+            <ManageViews />
           </ProtectedRoute>
         ),
       },

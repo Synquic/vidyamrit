@@ -2,8 +2,9 @@ export enum UserRole {
   SUPER_ADMIN = "super_admin",
   TUTOR = "tutor",
   VOLUNTEER = "volunteer",
+  VIEW_USER = "view_user",
 }
-export type UserRoleType = "super_admin" | "tutor" | "volunteer";
+export type UserRoleType = "super_admin" | "tutor" | "volunteer" | "view_user";
 
 // Base user interface that matches the API response
 export interface BaseUser {

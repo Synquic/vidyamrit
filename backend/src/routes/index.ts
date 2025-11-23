@@ -11,6 +11,7 @@ import volunteerRouter from "./VolunteerRoutes";
 import progressRouter from "./ProgressRoutes";
 import baselineAssessmentRouter from "./BaselineAssessmentRoutes";
 import levelAssessmentRouter from "./LevelAssessmentRoutes";
+import viewRouter from "./ViewRoutes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.use("/progress", progressRouter);
 router.use("/schools", schoolRouter);
 router.use("/students", studentRouter);
 router.use("/volunteers", volunteerRouter);
+router.use("/views", viewRouter);
 // router.use("/super-admin", superAdminRouter);
 // router.use("/program-assessments", programAssessmentRouter);
 // router.use("/level-transitions", levelTransitionRouter);

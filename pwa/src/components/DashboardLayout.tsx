@@ -21,6 +21,7 @@ import { AppSidebar } from "./AppSidebar";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/LanguageToggleButton";
 import Notifications from "./Notifications";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -29,6 +30,10 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuth();
+
+  // Hide sidebar for view users
+  const isViewUser = user && (user.role as string) === "view_user";
 
   const getBreadcrumbTitle = () => {
     const path = location.pathname.slice(1);
@@ -37,11 +42,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
+      {!isViewUser && <AppSidebar />}
+      <SidebarInset className={isViewUser ? "w-full" : ""}>
         <header className="flex h-15 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
+          {!isViewUser && <SidebarTrigger className="-ml-1" />}
+          {!isViewUser && (
+            <Separator orientation="vertical" className="mr-2 h-4" />
+          )}
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
