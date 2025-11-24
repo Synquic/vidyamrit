@@ -4,7 +4,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { getNavigationForRole } from "@/config/SidebarListAndRoleNavigation";
-import { LogOut, User, EllipsisVertical, Info } from "lucide-react";
+import { LogOut, User, EllipsisVertical, Info, BookOpen, GraduationCap } from "lucide-react";
 import { SidebarItems } from "@/components/SidebarItems";
 import { SchoolSwitcher } from "@/components/SchoolSwitcher";
 import {
@@ -51,88 +51,135 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <div className="w-full px-4 py-6 flex flex-col items-center">
-          <div className="w-full max-w-[220px]">
+    <Sidebar collapsible="icon" {...props} className="border-r-0 shadow-sm">
+      <SidebarHeader className="border-b-0 bg-white/80 backdrop-blur-xl">
+        <div className="w-full px-4 py-6 flex flex-col items-center gap-4">
+          {/* Vidyamrit Logo and Brand */}
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:gap-2">
+            <div className="relative group">
+              {/* Logo container with subtle shadow */}
+              <div className="relative w-12 h-12 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/25 group-hover:shadow-xl group-hover:shadow-orange-500/30 transition-all duration-300 group-hover:scale-105">
+                <BookOpen className="w-6 h-6 text-white" strokeWidth={2.5} />
+              </div>
+            </div>
+
+            {/* Brand text - hidden when collapsed */}
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-orange-600 via-orange-500 to-amber-600 bg-clip-text text-transparent tracking-tight">
+                Vidyamrit
+              </h1>
+              <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                <GraduationCap className="w-3 h-3" />
+                Education Platform
+              </p>
+            </div>
+          </div>
+
+          {/* School Switcher */}
+          <div className="w-full max-w-[220px] group-data-[collapsible=icon]:hidden">
             <SchoolSwitcher />
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="bg-white/50 backdrop-blur-xl">
         <SidebarItems items={navigationItems} />
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t-0 bg-white/80 backdrop-blur-xl shadow-sm">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-gray-100/80 hover:bg-gray-50 transition-all duration-200 group rounded-xl"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <User />
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.name}</span>
-                <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
+              {/* Avatar with modern styling */}
+              <div className="relative">
+                <Avatar className="h-9 w-9 rounded-xl border-2 border-white shadow-md bg-gradient-to-br from-orange-500 to-amber-600">
+                  <div className="flex items-center justify-center w-full h-full">
+                    <User className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  </div>
+                </Avatar>
               </div>
-              <EllipsisVertical className="ml-auto size-4" />
+
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold text-gray-900">{user?.name}</span>
+                <span className="truncate text-xs text-gray-500 font-medium">{user?.email}</span>
+              </div>
+
+              <EllipsisVertical className="ml-auto size-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-2xl border-gray-100 shadow-xl"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <User />
+              <div className="flex items-center gap-3 px-3 py-3 text-left bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-t-2xl">
+                <Avatar className="h-10 w-10 rounded-xl border-2 border-white shadow-md bg-gradient-to-br from-orange-500 to-amber-600">
+                  <div className="flex items-center justify-center w-full h-full">
+                    <User className="w-5 h-5 text-white" strokeWidth={2.5} />
+                  </div>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user?.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">{user?.email}</span>
+                  <span className="truncate font-semibold text-gray-900">{user?.name}</span>
+                  <span className="truncate text-xs text-gray-500 font-medium">{user?.email}</span>
+                  <span className="truncate text-xs text-gray-400 mt-0.5 capitalize font-medium">{user?.role?.replace(/_/g, ' ')}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
 
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-gray-100" />
 
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <User />
+            <DropdownMenuGroup className="p-2">
+              <DropdownMenuItem className="rounded-xl hover:bg-gray-50 focus:bg-gray-50 cursor-pointer py-2.5">
+                <User className="text-gray-600" />
                 {t("Account")}
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Info />
+              <DropdownMenuItem className="rounded-xl hover:bg-gray-50 focus:bg-gray-50 cursor-pointer py-2.5">
+                <Info className="text-gray-600" />
                 {t("Notifications")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <LanguageToggleButton />
               </DropdownMenuItem>
             </DropdownMenuGroup>
 
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-gray-100" />
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2 flex items-center gap-2 text-red-600"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              {t("Logout")}
-            </Button>
+            <div className="p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors py-2.5"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                {t("Logout")}
+              </Button>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Branding footer - hidden when collapsed */}
+        <div className="px-3 py-3 text-center group-data-[collapsible=icon]:hidden">
+          <p className="text-xs text-gray-400 font-medium">
+            Made with{" "}
+            <span className="text-red-500 inline-block animate-pulse">♥</span>
+            {" "}by{" "}
+            <a
+              href="https://synquic.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-orange-600 hover:text-orange-700 transition-colors"
+            >
+              Synquic
+            </a>
+          </p>
+        </div>
       </SidebarFooter>
 
-      <SidebarRail />
+      <SidebarRail className="bg-gray-100/50" />
     </Sidebar>
   );
 }

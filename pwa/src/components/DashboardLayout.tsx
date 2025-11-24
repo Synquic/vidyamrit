@@ -83,9 +83,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </div>
         <footer className="border-t bg-gradient-to-r from-background to-muted/30 px-4 py-3 text-xs text-muted-foreground text-center backdrop-blur-sm">
-          © {new Date().getFullYear()} Parashwanath Enterprises. Made by{" "}
+          © {new Date().getFullYear()} Vidyamrit. Made by{" "}
           <a
-            href="https://synquic.in"
+            href="https://synquic.com"
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-primary hover:text-primary/80 hover:underline transition-colors"
