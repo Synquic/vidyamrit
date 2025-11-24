@@ -28,7 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { useTranslation } from "react-i18next";
-import { LanguageToggleButton } from "./LanguageToggleButton";
 import { logout } from "@/services/auth";
 import { AUTH_ROUTE_PATHS } from "@/routes";
 
@@ -161,22 +160,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Branding footer - hidden when collapsed */}
-        <div className="px-3 py-3 text-center group-data-[collapsible=icon]:hidden">
-          <p className="text-xs text-gray-400 font-medium">
-            Made with{" "}
-            <span className="text-red-500 inline-block animate-pulse">♥</span>
-            {" "}by{" "}
-            <a
-              href="https://synquic.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-orange-600 hover:text-orange-700 transition-colors"
-            >
-              Synquic
-            </a>
-          </p>
-        </div>
+       
       </SidebarFooter>
 
       <SidebarRail className="bg-gray-100/50" />

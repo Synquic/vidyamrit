@@ -5,14 +5,6 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/LanguageToggleButton";
 

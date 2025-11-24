@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { AuthContext } from "../../contexts/AuthContext";
-import { UserRole } from "@/types/user";
 import { DASHBOARD_ROUTE_PATHS } from "@/routes";
 import { getDashboardAnalytics, DashboardAnalytics } from "@/services/analytics";
 import {
@@ -16,7 +15,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from "recharts";
 import {
@@ -96,8 +94,6 @@ function DashboardPage() {
     purple: "#8b5cf6",
     pink: "#ec4899"
   };
-
-  const PIE_COLORS = [COLORS.primary, COLORS.secondary, COLORS.success, COLORS.warning];
 
   // Progress flag color mapping
   const progressFlagColors: Record<string, string> = {
