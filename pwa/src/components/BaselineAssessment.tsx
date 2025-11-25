@@ -75,6 +75,7 @@ export function BaselineAssessmentModal({
 
   // testing state
   const [currentLevel, setCurrentLevel] = useState(0);
+  const [lastCompletedLevel, setLastCompletedLevel] = useState(-1); // Track last successfully completed level
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
   const [oneWordInput, setOneWordInput] = useState("");
@@ -195,6 +196,7 @@ const getCurrentQuestion = () => {
     setCurrentProgramIndex(i);
     setModalState("testing");
     setCurrentLevel(0);
+    setLastCompletedLevel(-1); // Reset last completed level
     setOneWordInput("");
     setTotalQuestions(0);
     setCorrectAnswersForProgram(0);
@@ -214,20 +216,16 @@ const getCurrentQuestion = () => {
     const active = getActiveProgram();
     if (!active) return;
 
-    // Termination condition 1: 3 wrong answers in current level → end test
+    // Termination condition: 3 wrong answers in current level → end test
     if (wrong >= 3) {
       await finalizeProgram();
       return;
     }
 
-    // Termination condition 2: Level 0 with 0 correct → end test
-    if (currentLevel === 0 && correct === 0 && answered >= 5) {
-      await finalizeProgram();
-      return;
-    }
-
-    // Promotion condition: 5 correct answers → move to next level
-    if (correct >= 5) {
+    // Promotion condition: 8 correct answers → move to next level
+    if (correct >= 8) {
+      // Student passed current level, save it as last completed
+      setLastCompletedLevel(currentLevel);
       setCurrentLevel((l) => l + 1);
       // Reset counters for new level
       levelQuestionsAnswered.current = 0;
@@ -237,24 +235,38 @@ const getCurrentQuestion = () => {
       return;
     }
 
-    // After 10 questions without 5 correct → stay at level and end test
+    // After 10 questions: if 8+ correct → promote, if <8 correct → end test
     if (answered >= 10) {
-      await finalizeProgram();
+      if (correct >= 8) {
+        // Student passed current level, save it as last completed
+        setLastCompletedLevel(currentLevel);
+        // Promote to next level
+        setCurrentLevel((l) => l + 1);
+        levelQuestionsAnswered.current = 0;
+        levelCorrectAnswers.current = 0;
+        levelWrongAnswers.current = 0;
+        setShowQuickComplete(false);
+      } else {
+        // Stay at current level and end test
+        await finalizeProgram();
+      }
       return;
     }
-
-    // If we've answered a batch of 5, check if we should continue
-    // (This is handled in handleAnswer, but we keep this for safety)
   };
 
   const finalizeProgram = async () => {
     const active = getActiveProgram();
     if (!active) return;
 
-    // Use currentLevel (no demotion, so this is the level student reached)
+    // lastCompletedLevel is the index of the last level they passed
+    // If they passed level 1 (index 0), their knowledge level is 1
+    // If they didn't pass any level (lastCompletedLevel === -1), they're at level 0 (displayed as level 1)
+    // Example: Pass level 1 (index 0) → lastCompletedLevel = 0 → knowledge level = 1
+    //          Fail level 2 → lastCompletedLevel still 0 → knowledge level = 1
+    const knowledgeLevel = lastCompletedLevel >= 0 ? lastCompletedLevel + 1 : 1;
     const result: TestResult = {
       subject: active.subject,
-      level: currentLevel + 1, // Convert to 1-indexed for display
+      level: knowledgeLevel, // Already 1-indexed
       totalQuestions,
       correctAnswers: correctAnswersForProgram,
     };
@@ -309,26 +321,26 @@ const getCurrentQuestion = () => {
       const correct = levelCorrectAnswers.current;
       const wrong = levelWrongAnswers.current;
 
-      // Check termination: 3 wrong in current level
+      // Check termination: 3 wrong in current level → end test immediately
       if (wrong >= 3) {
         await evaluateLevel();
         return;
       }
 
-      // Check promotion: 5 correct → promote immediately
-      if (correct >= 5) {
+      // After first 5 questions: if all 5 correct → promote immediately
+      if (answered === 5 && correct === 5) {
         await evaluateLevel();
         return;
       }
 
-      // After each batch of 5 questions, evaluate
-      if (answered === 5 || answered === 10) {
+      // Check promotion: 8 correct → promote immediately (can happen at any point)
+      if (correct >= 8) {
         await evaluateLevel();
         return;
       }
 
-      // If we've reached 10 questions without 5 correct, end
-      if (answered >= 10) {
+      // After 10 questions: evaluate final result (promote if 8+, end if <8)
+      if (answered === 10) {
         await evaluateLevel();
         return;
       }
