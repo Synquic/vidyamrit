@@ -6,6 +6,7 @@ import {
 } from "../controllers/analyticsController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
+import { UserRole } from "../configs/roles";
 
 const router = Router();
 
@@ -29,7 +30,7 @@ router.get(
  */
 router.get(
   "/school/:schoolId",
-  roleMiddleware(["admin", "super_admin"]),
+  roleMiddleware(UserRole.SUPER_ADMIN),
   getSchoolAnalytics
 );
 
