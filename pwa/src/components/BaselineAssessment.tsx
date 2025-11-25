@@ -29,6 +29,16 @@ const mapQuestionType = (qt: string) => {
   return "verbal";
 };
 
+const splitQuestionLines = (text?: string) => {
+  if (!text) return [];
+  // Some questions encode line breaks as "/n" or escaped "\n".
+  const normalized = text.replace(/\\n/g, "\n").replace(/\/n/g, "\n");
+  return normalized
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+};
+
 type ModalState = "program-selection" | "testing" | "completed";
 
 interface TestResult {
@@ -328,6 +338,8 @@ const getCurrentQuestion = () => {
   const active = getActiveProgram();
   const question = getCurrentQuestion();
   const qt = mapQuestionType(question?.questionType);
+  const questionLines = splitQuestionLines(question?.questionText);
+  const hasMultipleLines = questionLines.length > 1;
 
   if (!isOpen) return null;
 
@@ -432,11 +444,11 @@ const getCurrentQuestion = () => {
   {active?.levels?.[currentLevel]?.title ?? `Level ${currentLevel + 1}`}
 </CardTitle>
                   <CardContent className="space-y-4">
-                    <div className={`bg-gray-100 p-5 rounded text-center break-words font-bold ${question?.questionText?.includes('\n') ? 'text-xl' : 'text-5xl'}`}>
-                      {(question?.questionText?.split('\n') || []).map((line: string, i: number) => (
+                    <div className={`bg-gray-100 p-5 rounded text-center break-words font-bold ${hasMultipleLines ? "text-xl" : "text-5xl"}`}>
+                      {questionLines.map((line, i) => (
                         <span key={i}>
                           {line}
-                          {i < (question?.questionText?.split('\n') || []).length - 1 && <br />}
+                          {i < questionLines.length - 1 && <br />}
                         </span>
                       ))}
                     </div>
