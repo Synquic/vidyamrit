@@ -308,17 +308,62 @@ export const deleteCohort = async (req: AuthRequest, res: Response) => {
 
     // Update all students in this cohort to mark their cohort membership as ended
     if (cohort.students && cohort.students.length > 0) {
-      await Student.updateMany(
-        { _id: { $in: cohort.students } },
+      const cohortId = cohort._id as mongoose.Types.ObjectId;
+      const dateLeaved = new Date();
+
+      // Convert student IDs to strings for comparison
+      const studentIds = cohort.students.map((id: any) => 
+        id.toString ? id.toString() : id
+      );
+
+      // Update each student individually to ensure the update works correctly
+      // Using updateMany with proper array filter matching
+      const updateResult = await Student.updateMany(
+        { 
+          _id: { $in: studentIds },
+          "cohort.cohortId": cohortId
+        },
         {
           $set: {
-            "cohort.$[elem].dateLeaved": new Date(),
+            "cohort.$[elem].dateLeaved": dateLeaved,
           },
         },
         {
-          arrayFilters: [{ "elem.cohortId": cohort._id }],
+          arrayFilters: [{ 
+            "elem.cohortId": cohortId,
+            "elem.dateLeaved": { $exists: false } // Only update if dateLeaved doesn't exist
+          }],
         }
       );
+
+      console.log(`Updated ${updateResult.modifiedCount} students to mark cohort as left`);
+
+      // Fallback: If the array filter didn't work, update students individually
+      // This ensures all students are properly released even if the bulk update fails
+      if (updateResult.modifiedCount === 0) {
+        console.log("Bulk update didn't modify any documents, trying individual updates...");
+        for (const studentId of studentIds) {
+          const student = await Student.findById(studentId);
+          if (student && student.cohort) {
+            const cohortIndex = student.cohort.findIndex(
+              (c: any) => {
+                if (!c.cohortId) return false;
+                const cCohortId = c.cohortId as mongoose.Types.ObjectId;
+                return (
+                  (cCohortId.toString() === cohortId.toString() || 
+                   cCohortId.equals(cohortId)) &&
+                  !c.dateLeaved
+                );
+              }
+            );
+            
+            if (cohortIndex !== -1) {
+              student.cohort[cohortIndex].dateLeaved = dateLeaved;
+              await student.save();
+            }
+          }
+        }
+      }
     }
 
     // Now delete the cohort
@@ -484,7 +529,7 @@ export const previewOptimalCohorts = async (
       }));
     }
 
-    // Get students
+    // Get students (exclude archived students)
     const students: Array<{ 
       _id: any; 
       knowledgeLevel: Array<{ 
@@ -496,6 +541,7 @@ export const previewOptimalCohorts = async (
       }>;
     }> = await Student.find({
       school: schoolId,
+      isArchived: { $ne: true },
     });
 
     if (students.length === 0) {
@@ -510,14 +556,26 @@ export const previewOptimalCohorts = async (
       role: UserRole.TUTOR,
     });
 
-    // Get students already in active cohorts
-    const studentsInActiveCohorts = await Student.find({
+    // Get all active cohorts for this school to verify cohort existence
+    const activeCohorts = await Cohort.find({
+      schoolId: schoolId,
+      status: 'active'
+    }).select('_id');
+    const activeCohortIds = new Set(activeCohorts.map((c: any) => c._id.toString()));
+
+    // Get students already in active cohorts (exclude archived students)
+    // Only count students whose cohort membership is active AND the cohort still exists
+    const allStudents = await Student.find({ 
       school: schoolId,
-      cohort: {
-        $elemMatch: {
-          dateLeaved: { $exists: false },
-        },
-      },
+      isArchived: { $ne: true },
+    });
+    const studentsInActiveCohorts = allStudents.filter((student: any) => {
+      if (!student.cohort || student.cohort.length === 0) return false;
+      return student.cohort.some((c: any) => {
+        const hasActiveMembership = !c.dateLeaved;
+        const cohortExists = c.cohortId && activeCohortIds.has(c.cohortId.toString());
+        return hasActiveMembership && cohortExists;
+      });
     });
     const activeCohortStudentIds = new Set(
       studentsInActiveCohorts.map((s: any) => s._id.toString())
@@ -753,7 +811,7 @@ export const generateOptimalCohorts = async (
 
     console.log(`Generating optimal cohorts for school: ${schoolId} for ${programsToProcess.length} programs`);
 
-    // Get all students from the school who have completed assessments
+    // Get all students from the school who have completed assessments (exclude archived students)
     const students: Array<{ 
       _id: any; 
       knowledgeLevel: Array<{ 
@@ -765,6 +823,7 @@ export const generateOptimalCohorts = async (
       }>;
     }> = await Student.find({
       school: schoolId,
+      isArchived: { $ne: true },
     });
 
     if (students.length === 0) {
@@ -781,14 +840,26 @@ export const generateOptimalCohorts = async (
 
     console.log(`Found ${tutors.length} tutors for the school (tutors are optional)`);
 
-    // Get students who are already in active cohorts (to exclude them)
-    const studentsInActiveCohorts = await Student.find({
+    // Get all active cohorts for this school to verify cohort existence
+    const activeCohorts = await Cohort.find({
+      schoolId: schoolId,
+      status: 'active'
+    }).select('_id');
+    const activeCohortIds = new Set(activeCohorts.map((c: any) => c._id.toString()));
+
+    // Get students who are already in active cohorts (to exclude them) (exclude archived students)
+    // Only count students whose cohort membership is active AND the cohort still exists
+    const allStudentsForSchool = await Student.find({ 
       school: schoolId,
-      cohort: {
-        $elemMatch: {
-          dateLeaved: { $exists: false },
-        },
-      },
+      isArchived: { $ne: true },
+    });
+    const studentsInActiveCohorts = allStudentsForSchool.filter((student: any) => {
+      if (!student.cohort || student.cohort.length === 0) return false;
+      return student.cohort.some((c: any) => {
+        const hasActiveMembership = !c.dateLeaved;
+        const cohortExists = c.cohortId && activeCohortIds.has(c.cohortId.toString());
+        return hasActiveMembership && cohortExists;
+      });
     });
     const activeCohortStudentIds = new Set(
       studentsInActiveCohorts.map((s: any) => s._id.toString())

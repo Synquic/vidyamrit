@@ -417,8 +417,11 @@ export const getStudentCohortStatus = async (
       }
     }
 
-    // Get all students from the school
-    const allStudents = await Student.find({ school: schoolId });
+    // Get all students from the school (exclude archived students)
+    const allStudents = await Student.find({ 
+      school: schoolId,
+      isArchived: { $ne: true },
+    });
 
     // Filter students who have completed assessments
     const studentsWithAssessments = allStudents.filter(
