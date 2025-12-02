@@ -36,13 +36,25 @@ cohortRouter.get(
 );
 
 // Create cohort
-cohortRouter.post("/", roleMiddleware(UserRole.SUPER_ADMIN), createCohort);
+cohortRouter.post(
+  "/",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  createCohort
+);
 
 // Update cohort
-cohortRouter.put("/:id", roleMiddleware(UserRole.SUPER_ADMIN), updateCohort);
+cohortRouter.put(
+  "/:id",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  updateCohort
+);
 
 // Delete cohort
-cohortRouter.delete("/:id", roleMiddleware(UserRole.SUPER_ADMIN), deleteCohort);
+cohortRouter.delete(
+  "/:id",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  deleteCohort
+);
 
 // Tutor can add students to cohort
 cohortRouter.post(

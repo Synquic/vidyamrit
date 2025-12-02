@@ -97,9 +97,27 @@ export const getCohort = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Create cohort (School Admin, Super Admin only)
-export const createCohort = async (req: Request, res: Response) => {
+// Create cohort (Super Admin and Tutors)
+export const createCohort = async (req: AuthRequest, res: Response) => {
   try {
+    const { schoolId } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: "School ID is required" });
+    }
+
+    // Check if tutor has permission to create cohorts for this school
+    if (req.user?.role === UserRole.TUTOR) {
+      const userSchoolId = req.user.schoolId?.toString();
+      const requestedSchoolId = schoolId?.toString();
+      
+      if (userSchoolId !== requestedSchoolId) {
+        return res.status(403).json({
+          error: "You can only create cohorts for your assigned school",
+        });
+      }
+    }
+
     const cohort = new Cohort(req.body);
     await cohort.save();
     res.status(201).json(cohort);
@@ -108,18 +126,34 @@ export const createCohort = async (req: Request, res: Response) => {
   }
 };
 
-// Update cohort (School Admin, Super Admin only)
-export const updateCohort = async (req: Request, res: Response) => {
+// Update cohort (Super Admin and Tutors)
+export const updateCohort = async (req: AuthRequest, res: Response) => {
   try {
-    const cohort = await Cohort.findByIdAndUpdate(
+    const cohort = await Cohort.findById(req.params.id);
+    
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Check if tutor has permission to update this cohort
+    if (req.user?.role === UserRole.TUTOR) {
+      const cohortSchoolId = cohort.schoolId?.toString();
+      const userSchoolId = req.user.schoolId?.toString();
+      
+      if (cohortSchoolId !== userSchoolId) {
+        return res.status(403).json({
+          error: "You can only update cohorts from your assigned school",
+        });
+      }
+    }
+
+    const updatedCohort = await Cohort.findByIdAndUpdate(
       req.params.id,
       { ...req.body, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
-    if (!cohort) {
-      return res.status(404).json({ error: "Cohort not found" });
-    }
-    res.json(cohort);
+    
+    res.json(updatedCohort);
   } catch (error: any) {
     res.status(500).json({ error: "Error updating cohort" });
   }
@@ -252,12 +286,24 @@ export const checkAssessmentReadiness = async (req: AuthRequest, res: Response) 
   }
 };
 
-export const deleteCohort = async (req: Request, res: Response) => {
+export const deleteCohort = async (req: AuthRequest, res: Response) => {
   try {
     // Find the cohort first
     const cohort = await Cohort.findById(req.params.id);
     if (!cohort) {
       return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Check if tutor has permission to delete this cohort
+    if (req.user?.role === UserRole.TUTOR) {
+      const cohortSchoolId = cohort.schoolId?.toString();
+      const userSchoolId = req.user.schoolId?.toString();
+      
+      if (cohortSchoolId !== userSchoolId) {
+        return res.status(403).json({
+          error: "You can only delete cohorts from your assigned school",
+        });
+      }
     }
 
     // Update all students in this cohort to mark their cohort membership as ended
@@ -383,10 +429,15 @@ export const previewOptimalCohorts = async (
     }
 
     // Check if user has permission
-    if (req.user?.role === UserRole.TUTOR && req.user.schoolId !== schoolId) {
-      return res.status(403).json({
-        error: "You can only generate cohorts for your assigned school",
-      });
+    if (req.user?.role === UserRole.TUTOR) {
+      const userSchoolId = req.user.schoolId?.toString();
+      const requestedSchoolId = schoolId?.toString();
+      
+      if (userSchoolId !== requestedSchoolId) {
+        return res.status(403).json({
+          error: "You can only generate cohorts for your assigned school",
+        });
+      }
     }
 
     // Get programs to process (same logic as generateOptimalCohorts)
@@ -637,10 +688,15 @@ export const generateOptimalCohorts = async (
     }
 
     // Check if user has permission to generate cohorts for this school
-    if (req.user?.role === UserRole.TUTOR && req.user.schoolId !== schoolId) {
-      return res.status(403).json({
-        error: "You can only generate cohorts for your assigned school",
-      });
+    if (req.user?.role === UserRole.TUTOR) {
+      const userSchoolId = req.user.schoolId?.toString();
+      const requestedSchoolId = schoolId?.toString();
+      
+      if (userSchoolId !== requestedSchoolId) {
+        return res.status(403).json({
+          error: "You can only generate cohorts for your assigned school",
+        });
+      }
     }
 
     // Get programs to process
@@ -996,10 +1052,15 @@ export const createCohortsFromPlan = async (
     }
 
     // Check if user has permission
-    if (req.user?.role === UserRole.TUTOR && req.user.schoolId !== schoolId) {
-      return res.status(403).json({
-        error: "You can only create cohorts for your assigned school",
-      });
+    if (req.user?.role === UserRole.TUTOR) {
+      const userSchoolId = req.user.schoolId?.toString();
+      const requestedSchoolId = schoolId?.toString();
+      
+      if (userSchoolId !== requestedSchoolId) {
+        return res.status(403).json({
+          error: "You can only create cohorts for your assigned school",
+        });
+      }
     }
 
     const Program = require("../models/ProgramModel").default;

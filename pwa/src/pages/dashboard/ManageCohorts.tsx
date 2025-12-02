@@ -430,17 +430,14 @@ function ManageCohorts() {
   // Handle individual program cohort count change
   const handleProgramCohortChange = (programId: string, value: number) => {
     const newConfigs = { ...programCohortConfigs };
-    newConfigs[programId] = Math.max(0, value);
 
-    // Recalculate total
-    const newTotal = Object.values(newConfigs).reduce(
-      (sum, count) => sum + count,
-      0
-    );
-    setTotalMaxCohorts(newTotal);
+    // Cap the value at totalMaxCohorts (can't exceed total)
+    const newValue = Math.max(0, Math.min(value, totalMaxCohorts));
+    newConfigs[programId] = newValue;
 
-    // Redistribute remaining to other selected programs
-    const remaining = newTotal - newConfigs[programId];
+    // Keep totalMaxCohorts fixed - don't recalculate it
+    // Redistribute remaining (total - this program's value) to other selected programs
+    const remaining = totalMaxCohorts - newValue;
     const otherPrograms = Array.from(selectedPrograms).filter(
       (id) => id !== programId
     );
@@ -459,6 +456,7 @@ function ManageCohorts() {
     }
 
     setProgramCohortConfigs(newConfigs);
+    // Note: totalMaxCohorts stays the same - it's the source of truth
   };
 
   // Handle program selection toggle
@@ -1122,7 +1120,7 @@ function ManageCohorts() {
                                   id={`cohorts-${program._id}`}
                                   type="number"
                                   min="0"
-                                  max="50"
+                                  max={totalMaxCohorts}
                                   value={cohortCount}
                                   onChange={(e) =>
                                     handleProgramCohortChange(

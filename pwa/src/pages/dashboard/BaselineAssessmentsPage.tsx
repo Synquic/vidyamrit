@@ -55,6 +55,7 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -86,6 +87,9 @@ export default function BaselineAssessmentsPage() {
     cohort: [],
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [studentSelectSearch, setStudentSelectSearch] = useState("");
+  const [isStudentSelectOpen, setIsStudentSelectOpen] = useState(false);
   console.log(allAssessments);
 
   useEffect(() => {
@@ -729,9 +733,17 @@ export default function BaselineAssessmentsPage() {
                       </Label>
                       <Select
                         value={selectedStudent?._id || ""}
+                        open={isStudentSelectOpen}
+                        onOpenChange={(open) => {
+                          setIsStudentSelectOpen(open);
+                          if (!open) {
+                            setStudentSelectSearch(""); // Clear search when dropdown closes
+                          }
+                        }}
                         onValueChange={(value) => {
                           const student = students.find((s) => s._id === value);
                           setSelectedStudent(student || null);
+                          setIsStudentSelectOpen(false);
                           if (student) setModalOpen(true);
                         }}
                       >
@@ -739,13 +751,54 @@ export default function BaselineAssessmentsPage() {
                           <SelectValue placeholder="-- Select a student to assess --" />
                         </SelectTrigger>
                         <SelectContent>
-                          {students.map((student) => {
-                            return (
-                              <SelectItem key={student._id} value={student._id}>
-                                {student.name} (Roll: {student.roll_no})
-                              </SelectItem>
-                            );
-                          })}
+                          <div className="p-2 border-b sticky top-0 bg-background z-10">
+                            <div className="relative">
+                              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Search by name, roll..."
+                                value={studentSelectSearch}
+                                onChange={(e) => {
+                                  setStudentSelectSearch(e.target.value);
+                                }}
+                                className="pl-8 h-9"
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {(() => {
+                              // Filter students based on search query
+                              const filteredStudents = students.filter((student) => {
+                                if (!studentSelectSearch.trim()) return true;
+                                const query = studentSelectSearch.toLowerCase().trim();
+                                const name = student.name?.toLowerCase() || "";
+                                const rollNo = student.roll_no?.toLowerCase() || "";
+                                const className = student.class?.toLowerCase() || "";
+                                return (
+                                  name.includes(query) ||
+                                  rollNo.includes(query) ||
+                                  className.includes(query)
+                                );
+                              });
+
+                              if (filteredStudents.length === 0) {
+                                return (
+                                  <div className="p-4 text-center text-sm text-muted-foreground">
+                                    No students found matching "{studentSelectSearch}"
+                                  </div>
+                                );
+                              }
+
+                              return filteredStudents.map((student) => {
+                                return (
+                                  <SelectItem key={student._id} value={student._id}>
+                                    {student.name} (Roll: {student.roll_no})
+                                  </SelectItem>
+                                );
+                              });
+                            })()}
+                          </div>
                         </SelectContent>
                       </Select>
                     </div>
@@ -835,20 +888,34 @@ export default function BaselineAssessmentsPage() {
               <div className="lg:col-span-3">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BookOpen className="mr-2 h-5 w-5" />
-                      Baseline Assessment Status
-                    </CardTitle>
-                    <CardDescription>
-                      Complete overview of all students and their baseline
-                      assessment completion by program
-                    </CardDescription>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <CardTitle className="flex items-center">
+                          <BookOpen className="mr-2 h-5 w-5" />
+                          Baseline Assessment Status
+                        </CardTitle>
+                        <CardDescription>
+                          Complete overview of all students and their baseline
+                          assessment completion by program
+                        </CardDescription>
+                      </div>
+                      <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name, roll..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-12">#</TableHead>
                             <TableHead className="w-[200px]">
                               Student Name
                             </TableHead>
@@ -873,7 +940,37 @@ export default function BaselineAssessmentsPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {students.map((student) => {
+                          {(() => {
+                            // Filter students based on search query
+                            const filteredStudents = students.filter((student) => {
+                              if (!searchQuery.trim()) return true;
+                              const query = searchQuery.toLowerCase().trim();
+                              const name = student.name?.toLowerCase() || "";
+                              const rollNo = student.roll_no?.toLowerCase() || "";
+                              const className = student.class?.toLowerCase() || "";
+                              return (
+                                name.includes(query) ||
+                                rollNo.includes(query) ||
+                                className.includes(query)
+                              );
+                            });
+
+                            if (filteredStudents.length === 0) {
+                              return (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={3 + programs.length}
+                                    className="text-center py-8 text-muted-foreground"
+                                  >
+                                    {searchQuery.trim()
+                                      ? `No students found matching "${searchQuery}"`
+                                      : "No students found"}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }
+
+                            return filteredStudents.map((student, index) => {
                             const ProgramStatusCell = ({
                               status,
                               program,
@@ -967,6 +1064,9 @@ export default function BaselineAssessmentsPage() {
 
                             return (
                               <TableRow key={student._id}>
+                                <TableCell className="text-center font-medium text-muted-foreground">
+                                  {index + 1}
+                                </TableCell>
                                 <TableCell className="font-medium">
                                   {student.name}
                                 </TableCell>
@@ -995,7 +1095,8 @@ export default function BaselineAssessmentsPage() {
                                 })}
                               </TableRow>
                             );
-                          })}
+                            });
+                          })()}
                         </TableBody>
                       </Table>
                     </div>

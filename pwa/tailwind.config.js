@@ -7,9 +7,11 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ["var(--font-sans)", "sans-serif"],
+                sans: ["var(--font-sans)", "Inter", "sans-serif"],
                 serif: ["var(--font-serif)", "serif"],
                 display: ["var(--font-display)", "sans-serif"],
+                devanagari: ["'Noto Sans Devanagari'", "sans-serif"],
+                inter: ["Inter", "sans-serif"],
             },
             fontWeight: {
                 light: '300',

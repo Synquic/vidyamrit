@@ -406,13 +406,15 @@ export const getStudentCohortStatus = async (
     }
 
     // Check if user has permission to view this school's data
-    if (
-      req.user?.role === UserRole.TUTOR &&
-      String(req.user.schoolId) !== String(schoolId)
-    ) {
-      return res
-        .status(403)
-        .json({ error: "You can only view data for your assigned school" });
+    if (req.user?.role === UserRole.TUTOR) {
+      const userSchoolId = req.user.schoolId?.toString();
+      const requestedSchoolId = schoolId?.toString();
+      
+      if (userSchoolId !== requestedSchoolId) {
+        return res
+          .status(403)
+          .json({ error: "You can only view data for your assigned school" });
+      }
     }
 
     // Get all students from the school

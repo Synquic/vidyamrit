@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Edit, Archive, RotateCcw } from "lucide-react";
+import { Plus, Loader2, Edit, Archive, RotateCcw, Search } from "lucide-react";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 
 function ManageStudents() {
@@ -65,6 +65,7 @@ function ManageStudents() {
   const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
   const [confirmArchiveText, setConfirmArchiveText] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState<CreateStudentDTO>({
     name: "",
     age: 0,
@@ -395,6 +396,32 @@ function ManageStudents() {
     );
   };
 
+  // Filter students based on search query
+  const filterStudents = (studentList: Student[] | undefined) => {
+    if (!studentList) return [];
+    if (!searchQuery.trim()) return studentList;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return studentList.filter((student) => {
+      const name = student.name?.toLowerCase() || "";
+      const rollNo = student.roll_no?.toLowerCase() || "";
+      const className = student.class?.toLowerCase() || "";
+      const gender = student.gender?.toLowerCase() || "";
+      const caste = student.caste?.toLowerCase() || "";
+      
+      return (
+        name.includes(query) ||
+        rollNo.includes(query) ||
+        className.includes(query) ||
+        gender.includes(query) ||
+        caste.includes(query)
+      );
+    });
+  };
+
+  const filteredActiveStudents = filterStudents(students);
+  const filteredArchivedStudents = filterStudents(archivedStudents);
+
   const isLoading =
     viewMode === "active" ? isLoadingStudents : isLoadingArchived;
 
@@ -450,7 +477,7 @@ function ManageStudents() {
             </Button>
           )}
         </div>
-        <div className="mt-4 flex justify-start">
+        <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
           <div className="flex border rounded-md">
             <Button
               variant={viewMode === "active" ? "default" : "ghost"}
@@ -468,6 +495,15 @@ function ManageStudents() {
               Archived
             </Button>
           </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, roll, class..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
       </div>
 
@@ -475,6 +511,7 @@ function ManageStudents() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Age</TableHead>
               <TableHead>Gender</TableHead>
@@ -487,8 +524,11 @@ function ManageStudents() {
           <TableBody>
             {viewMode === "active"
               ? // Active students
-                students?.map((student) => (
+                filteredActiveStudents.map((student, index) => (
                   <TableRow key={student._id}>
+                    <TableCell className="text-center font-medium text-muted-foreground">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>{student.name}</TableCell>
                     <TableCell>{student.age}</TableCell>
                     <TableCell>{student.gender}</TableCell>
@@ -547,8 +587,11 @@ function ManageStudents() {
                   </TableRow>
                 ))
               : // Archived students
-                archivedStudents?.map((student) => (
+                filteredArchivedStudents.map((student, index) => (
                   <TableRow key={student._id}>
+                    <TableCell className="text-center font-medium text-muted-foreground">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>{student.name}</TableCell>
                     <TableCell>{student.age}</TableCell>
                     <TableCell>{student.gender}</TableCell>
@@ -597,15 +640,16 @@ function ManageStudents() {
                     </TableCell>
                   </TableRow>
                 ))}
-            {((viewMode === "active" && (!students || students.length === 0)) ||
-              (viewMode === "archived" &&
-                (!archivedStudents || archivedStudents.length === 0))) && (
+            {((viewMode === "active" && filteredActiveStudents.length === 0) ||
+              (viewMode === "archived" && filteredArchivedStudents.length === 0)) && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-8 text-muted-foreground"
                 >
-                  {viewMode === "active"
+                  {searchQuery.trim()
+                    ? `No students found matching "${searchQuery}"`
+                    : viewMode === "active"
                     ? "No active students found"
                     : "No archived students found"}
                 </TableCell>

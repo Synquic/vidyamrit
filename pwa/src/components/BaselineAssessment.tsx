@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -70,14 +70,20 @@ export function BaselineAssessmentModal({
   // global
   const [modalState, setModalState] = useState<ModalState>("program-selection");
   const [currentProgramIndex, setCurrentProgramIndex] = useState(-1);
-  const [completedPrograms, setCompletedPrograms] = useState<Set<string>>(new Set());
-  const [programResults, setProgramResults] = useState<Record<string, TestResult>>({});
+  const [completedPrograms, setCompletedPrograms] = useState<Set<string>>(
+    new Set()
+  );
+  const [programResults, setProgramResults] = useState<
+    Record<string, TestResult>
+  >({});
 
   // testing state
   const [currentLevel, setCurrentLevel] = useState(0);
   const [lastCompletedLevel, setLastCompletedLevel] = useState(-1); // Track last successfully completed level
   const [showFeedback, setShowFeedback] = useState(false);
-  const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(
+    null
+  );
   const [oneWordInput, setOneWordInput] = useState("");
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [correctAnswersForProgram, setCorrectAnswersForProgram] = useState(0);
@@ -89,6 +95,7 @@ export function BaselineAssessmentModal({
   const levelWrongAnswers = useRef(0); // wrong answers in current level (max 3)
 
   // shuffle question cache
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [shuffledCache, setShuffledCache] = useState<Record<string, any>>({});
 
   // reset modal when open
@@ -103,19 +110,20 @@ export function BaselineAssessmentModal({
 
   // Auto-start pre-selected program
   useEffect(() => {
-    if (!isOpen || !preSelectedProgramId || !student || programs.length === 0) return;
+    if (!isOpen || !preSelectedProgramId || !student || programs.length === 0)
+      return;
     if (currentProgramIndex >= 0) return; // Already started a program
-    
+
     const programIndex = programs.findIndex(
       (p) => p._id === preSelectedProgramId
     );
-    
+
     if (programIndex >= 0) {
       // Small delay to ensure state is reset first
       const timer = setTimeout(() => {
         startProgram(programIndex);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +134,7 @@ export function BaselineAssessmentModal({
     return programs[currentProgramIndex];
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const shuffle = (arr: any[]) => {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -135,58 +144,57 @@ export function BaselineAssessmentModal({
     return a;
   };
 
-const ensureShuffled = (programId: string, level: number) => {
-  // ✅ If level exceeds program levels – return empty array and stop later
-  const prog = programs.find((p) => p._id === programId);
-  const lvl = prog?.levels?.[level];
-  if (!lvl) return []; // prevents crash
+  const ensureShuffled = (programId: string, level: number) => {
+    // ✅ If level exceeds program levels – return empty array and stop later
+    const prog = programs.find((p) => p._id === programId);
+    const lvl = prog?.levels?.[level];
+    if (!lvl) return []; // prevents crash
 
-  if (shuffledCache?.[programId]?.[level]) {
-    return shuffledCache[programId][level];
-  }
+    if (shuffledCache?.[programId]?.[level]) {
+      return shuffledCache[programId][level];
+    }
 
-  const questions = Array.isArray(lvl.assessmentQuestions)
-    ? lvl.assessmentQuestions
-    : [];
+    const questions = Array.isArray(lvl.assessmentQuestions)
+      ? lvl.assessmentQuestions
+      : [];
 
-  const shuffled = shuffle(questions);
+    const shuffled = shuffle(questions);
 
-  setShuffledCache((prev) => ({
-    ...prev,
-    [programId]: { ...(prev[programId] || {}), [level]: shuffled },
-  }));
+    setShuffledCache((prev) => ({
+      ...prev,
+      [programId]: { ...(prev[programId] || {}), [level]: shuffled },
+    }));
 
-  return shuffled;
-};
+    return shuffled;
+  };
 
-const getCurrentQuestion = () => {
-  const active = getActiveProgram();
-  if (!active) return null;
+  const getCurrentQuestion = () => {
+    const active = getActiveProgram();
+    if (!active) return null;
 
-  // ✅ Level overflow = student conquered all levels → end program
-  if (currentLevel >= active.levels.length) {
-    finalizeProgram();
+    // ✅ Level overflow = student conquered all levels → end program
+    if (currentLevel >= active.levels.length) {
+      finalizeProgram();
+      return null;
+    }
+
+    const shuffled = ensureShuffled(active._id, currentLevel);
+
+    // ✅ No questions = auto finalize
+    if (!shuffled || shuffled.length === 0) {
+      finalizeProgram();
+      return null;
+    }
+
+    // Show questions sequentially: 0-4 (batch 1), then 5-9 (batch 2)
+    const idx = levelQuestionsAnswered.current;
+    if (idx < shuffled.length) {
+      return shuffled[idx];
+    }
+
+    // If we've answered all available questions, end
     return null;
-  }
-
-  const shuffled = ensureShuffled(active._id, currentLevel);
-
-  // ✅ No questions = auto finalize
-  if (!shuffled || shuffled.length === 0) {
-    finalizeProgram();
-    return null;
-  }
-
-  // Show questions sequentially: 0-4 (batch 1), then 5-9 (batch 2)
-  const idx = levelQuestionsAnswered.current;
-  if (idx < shuffled.length) {
-    return shuffled[idx];
-  }
-
-  // If we've answered all available questions, end
-  return null;
-};
-
+  };
 
   const startProgram = (i: number) => {
     if (!student) {
@@ -275,20 +283,21 @@ const getCurrentQuestion = () => {
       await createAssessment({
         student: student!._id,
         school: student!.schoolId._id,
-        mentor: user?.id || '',
+        mentor: user?.id || "",
         subject: active.subject,
         level: result.level,
         program: active._id, // Add program ID
       });
       toast.success(`${active.name}: Level ${result.level} saved`);
-    } catch (e) {
+    } catch {
       toast.error("Failed to save result");
     }
 
     setProgramResults((p) => ({ ...p, [active._id]: result }));
     setCompletedPrograms((p) => new Set([...p, active._id]));
 
-    const all = programs.length > 0 && completedPrograms.size + 1 === programs.length;
+    const all =
+      programs.length > 0 && completedPrograms.size + 1 === programs.length;
     if (all) setModalState("completed");
     else {
       setModalState("program-selection");
@@ -365,98 +374,140 @@ const getCurrentQuestion = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl bg-background rounded-2xl shadow-2xl">
-
-          {/* HEADER */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <Brain className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-md font-semibold">Baseline Assessment</h2>
-                {student && (
-                  <p className="text-sm text-muted-foreground">
-                    {student.name} (Roll {student.roll_no})
-                  </p>
-                )}
-              </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={closeAll}>
-              <X className="w-4 h-4" />
-            </Button>
+    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      {/* HEADER - Fixed at top */}
+      <div className="flex items-center justify-between p-4 border-b bg-background flex-shrink-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <Brain className="w-4 h-4 text-primary" />
           </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold truncate">
+              Baseline Assessment
+            </h2>
+            {student && (
+              <p className="text-xs text-muted-foreground truncate">
+                {student.name} (Roll {student.roll_no})
+              </p>
+            )}
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={closeAll}
+          className="flex-shrink-0"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
 
-          <div className="p-6">
-            {/* PROGRAM LIST */}
-            {modalState === "program-selection" && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <Target className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <h2 className="text-xl font-bold mb-1">Select Program</h2>
-                </div>
+      {/* CONTENT - Centered and Full Height */}
+      <div className="flex-1 overflow-y-auto flex items-center justify-center p-4">
+        <div className="w-full max-w-2xl mx-auto">
+          {/* PROGRAM LIST */}
+          {modalState === "program-selection" && (
+            <div className="space-y-4">
+              <div className="text-center py-2">
+                <Target className="h-6 w-6 text-primary mx-auto mb-2" />
+                <h2 className="text-lg font-bold">Select Program</h2>
+              </div>
 
+              <div className="space-y-3">
                 {programs.map((p, i) => {
                   const done = completedPrograms.has(p._id);
                   const res = programResults[p._id];
                   return (
-                    <Card key={p._id} className={done ? "bg-green-50" : ""}>
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                          <div className="flex gap-2 items-center">
-                            <BookOpen className={done ? "text-green-600" : "text-blue-600"} />
-                            <span className="font-semibold">{p.name}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {p.subject} • {p.levels?.length || 0} levels
-                          </p>
-                          {done && (
-                            <p className="text-sm text-green-600">
-                              Level {res?.level}
+                    <Card
+                      key={p._id}
+                      className={done ? "bg-green-50 border-green-200" : ""}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex gap-2 items-center mb-1">
+                              <BookOpen
+                                className={`w-4 h-4 flex-shrink-0 ${
+                                  done ? "text-green-600" : "text-blue-600"
+                                }`}
+                              />
+                              <span className="font-semibold text-base">
+                                {p.name}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-1">
+                              {p.subject} • {p.levels?.length || 0} levels
                             </p>
+                            {done && res && (
+                              <Badge
+                                variant="outline"
+                                className="bg-green-100 text-green-700 border-green-300 text-xs"
+                              >
+                                Completed: Level {res.level}
+                              </Badge>
+                            )}
+                          </div>
+                          {!done ? (
+                            <Button
+                              size="sm"
+                              onClick={() => startProgram(i)}
+                              className="flex-shrink-0"
+                            >
+                              Start
+                            </Button>
+                          ) : (
+                            <Badge className="bg-green-600 flex-shrink-0">
+                              Done
+                            </Badge>
                           )}
                         </div>
-
-                        {!done ? (
-                          <Button size="sm" onClick={() => startProgram(i)}>Start</Button>
-                        ) : (
-                          <Badge className="bg-green-600">Done</Badge>
-                        )}
                       </CardContent>
                     </Card>
                   );
                 })}
-
-                <Button variant="outline" className="w-full" onClick={closeAll}>
-                  Close
-                </Button>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* TESTING SCREEN */}
-            {modalState === "testing" && (
-              <div>
-                <div className="flex justify-between mb-2">
-                  <Badge>Level {currentLevel + 1}</Badge>
-                  <div className="flex gap-2">
-                    <Badge>
-                      Q{levelQuestionsAnswered.current + 1}
-                      {levelQuestionsAnswered.current < 5 ? "/5" : "/10"}
-                    </Badge>
-                    <Badge variant="outline">
-                      ✓ {levelCorrectAnswers.current} | ✗ {levelWrongAnswers.current}
-                    </Badge>
-                  </div>
+          {/* TESTING SCREEN */}
+          {modalState === "testing" && (
+            <div className="flex flex-col h-full min-h-[600px]">
+              {/* Progress Bar */}
+              <div className="flex justify-between items-center mb-6">
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  Level {currentLevel + 1}
+                </Badge>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="text-xs px-3 py-1">
+                    Q{levelQuestionsAnswered.current + 1}
+                    {levelQuestionsAnswered.current < 5 ? "/5" : "/10"}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs px-3 py-1">
+                    ✓ {levelCorrectAnswers.current} | ✗{" "}
+                    {levelWrongAnswers.current}
+                  </Badge>
                 </div>
+              </div>
 
-                <Card>
-<CardTitle>
-  {active?.levels?.[currentLevel]?.title ?? `Level ${currentLevel + 1}`}
-</CardTitle>
-                  <CardContent className="space-y-4">
-                    <div className={`bg-gray-100 p-5 rounded text-center break-words font-bold ${hasMultipleLines ? "text-xl" : "text-5xl"}`}>
+              {/* Question Card - Takes most of the space */}
+              <Card className="border-2 flex-1 flex flex-col mb-6">
+                <CardContent className="p-6 md:p-8 flex-1 flex flex-col justify-center space-y-8">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {active?.levels?.[currentLevel]?.title ??
+                        `Level ${currentLevel + 1}`}
+                    </p>
+                  </div>
+
+                  {/* Question Display - Large and centered with Devanagari font */}
+                  <div
+                    className={`bg-gray-100 dark:bg-gray-800 p-8 md:p-12 rounded-lg text-center break-words font-bold font-devanagari ${
+                      hasMultipleLines
+                        ? "text-3xl md:text-4xl"
+                        : "text-5xl md:text-7xl lg:text-8xl"
+                    } min-h-[200px] md:min-h-[300px] flex items-center justify-center`}
+                  >
+                    <div>
                       {questionLines.map((line, i) => (
                         <span key={i}>
                           {line}
@@ -464,116 +515,173 @@ const getCurrentQuestion = () => {
                         </span>
                       ))}
                     </div>
+                  </div>
 
-                    {/* FEEDBACK */}
-                    {showFeedback ? (
-                      <div className="text-center text-xl font-semibold">
+                  {/* FEEDBACK */}
+                  {showFeedback ? (
+                    <div className="text-center py-6">
+                      <div
+                        className={`text-3xl md:text-4xl font-bold ${
+                          lastAnswerCorrect ? "text-green-600" : "text-red-600"
+                        } flex items-center justify-center gap-3`}
+                      >
                         {lastAnswerCorrect ? (
-                          <span className="text-green-600 flex justify-center gap-2">
-                            <CheckCircle /> Correct
-                          </span>
-                        ) : (
-                          <span className="text-red-600 flex justify-center gap-2">
-                            <XCircle /> Noted
-                          </span>
-                        )}
-                      </div>
-                    ) : (
-                      <>
-                        {/* QUESTION TYPES */}
-                        {qt === "verbal" && (
-                          <div className="grid grid-cols-2 gap-4">
-                            <Button
-                              variant="destructive"
-                              className="h-20"
-                              onClick={() => handleAnswer(false)}
-                            >
-                              <X className="h-15 w-12" strokeWidth={5} />
-                            </Button>
-                            <Button
-                              className="h-20 bg-green-600"
-                              onClick={() => handleAnswer(true)}
-                            >
-                              <CheckIcon className="h-12 w-12" strokeWidth={5} />
-                            </Button>
-                          </div>
-                        )}
-
-                        {qt === "oneword" && (
                           <>
-                            <Input
-                              value={oneWordInput}
-                              onChange={(e) => setOneWordInput(e.target.value)}
-                              placeholder="Type answer"
-                            />
-                            <Button className="w-full" onClick={() => {
-                              const accepted = question.acceptedAnswers?.map((a:string)=>a.toLowerCase().trim())||[];
-                              const ok = accepted.includes(oneWordInput.trim().toLowerCase());
-                              handleAnswer(ok);
-                            }}>
-                              Submit
-                            </Button>
+                            <CheckCircle className="w-8 h-8 md:w-10 md:h-10" />{" "}
+                            Correct
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-8 h-8 md:w-10 md:h-10" />{" "}
+                            Noted
                           </>
                         )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* QUESTION TYPES */}
+                      {qt === "verbal" && (
+                        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                          <Button
+                            variant="destructive"
+                            className="h-20 md:h-24 text-xl"
+                            onClick={() => handleAnswer(false)}
+                          >
+                            <X
+                              className="w-10 h-10 md:w-12 md:h-12"
+                              strokeWidth={3}
+                            />
+                          </Button>
+                          <Button
+                            className="h-20 md:h-24 bg-green-600 hover:bg-green-700 text-xl"
+                            onClick={() => handleAnswer(true)}
+                          >
+                            <CheckIcon
+                              className="w-10 h-10 md:w-12 md:h-12"
+                              strokeWidth={3}
+                            />
+                          </Button>
+                        </div>
+                      )}
 
-                        {qt === "mcq" && (
-                          <div className="space-y-2">
-                            {question.options?.map((opt: string, idx: number) => (
-                              <Button
-                                key={idx}
-                                variant="outline"
-                                className="w-full py-4 text-lg"
-                                onClick={() => handleAnswer(idx === question.correctOptionIndex)}
-                              >
-                                {opt}
-                              </Button>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                      {qt === "oneword" && (
+                        <div className="space-y-4 max-w-md mx-auto">
+                          <Input
+                            value={oneWordInput}
+                            onChange={(e) => setOneWordInput(e.target.value)}
+                            placeholder="Type your answer"
+                            className="text-lg h-14"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const accepted =
+                                  question.acceptedAnswers?.map((a: string) =>
+                                    a.toLowerCase().trim()
+                                  ) || [];
+                                const ok = accepted.includes(
+                                  oneWordInput.trim().toLowerCase()
+                                );
+                                handleAnswer(ok);
+                              }
+                            }}
+                          />
+                          <Button
+                            className="w-full h-14 text-lg"
+                            onClick={() => {
+                              const accepted =
+                                question.acceptedAnswers?.map((a: string) =>
+                                  a.toLowerCase().trim()
+                                ) || [];
+                              const ok = accepted.includes(
+                                oneWordInput.trim().toLowerCase()
+                              );
+                              handleAnswer(ok);
+                            }}
+                          >
+                            Submit
+                          </Button>
+                        </div>
+                      )}
 
-                {showQuickComplete && !showFeedback && (
-                  <Button className="w-full mt-4" variant="outline" onClick={finalizeProgram}>
-                    End Program
+                      {qt === "mcq" && (
+                        <div className="space-y-3 max-w-lg mx-auto">
+                          {question.options?.map((opt: string, idx: number) => (
+                            <Button
+                              key={idx}
+                              variant="outline"
+                              className="w-full py-6 text-lg md:text-xl text-left justify-start h-auto"
+                              onClick={() =>
+                                handleAnswer(
+                                  idx === question.correctOptionIndex
+                                )
+                              }
+                            >
+                              {opt}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* End Assessment Button - Fixed at bottom */}
+              {showQuickComplete && !showFeedback && (
+                <div className="mt-auto">
+                  <Button
+                    className="w-full h-14 text-lg"
+                    variant="outline"
+                    onClick={finalizeProgram}
+                  >
+                    End Assessment
                   </Button>
-                )}
-              </div>
-            )}
-
-            {/* FINAL SCREEN */}
-            {modalState === "completed" && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <Trophy className="h-10 w-10 text-green-600 mx-auto" />
-                  <h2 className="text-xl font-bold mt-2">Assessment Complete</h2>
                 </div>
+              )}
+            </div>
+          )}
 
+          {/* FINAL SCREEN */}
+          {modalState === "completed" && (
+            <div className="space-y-4 py-4">
+              <div className="text-center py-4">
+                <Trophy className="h-12 w-12 text-green-600 mx-auto mb-3" />
+                <h2 className="text-xl font-bold">Assessment Complete!</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  All programs have been assessed
+                </p>
+              </div>
+
+              <div className="space-y-3">
                 {Object.entries(programResults).map(([pid, res]) => {
                   const p = programs.find((x) => x._id === pid);
                   return (
-                    <Card key={pid}>
-                      <CardContent className="p-4 flex justify-between">
-                        <div>
-                          <p className="font-semibold">{p?.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {res.correctAnswers}/{res.totalQuestions} correct
-                          </p>
+                    <Card key={pid} className="border-green-200 bg-green-50">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <p className="font-semibold text-base">{p?.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {res.correctAnswers}/{res.totalQuestions} correct
+                              answers
+                            </p>
+                          </div>
+                          <Badge className="bg-green-600 text-sm">
+                            Level {res.level}
+                          </Badge>
                         </div>
-                        <Badge>Level {res.level}</Badge>
                       </CardContent>
                     </Card>
                   );
                 })}
-
-                <Button className="w-full" variant="outline" onClick={closeAll}>
-                  Finish
-                </Button>
               </div>
-            )}
-          </div>
+
+              <Button className="w-full h-12 text-lg mt-6" onClick={closeAll}>
+                Finish
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
