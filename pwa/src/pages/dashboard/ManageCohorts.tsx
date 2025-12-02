@@ -13,7 +13,6 @@ import {
   type UpdateCohortDTO,
   type PreviewCohort,
 } from "@/services/cohorts";
-import { getSchools } from "@/services/schools";
 import { getTutors } from "@/services/tutors";
 import { getStudents, getStudentCohortStatus } from "@/services/students";
 import { programsService } from "@/services/programs";
@@ -37,14 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -57,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   Plus,
@@ -68,6 +60,9 @@ import {
   CheckCircle,
   Sparkles,
   TrendingUp,
+  BookOpen,
+  Calendar,
+  User,
 } from "lucide-react";
 
 function ManageCohorts() {
@@ -106,12 +101,7 @@ function ManageCohorts() {
     enabled: !!selectedSchool?._id,
   });
 
-  // Fetch all schools, tutors, students for dropdowns
-  const { data: schools = [] } = useQuery({
-    queryKey: ["schools"],
-    queryFn: getSchools,
-  });
-
+  // Fetch all tutors, students for dropdowns
   const { data: allTutors = [] } = useQuery({
     queryKey: ["tutors"],
     queryFn: () => getTutors(),
@@ -252,7 +242,10 @@ function ManageCohorts() {
       setIsApprovalModalOpen(false);
       setIsGenerating(false);
       toast.success(
-        `Successfully created ${data.cohorts.length} cohorts for ${data.studentsAssigned} students!`
+        `Successfully created ${data.cohorts.length} cohorts for ${data.studentsAssigned} students!`,
+        {
+          duration: 5000,
+        }
       );
     },
     onError: (error: unknown) => {
@@ -551,10 +544,6 @@ function ManageCohorts() {
     }));
   };
 
-  const getSchoolName = (schoolId: string) => {
-    return schools.find((school) => school._id === schoolId)?.name || schoolId;
-  };
-
   const getTutorName = (tutorId: string | undefined | null) => {
     if (!tutorId) return "No tutor assigned";
     return allTutors.find((tutor) => tutor.id === tutorId)?.name || tutorId;
@@ -565,6 +554,40 @@ function ManageCohorts() {
       allStudents.find((student) => student._id === studentId)?.name ||
       studentId
     );
+  };
+
+  const getProgramName = (programId: string | undefined) => {
+    if (!programId) return "No Program";
+    const program = programs.find((p) => p._id === programId);
+    return program ? `${program.name} (${program.subject})` : "Unknown Program";
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      case "completed":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "archived":
+        return "bg-gray-100 text-gray-700 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200";
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "N/A";
+    }
   };
 
   if (isLoadingCohorts) {
@@ -676,174 +699,306 @@ function ManageCohorts() {
         </div>
       )}
 
+      {/* Success Message After Generation */}
+      {(generateCohortsMutation.isSuccess ||
+        createFromPlanMutation.isSuccess) && (
+        <Card className="mb-6 border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="rounded-full bg-green-100 p-2">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-green-900 mb-2">
+                  Cohorts Created Successfully!
+                </h3>
+                <p className="text-sm text-green-800 mb-4">
+                  Your cohorts have been created and are now active. You can
+                  view them below and start managing attendance and progress.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  >
+                    View Cohorts
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Students Display */}
       {generateCohortsMutation.data &&
         generateCohortsMutation.data.totalPendingStudents > 0 && (
-          <div className="mb-6 p-4 border border-orange-200 bg-orange-50 rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold text-orange-900">
-                  Pending Students (
-                  {generateCohortsMutation.data.totalPendingStudents})
-                </h3>
-              </div>
-              <Badge
-                variant="outline"
-                className="bg-orange-100 text-orange-700"
-              >
-                Will be assigned after active cohorts complete
-              </Badge>
-            </div>
-            <p className="text-sm text-orange-800 mb-3">
-              These students have been assessed but are not yet assigned to
-              cohorts due to capacity constraints. They will be available for
-              cohort creation once the current active cohorts are completed.
-            </p>
-            <div className="space-y-3">
-              {/* Group by program */}
-              {generateCohortsMutation.data.pendingStudents &&
-                Array.from(
-                  new Set(
-                    generateCohortsMutation.data.pendingStudents.map(
-                      (p) => p.program
-                    )
-                  )
-                ).map((programName) => {
-                  const programPending =
-                    generateCohortsMutation.data.pendingStudents.filter(
-                      (p) => p.program === programName
-                    );
-                  return (
-                    <div
-                      key={programName}
-                      className="bg-white rounded-md p-3 border border-orange-200"
-                    >
-                      <div className="font-semibold text-orange-800 mb-2">
-                        {programName}
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {programPending.map((pending, idx) => (
-                          <div key={idx} className="text-center">
-                            <div className="text-base font-bold text-orange-700">
-                              Level {pending.level}
-                            </div>
-                            <div className="text-xs text-orange-600">
-                              {pending.students} students
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-
-            {/* Program Results Summary */}
-            {generateCohortsMutation.data.programResults &&
-              generateCohortsMutation.data.programResults.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-orange-300">
-                  <h4 className="text-sm font-semibold text-orange-900 mb-2">
-                    Generation Summary by Program:
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                    {generateCohortsMutation.data.programResults.map(
-                      (result, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-white rounded p-2 border border-orange-200"
-                        >
-                          <div className="font-medium text-sm text-orange-800">
-                            {result.programSubject.toUpperCase()}
-                          </div>
-                          <div className="text-xs text-orange-600 mt-1">
-                            {result.cohortsCreated} cohorts •{" "}
-                            {result.studentsAssigned} students •{" "}
-                            {result.pendingStudents} pending
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
+          <Card className="mb-6 border-orange-200 bg-orange-50">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                  <CardTitle className="text-orange-900">
+                    Pending Students (
+                    {generateCohortsMutation.data.totalPendingStudents})
+                  </CardTitle>
                 </div>
-              )}
-          </div>
+                <Badge
+                  variant="outline"
+                  className="bg-orange-100 text-orange-700"
+                >
+                  Will be assigned after active cohorts complete
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-orange-800 mb-4">
+                These students have been assessed but are not yet assigned to
+                cohorts due to capacity constraints. They will be available for
+                cohort creation once the current active cohorts are completed.
+              </p>
+              <div className="space-y-3">
+                {/* Group by program */}
+                {generateCohortsMutation.data.pendingStudents &&
+                  Array.from(
+                    new Set(
+                      generateCohortsMutation.data.pendingStudents.map(
+                        (p) => p.program
+                      )
+                    )
+                  ).map((programName) => {
+                    const programPending =
+                      generateCohortsMutation.data.pendingStudents.filter(
+                        (p) => p.program === programName
+                      );
+                    return (
+                      <div
+                        key={programName}
+                        className="bg-white rounded-md p-3 border border-orange-200"
+                      >
+                        <div className="font-semibold text-orange-800 mb-2">
+                          {programName}
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {programPending.map((pending, idx) => (
+                            <div key={idx} className="text-center">
+                              <div className="text-base font-bold text-orange-700">
+                                Level {pending.level}
+                              </div>
+                              <div className="text-xs text-orange-600">
+                                {pending.students} students
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {/* Program Results Summary */}
+              {generateCohortsMutation.data.programResults &&
+                generateCohortsMutation.data.programResults.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-orange-300">
+                    <h4 className="text-sm font-semibold text-orange-900 mb-2">
+                      Generation Summary by Program:
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      {generateCohortsMutation.data.programResults.map(
+                        (result, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-white rounded p-2 border border-orange-200"
+                          >
+                            <div className="font-medium text-sm text-orange-800">
+                              {result.programSubject.toUpperCase()}
+                            </div>
+                            <div className="text-xs text-orange-600 mt-1">
+                              {result.cohortsCreated} cohorts •{" "}
+                              {result.studentsAssigned} students •{" "}
+                              {result.pendingStudents} pending
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+            </CardContent>
+          </Card>
         )}
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>School</TableHead>
-              <TableHead>Tutor</TableHead>
-              <TableHead>Students</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCohorts?.map((cohort) => (
-              <TableRow key={cohort._id}>
-                <TableCell>{cohort.name}</TableCell>
-                <TableCell>
-                  {getSchoolName(
-                    typeof cohort.schoolId === "string"
-                      ? cohort.schoolId
-                      : cohort.schoolId?._id
+      {/* Cohorts Grid View */}
+      {filteredCohorts.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Cohorts Found</h3>
+            <p className="text-muted-foreground mb-4">
+              Get started by creating your first cohort or generating cohorts
+              automatically.
+            </p>
+            <Button onClick={() => setIsOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Cohort
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredCohorts.map((cohort) => {
+            const studentCount = Array.isArray(cohort.students)
+              ? cohort.students.length
+              : 0;
+            const tutorId = cohort.tutorId
+              ? typeof cohort.tutorId === "string"
+                ? cohort.tutorId
+                : cohort.tutorId._id
+              : null;
+            const tutorName = getTutorName(tutorId);
+
+            return (
+              <Card
+                key={cohort._id}
+                className="hover:shadow-lg transition-shadow"
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg mb-2">
+                        {cohort.name}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(cohort.status)}
+                        >
+                          {cohort.status || "active"}
+                        </Badge>
+                        {cohort.currentLevel && (
+                          <Badge variant="secondary">
+                            Level {cohort.currentLevel}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(cohort)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDeletingCohort(cohort);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Program Info */}
+                  {cohort.programId && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Program:</span>
+                      <span className="font-medium">
+                        {getProgramName(cohort.programId)}
+                      </span>
+                    </div>
                   )}
-                </TableCell>
-                <TableCell>
-                  {getTutorName(
-                    cohort.tutorId
-                      ? typeof cohort.tutorId === "string"
-                        ? cohort.tutorId
-                        : cohort.tutorId._id
-                      : null
-                  )}
-                </TableCell>
-                <TableCell>
-                  {Array.isArray(cohort.students)
-                    ? cohort.students
-                        .map((sid) => getStudentName(sid))
-                        .join(", ")
-                    : ""}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(cohort)}
+
+                  {/* Tutor Info */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Tutor:</span>
+                    <span
+                      className={
+                        tutorName === "No tutor assigned"
+                          ? "text-muted-foreground italic"
+                          : "font-medium"
+                      }
                     >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                      {tutorName}
+                    </span>
+                  </div>
+
+                  {/* Students Count */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Students:</span>
+                    <span className="font-semibold">{studentCount}</span>
+                  </div>
+
+                  {/* Start Date */}
+                  {cohort.startDate && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Started:</span>
+                      <span className="font-medium">
+                        {formatDate(cohort.startDate)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Student List Preview */}
+                  {studentCount > 0 && (
+                    <div className="pt-2 border-t">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        Students ({studentCount}):
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                        {Array.isArray(cohort.students) &&
+                          cohort.students.slice(0, 5).map((sid) => (
+                            <Badge
+                              key={sid}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {getStudentName(sid)}
+                            </Badge>
+                          ))}
+                        {studentCount > 5 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{studentCount - 5} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2 border-t">
                     <Button
                       variant="outline"
                       size="sm"
+                      className="flex-1"
                       onClick={() =>
                         (window.location.href = `/progress/cohort/${cohort._id}`)
                       }
-                      title="View Progress"
                     >
-                      <TrendingUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setDeletingCohort(cohort);
-                        setIsDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      View Progress
                     </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-2xl">
