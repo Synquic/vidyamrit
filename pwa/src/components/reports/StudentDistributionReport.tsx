@@ -415,7 +415,11 @@ export default function StudentDistributionReport({
                     <ResponsiveContainer width="100%" height={300}>
                       <RechartsPieChart>
                         <Tooltip
-                          formatter={(value: number, props: any) => {
+                          formatter={(
+                            value: number,
+                            _name: string,
+                            props: any
+                          ) => {
                             const total = data.reduce(
                               (sum, d) => sum + d.count,
                               0
@@ -424,8 +428,9 @@ export default function StudentDistributionReport({
                               total > 0
                                 ? ((value / total) * 100).toFixed(1)
                                 : 0;
+                            const level = props?.payload?.level ?? "N/A";
                             return [
-                              `Level ${props.payload.level}: ${value} students (${percentage}%)`,
+                              `Level ${level}: ${value} students (${percentage}%)`,
                               "",
                             ];
                           }}
@@ -433,8 +438,10 @@ export default function StudentDistributionReport({
                         <Legend
                           verticalAlign="bottom"
                           height={36}
-                          formatter={(entry: any) => {
-                            return `Level ${entry.payload.level}: ${entry.value}`;
+                          formatter={(_value: any, entry: any) => {
+                            const level = entry?.payload?.level ?? "N/A";
+                            const count = entry?.payload?.count ?? 0;
+                            return `Level ${level}: ${count}`;
                           }}
                         />
                         <Pie
@@ -591,15 +598,16 @@ export default function StudentDistributionReport({
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPieChart>
                     <Tooltip
-                      formatter={(value: number, props: any) => {
+                      formatter={(value: number, _name: string, props: any) => {
                         const total = classWiseData.reduce(
                           (sum, d) => sum + d.count,
                           0
                         );
                         const percentage =
                           total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                        const className = props?.payload?.className ?? "N/A";
                         return [
-                          `${props.payload.className}: ${value} students (${percentage}%)`,
+                          `${className}: ${value} students (${percentage}%)`,
                           "Students",
                         ];
                       }}
@@ -607,8 +615,10 @@ export default function StudentDistributionReport({
                     <Legend
                       verticalAlign="bottom"
                       height={36}
-                      formatter={(entry: any) => {
-                        return `${entry.payload.className}: ${entry.value}`;
+                      formatter={(_value: any, entry: any) => {
+                        const className = entry?.payload?.className ?? "N/A";
+                        const count = entry?.payload?.count ?? 0;
+                        return `${className}: ${count}`;
                       }}
                     />
                     <Pie
@@ -753,15 +763,16 @@ export default function StudentDistributionReport({
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPieChart>
                     <Tooltip
-                      formatter={(value: number, props: any) => {
+                      formatter={(value: number, _name: string, props: any) => {
                         const total = categoryWiseData.reduce(
                           (sum, d) => sum + d.count,
                           0
                         );
                         const percentage =
                           total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                        const category = props?.payload?.category ?? "N/A";
                         return [
-                          `${props.payload.category}: ${value} students (${percentage}%)`,
+                          `${category}: ${value} students (${percentage}%)`,
                           "Students",
                         ];
                       }}
@@ -769,8 +780,10 @@ export default function StudentDistributionReport({
                     <Legend
                       verticalAlign="bottom"
                       height={36}
-                      formatter={(entry: any) => {
-                        return `${entry.payload.category}: ${entry.value}`;
+                      formatter={(_value: any, entry: any) => {
+                        const category = entry?.payload?.category ?? "N/A";
+                        const count = entry?.payload?.count ?? 0;
+                        return `${category}: ${count}`;
                       }}
                     />
                     <Pie
