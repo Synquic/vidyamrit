@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Calendar, Users, CheckCircle, XCircle, Clock, BookOpen, 
-  ArrowLeft, Save, RotateCcw, PartyPopper
+  ArrowLeft, Save, RotateCcw, PartyPopper, TrendingUp, AlertCircle
 } from 'lucide-react';
+import { getTutorProgressSummary } from '@/services/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,34 @@ function AttendanceOverview() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   const schoolId = isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
+
+  // Fetch upcoming assessments
+  const { data: progressSummary = [] } = useQuery({
+    queryKey: ["tutor-progress-summary", schoolId],
+    queryFn: () => getTutorProgressSummary(schoolId),
+    enabled: !!schoolId,
+  });
+
+  // Get upcoming assessments (within next 7 days)
+  const upcomingAssessments = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    return progressSummary
+      .filter((summary: any) => {
+        if (!summary.nextAssessmentDue) return false;
+        const assessmentDate = new Date(summary.nextAssessmentDue);
+        return assessmentDate >= today && assessmentDate <= nextWeek;
+      })
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.nextAssessmentDue || 0);
+        const dateB = new Date(b.nextAssessmentDue || 0);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 5); // Show top 5 upcoming
+  }, [progressSummary]);
 
   const { data: attendanceSummary = [], isLoading: loading } = useQuery({
     queryKey: ["tutor-attendance-summary", selectedDate, schoolId],
@@ -135,6 +164,55 @@ function AttendanceOverview() {
           <span className="text-xs text-gray-500 hidden sm:inline">(Mon-Sat only)</span>
         </div>
       </div>
+
+      {/* Upcoming Assessments */}
+      {upcomingAssessments.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              Upcoming Assessments (Next 7 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {upcomingAssessments.map((summary: any, idx) => {
+                const assessmentDate = new Date(summary.nextAssessmentDue || 0);
+                const daysUntil = Math.ceil(
+                  (assessmentDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                );
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">
+                        {summary.cohort?.name || "Unknown Cohort"}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {summary.program?.name || summary.program?.subject || "Program"} - Level {summary.currentLevel || "N/A"}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant={daysUntil <= 1 ? "destructive" : daysUntil <= 3 ? "secondary" : "outline"}>
+                        {daysUntil === 0
+                          ? "Today"
+                          : daysUntil === 1
+                          ? "Tomorrow"
+                          : `${daysUntil} days`}
+                      </Badge>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {assessmentDate.toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       {attendanceSummary.length === 0 ? (
@@ -257,6 +335,71 @@ function AttendanceOverview() {
                   {t('attendance.totalUnmarked')}
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Upcoming Assessments */}
+      {upcomingAssessments.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-lg text-blue-900">
+                Upcoming Assessments
+              </CardTitle>
+            </div>
+            <p className="text-sm text-blue-700">
+              Cohorts with assessments due in the next 7 days
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {upcomingAssessments.map((summary) => {
+                const assessmentDate = summary.timeTracking?.nextAssessmentDue
+                  ? new Date(summary.timeTracking.nextAssessmentDue)
+                  : null;
+                const daysUntil = summary.timeTracking?.daysUntilNextAssessment || 0;
+                
+                return (
+                  <div
+                    key={summary.cohort._id}
+                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200"
+                  >
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">
+                        {summary.cohort.name}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {summary.cohort.program?.subject || "N/A"} • Level {summary.cohort.currentLevel || "N/A"}
+                      </div>
+                      {assessmentDate && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Due: {assessmentDate.toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {daysUntil <= 3 && daysUntil >= 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          {daysUntil === 0 ? "Today" : `${daysUntil} day${daysUntil > 1 ? "s" : ""}`}
+                        </Badge>
+                      )}
+                      {daysUntil > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {daysUntil} days
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

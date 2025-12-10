@@ -97,7 +97,7 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
   const [error, setError] = useState<string | null>(null);
   const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("tabular");
+  const [viewMode, setViewMode] = useState<ViewMode>("matrix");
   const [schoolViewMode, setSchoolViewMode] = useState<SchoolViewMode>("individual");
   const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(new Set());
   const [selectedBlock, setSelectedBlock] = useState<string>("all");
@@ -467,18 +467,25 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
         [subject: string]: { [level: number]: number };
       } & {
         totalStudents: number;
+        students: Student[];
       };
     } = {};
 
     Object.values(groupedData).forEach((schoolData) => {
       Object.entries(schoolData.classes).forEach(([className, classData]) => {
         if (!combined[className]) {
-          combined[className] = {
+          (combined as any)[className] = {
             totalStudents: 0,
-          } as typeof combined[string];
+            students: [],
+          };
         }
         
         combined[className].totalStudents += classData.totalStudents;
+        
+        // Add students from this class
+        if (classData.students) {
+          combined[className].students.push(...classData.students);
+        }
         
         Object.entries(classData.levelDistribution).forEach(([subject, levelDist]) => {
           if (!combined[className][subject]) {
@@ -774,10 +781,14 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
                                       ? classData as any // In combined, subjects are direct keys
                                       : (classData as any).levelDistribution || {};
                                     const subjects = isCombined
-                                      ? Object.keys(classData as any).filter(k => k !== 'totalStudents')
+                                      ? Object.keys(classData as any).filter(k => k !== 'totalStudents' && k !== 'students')
                                       : Object.keys(levelDist);
                                     
-                                    return subjects.length > 0 && (
+                                    if (subjects.length === 0) {
+                                      return <div className="text-sm text-muted-foreground">No level distribution data available</div>;
+                                    }
+                                    
+                                    return (
                                       <div className="space-y-4">
                                         {subjects
                                           .sort((a, b) => a.localeCompare(b))
@@ -786,153 +797,194 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
                                               ? (classData as any)[subject]
                                               : levelDist[subject];
                                             
+                                            if (!levelCounts || Object.keys(levelCounts).length === 0) {
+                                              return null;
+                                            }
+                                            
                                             return (
-                                          <div key={subject} className="space-y-2">
-                                            <div className="flex items-center gap-2 mb-2">
-                                              <BookOpen className="h-4 w-4 text-primary" />
-                                              <div className="text-sm font-semibold capitalize">
-                                                {subject} - Level Distribution:
+                                              <div key={subject} className="space-y-2">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  <BookOpen className="h-4 w-4 text-primary" />
+                                                  <div className="text-sm font-semibold capitalize">
+                                                    {subject} - Level Distribution:
+                                                  </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                                                  {Object.entries(levelCounts)
+                                                    .sort(([a], [b]) => Number(a) - Number(b))
+                                                    .map(([level, count]) => {
+                                                      const countNum = count as number;
+                                                      const classDataTyped = classData as GroupedData['classes'][string];
+                                                      return (
+                                                        <div
+                                                          key={`${subject}-${level}`}
+                                                          className="flex flex-col items-center p-2 md:p-3 bg-muted/50 rounded-lg"
+                                                        >
+                                                          <div className="text-xs text-muted-foreground mb-1 md:mb-2">
+                                                            Level {level}
+                                                          </div>
+                                                          <span className="text-sm md:text-base font-semibold">
+                                                            {countNum}
+                                                          </span>
+                                                          <span className="text-xs text-muted-foreground">
+                                                            {((countNum / classDataTyped.totalStudents) * 100).toFixed(0)}%
+                                                          </span>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                </div>
                                               </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                                              {Object.entries(levelCounts)
-                                                .sort(([a], [b]) => Number(a) - Number(b))
-                                                .map(([level, count]) => {
-                                                  const countNum = count as number;
-                                                  const classDataTyped = classData as GroupedData['classes'][string];
-                                                  return (
-                                                    <div
-                                                      key={`${subject}-${level}`}
-                                                      className="flex flex-col items-center p-2 md:p-3 bg-muted/50 rounded-lg"
-                                                    >
-                                                      <div className="text-xs text-muted-foreground mb-1 md:mb-2">
-                                                        Level {level}
-                                                      </div>
-                                                      <span className="text-sm md:text-base font-semibold">
-                                                        {countNum}
-                                                      </span>
-                                                      <span className="text-xs text-muted-foreground">
-                                                        {((countNum / classDataTyped.totalStudents) * 100).toFixed(0)}%
-                                                      </span>
-                                                    </div>
-                                                  );
-                                                })}
-                                            </div>
-                                          </div>
                                             );
                                           })}
                                       </div>
                                     );
                                   })()}
 
-                                  {/* Students Table - Only show in individual school view */}
-                                  {!isCombined && classData.students && classData.students.length > 0 && (
-                                    <div className="mt-4">
-                                      <div className="text-sm font-medium text-muted-foreground mb-3">
-                                        Students ({classData.totalStudents}):
-                                      </div>
-                                      <div className="overflow-x-auto">
-                                        <Table>
-                                          <TableHeader>
-                                            <TableRow>
-                                              <TableHead className="w-[50px]">#</TableHead>
-                                              <TableHead>Name</TableHead>
-                                              <TableHead className="hidden sm:table-cell">Roll No</TableHead>
-                                              <TableHead className="hidden md:table-cell">Age</TableHead>
-                                              <TableHead>Levels (by Subject)</TableHead>
-                                              <TableHead className="hidden md:table-cell">Last Assessment</TableHead>
-                                              <TableHead className="hidden lg:table-cell">Total Assessments</TableHead>
-                                            </TableRow>
-                                          </TableHeader>
-                                          <TableBody>
-                                            {classData.students
-                                              .sort((a, b) => {
-                                                // Sort by name
-                                                return (a.name || "").localeCompare(b.name || "");
-                                              })
-                                              .map((student, index) => {
-                                              const levelInfos = getStudentLevelInfo(student);
-                                              const latestAssessment = levelInfos.length > 0
-                                                ? levelInfos.sort((a, b) => 
-                                                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                                                  )[0]
-                                                : null;
-                                              
-                                              return (
-                                                <TableRow key={student._id} className="hover:bg-muted/50">
-                                                  <TableCell className="font-medium text-muted-foreground">
-                                                    {index + 1}
-                                                  </TableCell>
-                                                  <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                      <User className="h-4 w-4 text-muted-foreground" />
-                                                      <div>
-                                                        <div className="font-medium">{student.name}</div>
-                                                        <div className="text-xs text-muted-foreground sm:hidden">
-                                                          Roll: {student.roll_no || "N/A"}
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  </TableCell>
-                                                  <TableCell className="hidden sm:table-cell">
-                                                    {student.roll_no || "N/A"}
-                                                  </TableCell>
-                                                  <TableCell className="hidden md:table-cell">
-                                                    {student.age || "N/A"}
-                                                  </TableCell>
-                                                  <TableCell>
-                                                    {levelInfos.length > 0 ? (
-                                                      <div className="flex flex-wrap gap-2">
-                                                        {levelInfos.map((info) => (
-                                                          <div
-                                                            key={info.subject}
-                                                            className="text-sm"
-                                                          >
-                                                            <span className="font-medium">{info.subject}:</span>{" "}
-                                                            <span className="font-semibold">L{info.level}</span>
+                                  {/* Students Table - Show in both individual and combined views */}
+                                  {(() => {
+                                    // Get students for this class
+                                    let classStudents: Student[] = [];
+                                    
+                                    if (!isCombined && classData.students) {
+                                      classStudents = classData.students;
+                                    } else if (isCombined) {
+                                      // For combined view, get students from combinedData
+                                      if (combinedData[className] && combinedData[className].students) {
+                                        classStudents = combinedData[className].students;
+                                      }
+                                    }
+                                    
+                                    if (classStudents.length === 0) {
+                                      return (
+                                        <div className="mt-4">
+                                          <div className="text-sm font-medium text-muted-foreground mb-3">
+                                            Students ({classData.totalStudents}):
+                                          </div>
+                                          <div className="text-center py-8 text-muted-foreground">
+                                            No students found in this class
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <div className="mt-4">
+                                        <div className="text-sm font-medium text-muted-foreground mb-3">
+                                          Students ({classStudents.length}):
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                          <Table>
+                                            <TableHeader>
+                                              <TableRow>
+                                                <TableHead className="w-[50px]">#</TableHead>
+                                                <TableHead>Name</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Roll No</TableHead>
+                                                <TableHead className="hidden md:table-cell">Age</TableHead>
+                                                {!isCombined && <TableHead className="hidden lg:table-cell">School</TableHead>}
+                                                <TableHead>Class</TableHead>
+                                                <TableHead>Levels (by Subject)</TableHead>
+                                                <TableHead className="hidden md:table-cell">Last Assessment</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Total Assessments</TableHead>
+                                              </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                              {classStudents
+                                                .sort((a, b) => {
+                                                  // Sort by name
+                                                  return (a.name || "").localeCompare(b.name || "");
+                                                })
+                                                .map((student, index) => {
+                                                const levelInfos = getStudentLevelInfo(student);
+                                                const latestAssessment = levelInfos.length > 0
+                                                  ? levelInfos.sort((a, b) => 
+                                                      new Date(b.date).getTime() - new Date(a.date).getTime()
+                                                    )[0]
+                                                  : null;
+                                                
+                                                return (
+                                                  <TableRow key={student._id} className="hover:bg-muted/50">
+                                                    <TableCell className="font-medium text-muted-foreground">
+                                                      {index + 1}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                      <div className="flex items-center gap-2">
+                                                        <User className="h-4 w-4 text-muted-foreground" />
+                                                        <div>
+                                                          <div className="font-medium">{student.name}</div>
+                                                          <div className="text-xs text-muted-foreground sm:hidden">
+                                                            Roll: {student.roll_no || "N/A"}
                                                           </div>
-                                                        ))}
-                                                      </div>
-                                                    ) : (
-                                                      <span className="text-muted-foreground text-sm">Not Assessed</span>
-                                                    )}
-                                                  </TableCell>
-                                                  <TableCell className="hidden md:table-cell">
-                                                    {latestAssessment ? (
-                                                      <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-1 text-sm">
-                                                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                          {new Date(latestAssessment.date).toLocaleDateString("en-US", {
-                                                            month: "short",
-                                                            day: "numeric",
-                                                            year: "numeric",
-                                                          })}
                                                         </div>
-                                                        <Badge variant="secondary" className="text-xs w-fit capitalize">
-                                                          {latestAssessment.subject}
-                                                        </Badge>
                                                       </div>
-                                                    ) : (
-                                                      <span className="text-muted-foreground text-sm">-</span>
+                                                    </TableCell>
+                                                    <TableCell className="hidden sm:table-cell">
+                                                      {student.roll_no || "N/A"}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                      {student.age || "N/A"}
+                                                    </TableCell>
+                                                    {!isCombined && (
+                                                      <TableCell className="hidden lg:table-cell">
+                                                        {schoolData.school?.name || "N/A"}
+                                                      </TableCell>
                                                     )}
-                                                  </TableCell>
-                                                  <TableCell className="hidden lg:table-cell">
-                                                    {student.knowledgeLevel && student.knowledgeLevel.length > 0 ? (
-                                                      <Badge variant="outline">
-                                                        {student.knowledgeLevel.length}
-                                                      </Badge>
-                                                    ) : (
-                                                      <span className="text-muted-foreground text-sm">0</span>
-                                                    )}
-                                                  </TableCell>
-                                                </TableRow>
-                                              );
-                                            })}
-                                        </TableBody>
-                                      </Table>
-                                    </div>
-                                  </div>
-                                  )}
+                                                    <TableCell>
+                                                      <Badge variant="outline">{student.class || "N/A"}</Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                      {levelInfos.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                          {levelInfos.map((info) => (
+                                                            <div
+                                                              key={info.subject}
+                                                              className="text-sm"
+                                                            >
+                                                              <span className="font-medium">{info.subject}:</span>{" "}
+                                                              <span className="font-semibold">L{info.level}</span>
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      ) : (
+                                                        <span className="text-muted-foreground text-sm">Not Assessed</span>
+                                                      )}
+                                                    </TableCell>
+                                                    <TableCell className="hidden md:table-cell">
+                                                      {latestAssessment ? (
+                                                        <div className="flex flex-col gap-1">
+                                                          <div className="flex items-center gap-1 text-sm">
+                                                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                            {new Date(latestAssessment.date).toLocaleDateString("en-US", {
+                                                              month: "short",
+                                                              day: "numeric",
+                                                              year: "numeric",
+                                                            })}
+                                                          </div>
+                                                          <Badge variant="secondary" className="text-xs w-fit capitalize">
+                                                            {latestAssessment.subject}
+                                                          </Badge>
+                                                        </div>
+                                                      ) : (
+                                                        <span className="text-muted-foreground text-sm">-</span>
+                                                      )}
+                                                    </TableCell>
+                                                    <TableCell className="hidden lg:table-cell">
+                                                      {student.knowledgeLevel && student.knowledgeLevel.length > 0 ? (
+                                                        <Badge variant="outline">
+                                                          {student.knowledgeLevel.length}
+                                                        </Badge>
+                                                      ) : (
+                                                        <span className="text-muted-foreground text-sm">0</span>
+                                                      )}
+                                                    </TableCell>
+                                                  </TableRow>
+                                                );
+                                              })}
+                                            </TableBody>
+                                          </Table>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </CardContent>
                               </CollapsibleContent>
                             </Collapsible>

@@ -62,7 +62,21 @@ import {
   Copy,
   Eye,
   EyeOff,
+  CheckCircle,
+  XCircle,
+  Mail,
+  Phone,
+  MapPin,
+  GraduationCap,
 } from "lucide-react";
+import {
+  getPendingVolunteerRequests,
+  approveVolunteerRequest,
+  rejectVolunteerRequest,
+  type VolunteerRequest,
+} from "@/services/volunteerRequests";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 function ManageVolunteers() {
   const { user } = useAuth();
@@ -70,8 +84,11 @@ function ManageVolunteers() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [deletingVolunteer, setDeletingVolunteer] = useState<Volunteer | null>(null);
   const [createdVolunteer, setCreatedVolunteer] = useState<Volunteer | null>(null);
+  const [rejectingRequest, setRejectingRequest] = useState<VolunteerRequest | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<CreateVolunteerDTO>({
     schoolId: "",
@@ -80,6 +97,15 @@ function ManageVolunteers() {
   });
 
   const queryClient = useQueryClient();
+
+  // Fetch pending volunteer requests
+  const { data: volunteerRequestsData, isLoading: isLoadingRequests } = useQuery({
+    queryKey: ["volunteer-requests"],
+    queryFn: () => getPendingVolunteerRequests(),
+    enabled: user?.role === UserRole.SUPER_ADMIN,
+  });
+
+  const pendingRequests = volunteerRequestsData?.requests || [];
 
   // Fetch volunteers - filter by school if context is active
   const { data: volunteers, isLoading: isLoadingVolunteers } = useQuery({
@@ -145,6 +171,36 @@ function ManageVolunteers() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to delete volunteer";
+      toast.error(message);
+    },
+  });
+
+  // Approve volunteer request mutation
+  const approveRequestMutation = useMutation({
+    mutationFn: approveVolunteerRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["volunteer-requests"] });
+      toast.success("Volunteer request approved successfully");
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || "Failed to approve request";
+      toast.error(message);
+    },
+  });
+
+  // Reject volunteer request mutation
+  const rejectRequestMutation = useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: string; reason?: string }) =>
+      rejectVolunteerRequest(requestId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["volunteer-requests"] });
+      setIsRejectDialogOpen(false);
+      setRejectingRequest(null);
+      setRejectionReason("");
+      toast.success("Volunteer request rejected");
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || "Failed to reject request";
       toast.error(message);
     },
   });
@@ -245,7 +301,7 @@ function ManageVolunteers() {
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Manage Volunteers</h1>
           <p className="text-muted-foreground">
-            Create and manage volunteer accounts for schools
+            Review volunteer requests and manage volunteer accounts for schools
           </p>
         </div>
         <Button 
@@ -265,29 +321,148 @@ function ManageVolunteers() {
         </Button>
       </div>
 
-      {/* Current School Context Display */}
-      {selectedSchool && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Filtering by School
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">{selectedSchool.name}</span>
-              <Badge variant="outline">{selectedSchool.type}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Showing volunteers for this school only
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabs for Volunteer Requests and Accounts */}
+      <Tabs defaultValue="requests" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="requests" className="relative">
+            Volunteer Requests
+            {pendingRequests.length > 0 && (
+              <Badge className="ml-2 bg-red-500">{pendingRequests.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="accounts">Volunteer Accounts</TabsTrigger>
+        </TabsList>
 
-      {/* Volunteers Table */}
-      <Card>
+        {/* Volunteer Requests Tab */}
+        <TabsContent value="requests" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Volunteer Requests</CardTitle>
+              <CardDescription>
+                Review and approve volunteer applications from the public form
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingRequests ? (
+                <div className="flex h-[200px] items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">No pending requests</h3>
+                  <p className="text-muted-foreground mt-2">
+                    All volunteer requests have been reviewed
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingRequests.map((request) => (
+                    <Card key={request.id} className="border-l-4 border-l-amber-500">
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-5 w-5 text-muted-foreground" />
+                              <h3 className="font-semibold text-lg">{request.name}</h3>
+                            </div>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span>{request.email}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4 text-muted-foreground" />
+                                <span>{request.phoneNumber}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <span>{request.city}, {request.state} - {request.pincode}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                                <span>{request.education}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            {request.experience && (
+                              <div>
+                                <Label className="text-sm font-medium">Experience:</Label>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {request.experience}
+                                </p>
+                              </div>
+                            )}
+                            {request.motivation && (
+                              <div>
+                                <Label className="text-sm font-medium">Motivation:</Label>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {request.motivation}
+                                </p>
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Submitted: {new Date(request.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 mt-4 pt-4 border-t">
+                          <Button
+                            onClick={() => approveRequestMutation.mutate(request.id)}
+                            disabled={approveRequestMutation.isPending}
+                            className="flex-1"
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Approve
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              setRejectingRequest(request);
+                              setIsRejectDialogOpen(true);
+                            }}
+                            className="flex-1"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Reject
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Volunteer Accounts Tab */}
+        <TabsContent value="accounts" className="space-y-4">
+
+          {/* Current School Context Display */}
+          {selectedSchool && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Filtering by School
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">{selectedSchool.name}</span>
+                  <Badge variant="outline">{selectedSchool.type}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Showing volunteers for this school only
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Volunteers Table */}
+          <Card>
         <CardHeader>
           <CardTitle>Volunteer Accounts ({volunteers?.length || 0})</CardTitle>
           <CardDescription>
@@ -403,8 +578,63 @@ function ManageVolunteers() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Reject Request Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Volunteer Request</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting this volunteer request (optional)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {rejectingRequest && (
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm">
+                  <strong>Request from:</strong> {rejectingRequest.name} ({rejectingRequest.email})
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="rejectionReason">Rejection Reason (Optional)</Label>
+              <Textarea
+                id="rejectionReason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter reason for rejection..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (rejectingRequest) {
+                  rejectRequestMutation.mutate({
+                    requestId: rejectingRequest.id,
+                    reason: rejectionReason || undefined,
+                  });
+                }
+              }}
+              disabled={rejectRequestMutation.isPending}
+            >
+              {rejectRequestMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Reject Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Volunteer Dialog */}
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>

@@ -89,14 +89,6 @@ export default function PublicFooter() {
                   Success Stories
                 </a>
               </li>
-              <li>
-                <a
-                  href="#"
-                  className="font-sans text-gray-300 hover:text-amber-400 transition-colors"
-                >
-                  Annual Reports
-                </a>
-              </li>
             </ul>
           </div>
 
@@ -138,14 +130,6 @@ export default function PublicFooter() {
                   Donate
                 </a>
               </li>
-              <li>
-                <a
-                  href="#"
-                  className="font-sans text-gray-300 hover:text-amber-400 transition-colors"
-                >
-                  Fundraise
-                </a>
-              </li>
             </ul>
           </div>
 
@@ -164,19 +148,19 @@ export default function PublicFooter() {
               <div className="flex items-center">
                 <Mail className="h-4 w-4 text-amber-400 mr-3 flex-shrink-0" />
                 <a
-                  href="mailto:hello@vidyamrit.org"
+                  href="mailto:connect@vidyamrit.in"
                   className="font-sans text-gray-300 text-sm hover:text-amber-400 transition-colors"
                 >
-                  hello@vidyamrit.org
+                  connect@vidyamrit.in
                 </a>
               </div>
               <div className="flex items-center">
                 <Phone className="h-4 w-4 text-amber-400 mr-3 flex-shrink-0" />
                 <a
-                  href="tel:+91-XXXXXXXXXX"
+                  href="tel:+919098304802"
                   className="font-sans text-gray-300 text-sm hover:text-amber-400 transition-colors"
                 >
-                  +91-XXXXXXXXXX
+                  +91 9098304802
                 </a>
               </div>
             </div>

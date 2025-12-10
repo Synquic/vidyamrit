@@ -331,7 +331,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stories Section */}
+      {/* Success Stories & Testimonials Section */}
       <section className="py-16 bg-white" id="stories">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
@@ -339,42 +339,195 @@ export default function LandingPage() {
               From Silence to Stories
             </h2>
             <div className="w-24 h-1 bg-amber-500 mx-auto mb-8"></div>
+            <p className="font-sans text-xl text-gray-700 max-w-3xl mx-auto">
+              Real stories from students, parents, and volunteers who have been part of the Vidyamrit journey.
+            </p>
           </div>
-          <div className="max-w-4xl mx-auto">
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-white">
-              <CardContent className="p-8 md:p-12">
-                <Quote className="h-12 w-12 text-amber-500 mb-6" />
-                <blockquote className="font-sans text-xl md:text-2xl text-gray-700 leading-relaxed mb-6 italic">
+
+          {/* Testimonials Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {/* Testimonial 1 */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-white hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <div className="w-20 h-20 rounded-full bg-amber-200 flex items-center justify-center mb-4 mx-auto">
+                    {/* Placeholder for student image */}
+                    <img
+                      src="/testimonials/student-1.jpg"
+                      alt="Student testimonial"
+                      className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = "none";
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<span class="font-serif font-bold text-amber-700 text-2xl">R</span>';
+                        }
+                      }}
+                    />
+                  </div>
+                  <Quote className="h-6 w-6 text-amber-500 mx-auto mb-3" />
+                </div>
+                <blockquote className="font-sans text-base text-gray-700 leading-relaxed mb-4 italic text-center">
                   "Before, I couldn't even read my own name. Now, I read books
                   and share stories with my little brother."
                 </blockquote>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center mr-4">
-                    <span className="font-serif font-bold text-amber-700">
-                      R
-                    </span>
+                <div className="text-center">
+                  <div className="font-serif font-bold text-gray-900">Rani</div>
+                  <div className="font-sans text-sm text-gray-600">Class 5 Student</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Testimonial 2 */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-white hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <div className="w-20 h-20 rounded-full bg-red-200 flex items-center justify-center mb-4 mx-auto">
+                    {/* Placeholder for student image */}
+                    <img
+                      src="/testimonials/student-2.jpg"
+                      alt="Student testimonial"
+                      className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = "none";
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<span class="font-serif font-bold text-red-700 text-2xl">A</span>';
+                        }
+                      }}
+                    />
+                  </div>
+                  <Quote className="h-6 w-6 text-red-500 mx-auto mb-3" />
+                </div>
+                <blockquote className="font-sans text-base text-gray-700 leading-relaxed mb-4 italic text-center">
+                  "I used to be scared of numbers. Now I solve math problems confidently and help my friends too!"
+                </blockquote>
+                <div className="text-center">
+                  <div className="font-serif font-bold text-gray-900">Arjun</div>
+                  <div className="font-sans text-sm text-gray-600">Class 7 Student</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Testimonial 3 */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-white hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <div className="w-20 h-20 rounded-full bg-amber-200 flex items-center justify-center mb-4 mx-auto">
+                    {/* Placeholder for parent image */}
+                    <img
+                      src="/testimonials/parent-1.jpg"
+                      alt="Parent testimonial"
+                      className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = "none";
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<span class="font-serif font-bold text-amber-700 text-2xl">P</span>';
+                        }
+                      }}
+                    />
+                  </div>
+                  <Quote className="h-6 w-6 text-amber-500 mx-auto mb-3" />
+                </div>
+                <blockquote className="font-sans text-base text-gray-700 leading-relaxed mb-4 italic text-center">
+                  "My daughter's confidence has grown so much. She now dreams of becoming a teacher and helping others."
+                </blockquote>
+                <div className="text-center">
+                  <div className="font-serif font-bold text-gray-900">Priya's Mother</div>
+                  <div className="font-sans text-sm text-gray-600">Parent</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Success Story Highlight */}
+          <div className="max-w-4xl mx-auto mb-8">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50 to-white">
+              <CardContent className="p-8 md:p-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                  <div>
+                    {/* Placeholder for success story image */}
+                    <div className="w-full h-64 rounded-lg bg-gradient-to-br from-amber-100 to-red-100 flex items-center justify-center overflow-hidden">
+                      <img
+                        src="/success-stories/classroom-transformation.jpg"
+                        alt="Classroom transformation"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = "none";
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = '<div class="text-center text-gray-500"><BookOpen class="h-16 w-16 mx-auto mb-2" /><p class="text-sm">Success Story Image</p></div>';
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                   <div>
-                    <div className="font-serif font-bold text-gray-900">
-                      Rani
-                    </div>
-                    <div className="font-sans text-gray-600">
-                      Class 5 Student
+                    <h3 className="font-serif text-2xl font-bold text-gray-900 mb-4">
+                      A Classroom Transformed
+                    </h3>
+                    <p className="font-sans text-gray-700 leading-relaxed mb-4">
+                      In just six months, our first school saw remarkable changes. Students who couldn't read basic words are now reading storybooks. The classroom atmosphere shifted from silence to active participation, with children eager to learn and share.
+                    </p>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div>
+                        <div className="font-semibold text-gray-900">120+</div>
+                        <div>Students Impacted</div>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">6 Months</div>
+                        <div>Transformation Time</div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            <div className="text-center mt-8">
-              <Button
-                variant="outline"
-                className="border-amber-500 text-amber-700 hover:bg-amber-50 bg-transparent"
+          {/* More Success Images Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {[
+              { src: "/success-stories/students-learning.jpg", alt: "Students learning together" },
+              { src: "/success-stories/digital-literacy.jpg", alt: "Digital literacy session" },
+              { src: "/success-stories/volunteer-teaching.jpg", alt: "Volunteer teaching students" },
+              { src: "/success-stories/graduation-ceremony.jpg", alt: "Graduation ceremony" },
+            ].map((image, idx) => (
+              <div
+                key={idx}
+                className="aspect-square rounded-lg bg-gradient-to-br from-amber-100 to-red-100 overflow-hidden hover:scale-105 transition-transform duration-300"
               >
-                See More Stories
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.className = "aspect-square rounded-lg bg-gradient-to-br from-amber-100 to-red-100 flex items-center justify-center";
+                      parent.innerHTML = `<div class="text-center text-gray-500"><Star class="h-8 w-8 mx-auto mb-1" /><p class="text-xs">${image.alt}</p></div>`;
+                    }
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Button
+              variant="outline"
+              className="border-amber-500 text-amber-700 hover:bg-amber-50 bg-transparent"
+            >
+              See More Stories
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </div>
       </section>

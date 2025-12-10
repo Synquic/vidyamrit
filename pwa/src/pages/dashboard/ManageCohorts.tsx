@@ -518,16 +518,30 @@ function ManageCohorts() {
       return;
     }
 
-    setIsGenerating(true);
+    // Filter out cohorts with 0 students
+    const cohortsToCreate = editableCohorts
+      .filter((cohort) => cohort.students.length > 0)
+      .map((cohort) => ({
+        name: cohort.name,
+        programId: cohort.programId,
+        currentLevel: cohort.currentLevel,
+        tutorId: cohort.tutorId || null,
+        students: cohort.students,
+      }));
 
-    // Prepare cohorts for creation
-    const cohortsToCreate = editableCohorts.map((cohort) => ({
-      name: cohort.name,
-      programId: cohort.programId,
-      currentLevel: cohort.currentLevel,
-      tutorId: cohort.tutorId || null,
-      students: cohort.students,
-    }));
+    if (cohortsToCreate.length === 0) {
+      toast.error(
+        "No cohorts with students to create. Please ensure at least one cohort has students."
+      );
+      return;
+    }
+
+    const skippedCount = editableCohorts.length - cohortsToCreate.length;
+    if (skippedCount > 0) {
+      toast.info(`${skippedCount} cohort(s) with 0 students will be skipped`);
+    }
+
+    setIsGenerating(true);
 
     createFromPlanMutation.mutate({
       schoolId: selectedSchool._id,
@@ -1414,6 +1428,99 @@ function ManageCohorts() {
                               <div
                                 key={globalIndex}
                                 className="border rounded-md p-4 bg-gray-50 space-y-3"
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = "move";
+                                  e.currentTarget.classList.add(
+                                    "border-blue-400",
+                                    "bg-blue-50"
+                                  );
+                                }}
+                                onDragLeave={(e) => {
+                                  e.currentTarget.classList.remove(
+                                    "border-blue-400",
+                                    "bg-blue-50"
+                                  );
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.remove(
+                                    "border-blue-400",
+                                    "bg-blue-50"
+                                  );
+
+                                  try {
+                                    const dragData = JSON.parse(
+                                      e.dataTransfer.getData("text/plain")
+                                    );
+                                    const {
+                                      studentId,
+                                      studentName,
+                                      sourceCohortIndex,
+                                    } = dragData;
+
+                                    // Don't allow dropping on the same cohort
+                                    if (sourceCohortIndex === globalIndex) {
+                                      return;
+                                    }
+
+                                    const updated = editableCohorts.map(
+                                      (c) => ({ ...c })
+                                    );
+
+                                    // Find student name index in source cohort
+                                    const sourceCohortData =
+                                      updated[sourceCohortIndex];
+                                    const studentNameIdx =
+                                      sourceCohortData.students.findIndex(
+                                        (id) => id === studentId
+                                      );
+                                    const nameToMove =
+                                      studentNameIdx >= 0 &&
+                                      studentNameIdx <
+                                        sourceCohortData.studentNames.length
+                                        ? sourceCohortData.studentNames[
+                                            studentNameIdx
+                                          ]
+                                        : studentName;
+
+                                    // Remove from source cohort
+                                    updated[sourceCohortIndex] = {
+                                      ...sourceCohortData,
+                                      students:
+                                        sourceCohortData.students.filter(
+                                          (id) => id !== studentId
+                                        ),
+                                      studentNames:
+                                        sourceCohortData.studentNames.filter(
+                                          (_, idx) => idx !== studentNameIdx
+                                        ),
+                                    };
+
+                                    // Add to target cohort
+                                    updated[globalIndex] = {
+                                      ...updated[globalIndex],
+                                      students: [
+                                        ...updated[globalIndex].students,
+                                        studentId,
+                                      ],
+                                      studentNames: [
+                                        ...updated[globalIndex].studentNames,
+                                        nameToMove,
+                                      ],
+                                    };
+
+                                    setEditableCohorts(updated);
+                                    toast.success(
+                                      `Moved ${studentName} to ${cohort.name}`
+                                    );
+                                  } catch (error) {
+                                    console.error(
+                                      "Error handling drop:",
+                                      error
+                                    );
+                                  }
+                                }}
                               >
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   {/* Cohort Name */}
@@ -1486,10 +1593,11 @@ function ManageCohorts() {
                                   </Badge>
                                 </div>
 
-                                {/* Students List - Editable */}
+                                {/* Students List - Editable with Drag and Drop */}
                                 <div className="space-y-2">
                                   <Label>
-                                    Students ({cohort.students.length})
+                                    Students ({cohort.students.length}) - Drag
+                                    to move between cohorts
                                   </Label>
                                   <ScrollArea className="h-32 border rounded-md p-2">
                                     <div className="space-y-2">
@@ -1503,25 +1611,50 @@ function ManageCohorts() {
                                             cohort.studentNames[studentIdx] ||
                                             studentId;
 
-                                          // Find other cohorts in the same program and level where this student could be moved
+                                          // Find all other cohorts where this student could be moved
                                           const otherCohorts = editableCohorts
-                                            .map((c, idx) => ({
-                                              cohort: c,
+                                            .map((cohort, idx) => ({
+                                              cohort: cohort,
                                               index: idx,
                                             }))
                                             .filter(
-                                              ({ cohort: c, index }) =>
-                                                index !== globalIndex &&
-                                                c.programId ===
-                                                  cohort.programId &&
-                                                c.currentLevel ===
-                                                  cohort.currentLevel
+                                              ({ index }) =>
+                                                index !== globalIndex
                                             );
+
+                                          const handleDragStart = (
+                                            e: React.DragEvent
+                                          ) => {
+                                            e.dataTransfer.effectAllowed =
+                                              "move";
+                                            e.dataTransfer.setData(
+                                              "text/plain",
+                                              JSON.stringify({
+                                                studentId,
+                                                studentName,
+                                                sourceCohortIndex: globalIndex,
+                                              })
+                                            );
+                                            (
+                                              e.target as HTMLElement
+                                            ).style.opacity = "0.5";
+                                          };
+
+                                          const handleDragEnd = (
+                                            e: React.DragEvent
+                                          ) => {
+                                            (
+                                              e.target as HTMLElement
+                                            ).style.opacity = "1";
+                                          };
 
                                           return (
                                             <div
                                               key={studentId}
-                                              className="flex items-center justify-between p-2 bg-white rounded border"
+                                              draggable
+                                              onDragStart={handleDragStart}
+                                              onDragEnd={handleDragEnd}
+                                              className="flex items-center justify-between p-2 bg-white rounded border cursor-move hover:bg-gray-50 transition-colors"
                                             >
                                               <span className="text-sm flex-1">
                                                 {studentName}

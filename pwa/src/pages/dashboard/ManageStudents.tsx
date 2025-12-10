@@ -772,13 +772,23 @@ function ManageStudents() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
-              <Input
-                id="class"
+              <Select
                 value={formData.class}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, class: e.target.value }))
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, class: value }))
                 }
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      Class {num}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>School</Label>

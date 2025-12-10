@@ -605,13 +605,23 @@ export default function BaselineAssessmentsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="class">Class</Label>
-                  <Input
-                    id="class"
+                  <Select
                     value={newStudent.class || ""}
-                    onChange={(e) =>
-                      setNewStudent({ ...newStudent, class: e.target.value })
+                    onValueChange={(value) =>
+                      setNewStudent({ ...newStudent, class: value })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                        <SelectItem key={num} value={num.toString()}>
+                          Class {num}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>School</Label>

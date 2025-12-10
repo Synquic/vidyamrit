@@ -28,8 +28,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CheckCircle2, Info } from "lucide-react";
+import { CheckCircle2, Info, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { submitVolunteerRequest } from "@/services/volunteerRequests";
+import { toast } from "sonner";
 
 // Simple math captcha component
 function Captcha({ onValidChange }: { onValidChange: (v: boolean) => void }) {
@@ -121,17 +123,223 @@ function SuccessMessage({
   );
 }
 
-// const mentorSchema = z.object({
-//   firstName: z.string().min(2, "First name required"),
-//   lastName: z.string().min(2, "Last name required"),
-//   email: z.string().email("Invalid email"),
-//   phone: z.string().min(8, "Phone required"),
-//   city: z.string().min(2, "City required"),
-//   state: z.string().min(2, "State required"),
-//   pincode: z.string().min(4, "Pincode required"),
-//   education: z.string().min(2, "Education required"),
-//   experience: z.string().optional(),
-// });
+const volunteerSchema = z.object({
+  name: z.string().min(2, "Name required"),
+  email: z.string().email("Invalid email"),
+  phoneNumber: z.string().min(10, "Phone number required"),
+  city: z.string().min(2, "City required"),
+  state: z.string().min(2, "State required"),
+  pincode: z.string().min(4, "Pincode required"),
+  education: z.string().min(2, "Education required"),
+  experience: z.string().optional(),
+  motivation: z.string().optional(),
+});
+
+function VolunteerForm() {
+  const [captchaOk, setCaptchaOk] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const form = useForm<z.infer<typeof volunteerSchema>>({
+    resolver: zodResolver(volunteerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phoneNumber: "",
+      city: "",
+      state: "",
+      pincode: "",
+      education: "",
+      experience: "",
+      motivation: "",
+    },
+  });
+
+  if (submitted)
+    return (
+      <SuccessMessage
+        title="Volunteer request received!"
+        email={form.getValues("email")}
+        onClose={() => setSubmitted(false)}
+      />
+    );
+
+  async function onSubmit(values: z.infer<typeof volunteerSchema>) {
+    if (!captchaOk) {
+      toast.error("Please complete the captcha");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await submitVolunteerRequest(values);
+      setSubmitted(true);
+      toast.success("Volunteer request submitted successfully!");
+    } catch (error: unknown) {
+      let errorMessage = "Failed to submit volunteer request";
+      if (error && typeof error === "object" && "response" in error) {
+        const err = error as { response?: { data?: { error?: string } } };
+        if (err.response?.data?.error) {
+          errorMessage = err.response.data.error;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Full Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phoneNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input inputMode="tel" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="city"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City/Town</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="state"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="pincode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pincode</FormLabel>
+                <FormControl>
+                  <Input inputMode="numeric" pattern="[0-9]*" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="education"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Education Qualification</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="e.g., B.A., B.Ed., M.A., etc." />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="experience"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prior Experience (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Teaching, volunteering, facilitation, etc."
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="motivation"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Why do you want to volunteer? (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Share your motivation for volunteering with Vidyamrit..."
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="pt-2">
+          <Captcha onValidChange={setCaptchaOk} />
+        </div>
+        <Button
+          type="submit"
+          disabled={!captchaOk || isSubmitting}
+          className={cn(
+            "w-full sm:w-auto",
+            (!captchaOk || isSubmitting) && "opacity-70 cursor-not-allowed"
+          )}
+        >
+          {isSubmitting ? "Submitting..." : "Submit volunteer request"}
+        </Button>
+        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
+          <Info className="h-3.5 w-3.5" /> You'll receive review updates by email.
+        </p>
+      </form>
+    </Form>
+  );
+}
 
 // function MentorForm() {
 //   const [captchaOk, setCaptchaOk] = useState(false);
@@ -585,8 +793,7 @@ function InquiryForm() {
 }
 
 export default function SupportPage() {
-  // const [mentorOpen, setMentorOpen] = useState(false);
-  // const [schoolOpen, setSchoolOpen] = useState(false);
+  const [volunteerOpen, setVolunteerOpen] = useState(false);
   const [inquiryOpen, setInquiryOpen] = useState(false);
 
   return (
@@ -604,6 +811,81 @@ export default function SupportPage() {
         </div>
 
         <div className="max-w-5xl mx-auto mt-8 grid grid-cols-1 gap-6 md:gap-8">
+          {/* Volunteer card */}
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-6 md:p-8">
+              <div className="md:grid md:grid-cols-5 md:gap-6 md:items-center">
+                <div className="md:col-span-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-amber-700" />
+                    </div>
+                    <h2 className="font-serif text-2xl font-semibold">
+                      Join as Volunteer
+                    </h2>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Help educate and uplift by teaching in schools, conducting
+                    baseline tests, and mentoring students. Anyone can be a
+                    volunteer—training and materials are provided.
+                  </p>
+                  <ul className="mt-3 text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                    <li>Go on-ground to teach and facilitate learning</li>
+                    <li>Conduct baseline assessments and track progress</li>
+                    <li>Receive training, curriculum, and ongoing support</li>
+                  </ul>
+                  <div className="mt-5">
+                    <Button
+                      id="volunteer-toggle"
+                      aria-haspopup="dialog"
+                      onClick={() => setVolunteerOpen(true)}
+                      className="w-full sm:w-auto"
+                    >
+                      Register as volunteer
+                    </Button>
+                  </div>
+                </div>
+                <div className="md:col-span-2 mt-5 md:mt-0">
+                  <img
+                    src="/volunteer-teaching.jpg"
+                    alt="Volunteer teaching students in a classroom"
+                    width={640}
+                    height={500}
+                    className="w-full h-48 md:h-44 object-cover rounded-lg"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent) {
+                        parent.className = "md:col-span-2 mt-5 md:mt-0 flex items-center justify-center bg-gradient-to-br from-amber-100 to-red-100 rounded-lg";
+                        parent.innerHTML = '<Users class="h-16 w-16 text-amber-600" />';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <Dialog open={volunteerOpen} onOpenChange={setVolunteerOpen}>
+                <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Join as Volunteer</DialogTitle>
+                    <DialogDescription>
+                      Fill in your details to apply as a volunteer. We'll review your application and get back to you soon.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <VolunteerForm />
+                  <DialogFooter className="flex items-center justify-end">
+                    <DialogClose asChild>
+                      <Button type="button" variant="ghost">
+                        Close
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardContent>
+          </Card>
+
           {/* Mentor card */}
           {/* <Card className="border-0 shadow-lg">
             <CardContent className="p-6 md:p-8">

@@ -8,6 +8,7 @@ import assessmentRouter from "./AssessmentRoutes";
 import attendanceRouter from "./AttendanceRoutes";
 import programRouter from "./ProgramRoutes";
 import volunteerRouter from "./VolunteerRoutes";
+import volunteerRequestRouter from "./VolunteerRequestRoutes";
 import progressRouter from "./ProgressRoutes";
 import baselineAssessmentRouter from "./BaselineAssessmentRoutes";
 import levelAssessmentRouter from "./LevelAssessmentRoutes";
@@ -21,6 +22,9 @@ router.get("/", (req, res) => {
   logger.info("Accessed root route");
   res.json({ message: "Welcome to the API" });
 });
+
+// Public routes (no auth required)
+router.use("/volunteer-requests", volunteerRequestRouter);
 
 router.use(authMiddleware);
 

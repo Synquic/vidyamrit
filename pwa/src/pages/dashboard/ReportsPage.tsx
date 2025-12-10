@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, FileText, ArrowRight } from "lucide-react";
+import { BarChart3, FileText, ArrowRight, PieChart } from "lucide-react";
 import StudentLevelsReport from "@/components/reports/StudentLevelsReport";
+import StudentDistributionReport from "@/components/reports/StudentDistributionReport";
 
 interface Report {
   id: string;
@@ -19,6 +20,12 @@ const availableReports: Report[] = [
     title: "Student Levels - Class & School Wise",
     description: "View student assessment levels grouped by school and class",
     icon: BarChart3,
+  },
+  {
+    id: "student-distribution",
+    title: "Student Distribution Analysis",
+    description: "View students by level, class, and category with visual charts",
+    icon: PieChart,
   },
   // Future reports can be added here
 ];
@@ -37,6 +44,9 @@ export default function ReportsPage() {
   if (selectedReport) {
     if (selectedReport === "student-levels") {
       return <StudentLevelsReport onBack={handleBack} />;
+    }
+    if (selectedReport === "student-distribution") {
+      return <StudentDistributionReport onBack={handleBack} />;
     }
   }
 
@@ -93,6 +103,7 @@ export default function ReportsPage() {
     </div>
   );
 }
+
 
 
 
