@@ -1,16 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { 
   Calendar, Users, CheckCircle, XCircle, Clock, BookOpen, 
-  ArrowLeft, Save, RotateCcw, PartyPopper, TrendingUp, AlertCircle
+  ArrowLeft, Save, RotateCcw, PartyPopper, TrendingUp, AlertCircle,
+  ChevronRight, AlertTriangle, Play
 } from 'lucide-react';
-import { getTutorProgressSummary } from '@/services/progress';
+import { getTutorProgressSummary, getCohortProgress } from '@/services/progress';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 import { 
   getTutorAttendanceSummary, 
   getCohortAttendance,
@@ -18,7 +30,7 @@ import {
   AttendanceStatus,
   CohortAttendanceRecord
 } from '@/services/attendance';
-import { toggleCohortHoliday } from '@/services/cohorts';
+import { toggleCohortHoliday, getCohorts, startCohort } from '@/services/cohorts';
 import { toast } from 'sonner';
 import { Link } from 'react-router';
 import { useSchoolContext } from '@/contexts/SchoolContext';
@@ -28,6 +40,10 @@ function AttendanceOverview() {
   const { t } = useTranslation();
   const { selectedSchool, isSchoolContextActive } = useSchoolContext();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
+  const [startingCohort, setStartingCohort] = useState<any>(null);
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const queryClient = useQueryClient();
 
   const schoolId = isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
 
@@ -81,6 +97,100 @@ function AttendanceOverview() {
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Fetch cohorts to check start status
+  const { data: cohorts = [] } = useQuery({
+    queryKey: ["cohorts-for-attendance", schoolId],
+    queryFn: () => getCohorts(schoolId),
+    enabled: !!schoolId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Start cohort mutation
+  const startCohortMutation = useMutation({
+    mutationFn: ({ id, startDate }: { id: string; startDate?: string }) =>
+      startCohort(id, startDate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["cohorts-for-attendance", schoolId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["tutor-attendance-summary", selectedDate, schoolId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["cohorts", schoolId],
+      });
+      setIsStartDialogOpen(false);
+      setStartingCohort(null);
+      setCustomStartDate("");
+      toast.success("Cohort started successfully");
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to start cohort";
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    },
+  });
+
+  // Helper function to check if cohort has started
+  const isCohortStarted = (cohortId: string): boolean => {
+    const cohort = cohorts.find(c => c._id === cohortId);
+    if (!cohort) return false;
+    return !!(
+      cohort.timeTracking?.cohortStartDate ||
+      cohort.startDate ||
+      (cohort.timeTracking?.cohortStartDate && new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
+    );
+  };
+
+  // Get cohort start date
+  const getCohortStartDate = (cohortId: string): string | null => {
+    const cohort = cohorts.find(c => c._id === cohortId);
+    if (!cohort) return null;
+    if (cohort.timeTracking?.cohortStartDate) {
+      return cohort.timeTracking.cohortStartDate;
+    }
+    if (cohort.startDate) {
+      return cohort.startDate;
+    }
+    return null;
+  };
+
+  // Format date helper
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    try {
+      return new Date(dateString).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "N/A";
+    }
+  };
+
+  // Handle start cohort
+  const handleStartCohort = (cohort: any) => {
+    setStartingCohort(cohort);
+    setCustomStartDate(new Date().toISOString().split('T')[0]);
+    setIsStartDialogOpen(true);
+  };
+
+  // Handle confirm start cohort
+  const handleConfirmStartCohort = () => {
+    if (!startingCohort?._id) return;
+    
+    const startDateToUse = customStartDate || new Date().toISOString().split('T')[0];
+    startCohortMutation.mutate({
+      id: startingCohort._id,
+      startDate: startDateToUse,
+    });
+  };
 
   const getAttendanceRateBadgeVariant = (rate: number) => {
     if (rate >= 90) return 'default';
@@ -250,6 +360,21 @@ function AttendanceOverview() {
               </CardHeader>
               
               <CardContent className="space-y-4">
+                {/* Start Status */}
+                {!isCohortStarted(summary.cohort._id) ? (
+                  <div className="flex items-center gap-2 text-sm p-2 bg-orange-50 border border-orange-200 rounded-md">
+                    <Clock className="h-4 w-4 text-orange-600" />
+                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                      Not Started
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    <span>Started: {formatDate(getCohortStartDate(summary.cohort._id))}</span>
+                  </div>
+                )}
+
                 {/* Attendance Stats */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center gap-2">
@@ -274,19 +399,31 @@ function AttendanceOverview() {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                <Button 
-                  asChild 
-                  className="w-full"
-                  variant={summary.attendance.unmarkedCount > 0 ? "default" : "outline"}
-                >
-                  <Link to={`/attendance/cohort/${summary.cohort._id}`}>
-                    {summary.attendance.unmarkedCount > 0 
-                      ? t('attendance.markAttendance')
-                      : t('attendance.viewAttendance')
-                    }
-                  </Link>
-                </Button>
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-2">
+                  {!isCohortStarted(summary.cohort._id) ? (
+                    <Button
+                      onClick={() => handleStartCohort(summary.cohort)}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      Start Cohort
+                    </Button>
+                  ) : (
+                    <Button 
+                      asChild 
+                      className="w-full"
+                      variant={summary.attendance.unmarkedCount > 0 ? "default" : "outline"}
+                    >
+                      <Link to={`/attendance/cohort/${summary.cohort._id}`}>
+                        {summary.attendance.unmarkedCount > 0 
+                          ? t('attendance.markAttendance')
+                          : t('attendance.viewAttendance')
+                        }
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -404,6 +541,77 @@ function AttendanceOverview() {
           </CardContent>
         </Card>
       )}
+
+      {/* Start Cohort Dialog */}
+      <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start Cohort</DialogTitle>
+            <DialogDescription>
+              Set a start date for "{startingCohort?.name}". The cohort will begin tracking progress and attendance from this date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select a date to start the cohort. Leave as today's date to start immediately.
+              </p>
+            </div>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Once started, the cohort will begin tracking:
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Progress tracking from the start date</li>
+                  <li>Attendance recording</li>
+                  <li>Assessment timelines</li>
+                </ul>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsStartDialogOpen(false);
+                setStartingCohort(null);
+                setCustomStartDate("");
+              }}
+              disabled={startCohortMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmStartCohort}
+              disabled={startCohortMutation.isPending || !customStartDate}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {startCohortMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  Start Cohort
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -419,6 +627,84 @@ function CohortAttendanceDetail() {
   const [attendanceRecords, setAttendanceRecords] = useState<{[studentId: string]: AttendanceStatus}>({});
   const [isHoliday, setIsHoliday] = useState(false);
   const queryClient = useQueryClient();
+
+  // Fetch cohort progress for indicator
+  const { data: progressData } = useQuery({
+    queryKey: ["cohort-progress-indicator", cohortId],
+    queryFn: async () => {
+      try {
+        const data = await getCohortProgress(cohortId!);
+        return data;
+      } catch (error) {
+        console.error('Error fetching cohort progress:', error);
+        return null;
+      }
+    },
+    enabled: !!cohortId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Calculate days until assessment
+  const daysUntilAssessment = useMemo(() => {
+    if (!progressData?.timeTracking) return null;
+    return progressData.timeTracking.daysUntilNextAssessment;
+  }, [progressData]);
+
+  // Get inline style for smooth gradient color based on days
+  const getGradientStyle = (days: number | null) => {
+    if (days === null) return {};
+    
+    // Clamp days between -7 and 21 for color calculation
+    const clampedDays = Math.max(-7, Math.min(21, days));
+    
+    // Calculate hue: red (0) -> orange (30) -> yellow (60) -> green (120)
+    // -7 days = 0 (red), 0 days = 15 (red-orange), 7 days = 45 (orange), 14 days = 90 (yellow-green), 21+ days = 120 (green)
+    let hue: number;
+    if (clampedDays < 0) {
+      // Overdue: deeper red
+      hue = 0;
+    } else if (clampedDays <= 7) {
+      // 0-7 days: red to orange (0 to 30)
+      hue = (clampedDays / 7) * 30;
+    } else if (clampedDays <= 14) {
+      // 7-14 days: orange to yellow-green (30 to 80)
+      hue = 30 + ((clampedDays - 7) / 7) * 50;
+    } else {
+      // 14+ days: yellow-green to green (80 to 120)
+      hue = 80 + ((clampedDays - 14) / 7) * 40;
+    }
+    
+    return {
+      backgroundColor: `hsl(${hue}, 85%, 95%)`,
+      borderColor: `hsl(${hue}, 70%, 70%)`,
+      color: `hsl(${hue}, 80%, 35%)`,
+    };
+  };
+
+  // Get assessment message based on days
+  const getAssessmentMessage = (days: number | null): string => {
+    if (days === null) return "No data";
+    
+    if (days < 0) {
+      // Overdue
+      const overdueDays = Math.abs(days);
+      if (overdueDays === 1) {
+        return "Assessment pending (1 day overdue)";
+      }
+      return `Assessment pending (${overdueDays} days overdue)`;
+    } else if (days === 0) {
+      return "Assessment today";
+    } else if (days === 1) {
+      return "Assessment in 1 day";
+    } else {
+      return `Assessment in ${days} days`;
+    }
+  };
+
+  // Handle progress indicator click
+  const handleProgressClick = () => {
+    navigate(`/progress/cohort/${cohortId}`);
+  };
 
   const { data: cohortData, isLoading: loading } = useQuery({
     queryKey: ["cohort-attendance", cohortId, selectedDate],
@@ -649,8 +935,9 @@ function CohortAttendanceDetail() {
       {/* Date and Quick Actions */}
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="space-y-3">
+            {/* Row 1: Date Picker and Progress Indicator */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <input
@@ -679,12 +966,29 @@ function CohortAttendanceDetail() {
                     today.setHours(0, 0, 0, 0);
                     e.currentTarget.min = today.toISOString().split('T')[0];
                   }}
-                  className="flex-1 sm:flex-none px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
+                <span className="text-xs text-gray-500 hidden sm:inline">(Mon-Sat only)</span>
               </div>
-              <span className="text-xs text-gray-500 hidden sm:inline">(Mon-Sat only)</span>
+
+              {/* Progress Indicator - Days until assessment with gradient color */}
+              <button
+                onClick={handleProgressClick}
+                style={getGradientStyle(daysUntilAssessment)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md hover:scale-105 active:scale-100"
+              >
+                {daysUntilAssessment !== null && daysUntilAssessment < 0 && (
+                  <AlertTriangle className="h-4 w-4 animate-pulse" />
+                )}
+                <TrendingUp className="h-4 w-4" />
+                <div className="flex items-center gap-1 text-sm font-semibold">
+                  {getAssessmentMessage(daysUntilAssessment)}
+                </div>
+                <ChevronRight className="h-4 w-4 opacity-60" />
+              </button>
             </div>
-            
+
+            {/* Row 2: Quick Action Buttons */}
             <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
@@ -718,18 +1022,19 @@ function CohortAttendanceDetail() {
                 <RotateCcw className="h-4 w-4 mr-1 sm:mr-2" />
                 Clear
               </Button>
-              <Button 
-                variant={isHoliday ? "default" : "outline"} 
-                size="sm" 
-                onClick={handleMarkHoliday}
-                disabled={markingHoliday}
-                className={`flex-1 sm:flex-none ${isHoliday ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-              >
-                <PartyPopper className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">{isHoliday ? "Unmark Holiday" : "Mark Holiday"}</span>
-                <span className="sm:hidden">{isHoliday ? "Unmark" : "Holiday"}</span>
-              </Button>
             </div>
+
+            {/* Row 3: Holiday Button (full width) */}
+            <Button 
+              variant={isHoliday ? "default" : "outline"} 
+              size="sm" 
+              onClick={handleMarkHoliday}
+              disabled={markingHoliday}
+              className={`w-full ${isHoliday ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+            >
+              <PartyPopper className="h-4 w-4 mr-2" />
+              {isHoliday ? "Unmark Holiday" : "Mark Holiday"}
+            </Button>
           </div>
         </CardHeader>
         

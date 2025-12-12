@@ -35,7 +35,7 @@ import { TimelineProgress } from "@/components/progress/TimelineProgress";
 import { toast } from "sonner";
 import { Link } from "react-router";
 import { useSchoolContext } from "@/contexts/SchoolContext";
-import { checkAssessmentReadiness } from "@/services/cohorts";
+import { checkAssessmentReadiness, getCohorts } from "@/services/cohorts";
 import { CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -61,6 +61,25 @@ function ProgressOverview() {
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Fetch cohorts to check start status
+  const { data: cohorts = [] } = useQuery({
+    queryKey: ["cohorts-for-progress", schoolId],
+    queryFn: () => getCohorts(schoolId),
+    enabled: !!schoolId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Helper function to check if cohort has started
+  const isCohortStarted = (cohortId: string): boolean => {
+    const cohort = cohorts.find(c => c._id === cohortId);
+    if (!cohort) return false;
+    return !!(
+      cohort.timeTracking?.cohortStartDate ||
+      cohort.startDate ||
+      (cohort.timeTracking?.cohortStartDate && new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
+    );
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -453,21 +472,27 @@ function ProgressOverview() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right min-w-[80px]">
-                        <Button
-                          asChild
-                          size="sm"
-                          variant={
-                            summary.summary.studentsNeedingAttention > 0
-                              ? "default"
-                              : "outline"
-                          }
-                          className="w-full sm:w-auto"
-                        >
-                          <Link to={`/progress/cohort/${summary.cohort._id}`}>
-                            <span className="hidden sm:inline">View</span>
-                            <span className="sm:hidden">→</span>
-                          </Link>
-                        </Button>
+                        {isCohortStarted(summary.cohort._id) ? (
+                          <Button
+                            asChild
+                            size="sm"
+                            variant={
+                              summary.summary.studentsNeedingAttention > 0
+                                ? "default"
+                                : "outline"
+                            }
+                            className="w-full sm:w-auto"
+                          >
+                            <Link to={`/progress/cohort/${summary.cohort._id}`}>
+                              <span className="hidden sm:inline">View</span>
+                              <span className="sm:hidden">→</span>
+                            </Link>
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">
+                            Not Started
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );

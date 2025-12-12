@@ -999,9 +999,8 @@ export const generateOptimalCohorts = async (
             currentLevel: level,
             status: 'active',
             students: cohortStudents,
+            // Don't set startDate or timeTracking.cohortStartDate - let user start manually
             timeTracking: {
-              cohortStartDate: new Date(),
-              currentLevelStartDate: new Date(),
               attendanceDays: 0,
               expectedDaysForCurrentLevel: 14,
               totalExpectedDays: program.levels ? program.levels.reduce((total: number, level: any) => {
@@ -1166,9 +1165,8 @@ export const createCohortsFromPlan = async (
         currentLevel: currentLevel || 1,
         status: 'active',
         students: students,
+        // Don't set startDate or timeTracking.cohortStartDate - let user start manually
         timeTracking: {
-          cohortStartDate: new Date(),
-          currentLevelStartDate: new Date(),
           attendanceDays: 0,
           expectedDaysForCurrentLevel: 14,
           totalExpectedDays: program.levels ? program.levels.reduce((total: number, level: any) => {
@@ -1219,6 +1217,11 @@ export const createCohortsFromPlan = async (
     });
   } catch (error: any) {
     console.error("Error creating cohorts from plan:", error);
-    res.status(500).json({ error: "Error creating cohorts from plan" });
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({ 
+      error: "Error creating cohorts from plan",
+      details: error.message || "Unknown error"
+    });
   }
 };

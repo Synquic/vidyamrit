@@ -5,6 +5,7 @@ import {
   deleteCohort,
   getCohorts,
   updateCohort,
+  startCohort,
   generateOptimalCohorts,
   previewOptimalCohorts,
   createCohortsFromPlan,
@@ -63,14 +64,19 @@ import {
   BookOpen,
   Calendar,
   User,
+  Play,
+  Clock,
 } from "lucide-react";
 
 function ManageCohorts() {
   const { selectedSchool } = useSchoolContext();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
   const [editingCohort, setEditingCohort] = useState<Cohort | null>(null);
   const [deletingCohort, setDeletingCohort] = useState<Cohort | null>(null);
+  const [startingCohort, setStartingCohort] = useState<Cohort | null>(null);
+  const [customStartDate, setCustomStartDate] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
@@ -87,12 +93,22 @@ function ManageCohorts() {
   );
   const [formData, setFormData] = useState<CreateCohortDTO>({
     name: "",
-    schoolId: "",
+    schoolId: selectedSchool?._id || "",
     tutorId: "",
     students: [],
   });
 
   const queryClient = useQueryClient();
+
+  // Update schoolId in formData when selectedSchool changes
+  useEffect(() => {
+    if (selectedSchool?._id && !editingCohort) {
+      setFormData((prev) => ({
+        ...prev,
+        schoolId: selectedSchool._id || "",
+      }));
+    }
+  }, [selectedSchool?._id, editingCohort]);
 
   // Fetch cohorts filtered by selected school
   const { data: cohorts, isLoading: isLoadingCohorts } = useQuery({
@@ -201,6 +217,70 @@ function ManageCohorts() {
       toast.error("Failed to delete cohort");
     },
   });
+
+  // Start cohort mutation
+  const startCohortMutation = useMutation({
+    mutationFn: ({ id, startDate }: { id: string; startDate?: string }) =>
+      startCohort(id, startDate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["cohorts", selectedSchool?._id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["progress"] });
+      setIsStartDialogOpen(false);
+      setStartingCohort(null);
+      setCustomStartDate("");
+      toast.success("Cohort started successfully");
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to start cohort";
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    },
+  });
+
+  // Helper function to check if cohort has started
+  const isCohortStarted = (cohort: Cohort): boolean => {
+    return !!(
+      cohort.timeTracking?.cohortStartDate ||
+      cohort.startDate ||
+      (cohort.timeTracking?.cohortStartDate && new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
+    );
+  };
+
+  // Get cohort start date
+  const getCohortStartDate = (cohort: Cohort): string | null => {
+    if (cohort.timeTracking?.cohortStartDate) {
+      return cohort.timeTracking.cohortStartDate;
+    }
+    if (cohort.startDate) {
+      return cohort.startDate;
+    }
+    return null;
+  };
+
+  // Handle start cohort
+  const handleStartCohort = (cohort: Cohort) => {
+    setStartingCohort(cohort);
+    setCustomStartDate(new Date().toISOString().split('T')[0]);
+    setIsStartDialogOpen(true);
+  };
+
+  // Handle confirm start cohort
+  const handleConfirmStartCohort = () => {
+    if (!startingCohort?._id) return;
+    
+    const startDateToUse = customStartDate || new Date().toISOString().split('T')[0];
+    startCohortMutation.mutate({
+      id: startingCohort._id,
+      startDate: startDateToUse,
+    });
+  };
 
   // Preview cohorts mutation
   const previewCohortsMutation = useMutation({
@@ -657,7 +737,13 @@ function ManageCohorts() {
               {isGenerating ? "Generating..." : `Generate Cohorts`}
             </Button>
           )}
-          <Button onClick={() => setIsOpen(true)}>
+          <Button onClick={() => {
+              setFormData((prev) => ({
+                ...prev,
+                schoolId: selectedSchool?._id || "",
+              }));
+              setIsOpen(true);
+            }}>
             <Plus className="mr-2 h-4 w-4" />
             Add Cohort
           </Button>
@@ -855,7 +941,13 @@ function ManageCohorts() {
               Get started by creating your first cohort or generating cohorts
               automatically.
             </p>
-            <Button onClick={() => setIsOpen(true)}>
+            <Button onClick={() => {
+                setFormData((prev) => ({
+                  ...prev,
+                  schoolId: selectedSchool?._id || "",
+                }));
+                setIsOpen(true);
+              }}>
               <Plus className="mr-2 h-4 w-4" />
               Create Cohort
             </Button>
@@ -956,14 +1048,21 @@ function ManageCohorts() {
                     <span className="font-semibold">{studentCount}</span>
                   </div>
 
-                  {/* Start Date */}
-                  {cohort.startDate && (
+                  {/* Start Date / Start Button */}
+                  {isCohortStarted(cohort) ? (
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Started:</span>
                       <span className="font-medium">
-                        {formatDate(cohort.startDate)}
+                        {formatDate(getCohortStartDate(cohort) || cohort.startDate)}
                       </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4 text-orange-500" />
+                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                        Not Started
+                      </Badge>
                     </div>
                   )}
 
@@ -995,17 +1094,29 @@ function ManageCohorts() {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() =>
-                        (window.location.href = `/progress/cohort/${cohort._id}`)
-                      }
-                    >
-                      <TrendingUp className="mr-2 h-4 w-4" />
-                      View Progress
-                    </Button>
+                    {!isCohortStarted(cohort) ? (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() => handleStartCohort(cohort)}
+                      >
+                        <Play className="mr-2 h-4 w-4" />
+                        Start Cohort
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() =>
+                          (window.location.href = `/progress/cohort/${cohort._id}`)
+                        }
+                      >
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        View Progress
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1153,6 +1264,77 @@ function ManageCohorts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Start Cohort Dialog */}
+      <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start Cohort</DialogTitle>
+            <DialogDescription>
+              Set a start date for "{startingCohort?.name}". The cohort will begin tracking progress and attendance from this date.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">Start Date</Label>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select a date to start the cohort. Leave as today's date to start immediately.
+              </p>
+            </div>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Once started, the cohort will begin tracking:
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>Progress tracking from the start date</li>
+                  <li>Attendance recording</li>
+                  <li>Assessment timelines</li>
+                </ul>
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsStartDialogOpen(false);
+                setStartingCohort(null);
+                setCustomStartDate("");
+              }}
+              disabled={startCohortMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmStartCohort}
+              disabled={startCohortMutation.isPending || !customStartDate}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {startCohortMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  Start Cohort
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Generate Cohorts Modal */}
       <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>

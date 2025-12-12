@@ -50,8 +50,8 @@ export interface ICohort extends Document {
 }
 
 const TimeTrackingSchema = new mongoose.Schema({
-  cohortStartDate: { type: Date, required: true },
-  currentLevelStartDate: { type: Date, required: true },
+  cohortStartDate: { type: Date, required: false }, // Optional - cohort can be created without start date
+  currentLevelStartDate: { type: Date, required: false }, // Optional - set when cohort starts
   attendanceDays: { type: Number, default: 0 },
   expectedDaysForCurrentLevel: { type: Number, default: 0 },
   totalExpectedDays: { type: Number, default: 0 },
@@ -117,7 +117,7 @@ const CohortSchema = new mongoose.Schema({
   },
   startDate: {
     type: Date,
-    default: Date.now,
+    required: false, // Optional - cohort can be created without start date
   },
   status: {
     type: String,

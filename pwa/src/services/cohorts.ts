@@ -13,6 +13,13 @@ export interface Cohort {
   startDate?: string;
   status?: 'active' | 'pending' | 'completed' | 'archived';
   students: string[];
+  timeTracking?: {
+    cohortStartDate?: string;
+    currentLevelStartDate?: string;
+    attendanceDays?: number;
+    expectedDaysForCurrentLevel?: number;
+    totalExpectedDays?: number;
+  };
   createdAt?: string;
   updatedAt?: string;
 }
@@ -33,6 +40,11 @@ export interface UpdateCohortDTO {
   programId?: string;
   currentLevel?: number;
   status?: 'active' | 'pending' | 'completed' | 'archived';
+  startDate?: string;
+  timeTracking?: {
+    cohortStartDate?: string;
+    currentLevelStartDate?: string;
+  };
 }
 
 export interface GenerateCohortsResponse {
@@ -76,6 +88,19 @@ export const createCohort = async (data: CreateCohortDTO): Promise<Cohort> => {
 
 export const updateCohort = async (id: string, data: UpdateCohortDTO): Promise<Cohort> => {
   const response = await authAxios.put(`${baseUrl}/${id}`, data);
+  return response.data;
+};
+
+export const startCohort = async (id: string, startDate?: string): Promise<Cohort> => {
+  const startDateToUse = startDate ? new Date(startDate) : new Date();
+  const updateData: UpdateCohortDTO = {
+    startDate: startDateToUse.toISOString(),
+    timeTracking: {
+      cohortStartDate: startDateToUse.toISOString(),
+      currentLevelStartDate: startDateToUse.toISOString(),
+    },
+  };
+  const response = await authAxios.put(`${baseUrl}/${id}`, updateData);
   return response.data;
 };
 

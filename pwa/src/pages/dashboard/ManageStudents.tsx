@@ -52,8 +52,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Edit, Archive, RotateCcw, Search } from "lucide-react";
+import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown } from "lucide-react";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
+import {
+  Collapsible,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 
 function ManageStudents() {
   const { selectedSchool } = useSchoolContext();
@@ -66,6 +70,10 @@ function ManageStudents() {
   const [viewMode, setViewMode] = useState<"active" | "archived">("active");
   const [confirmArchiveText, setConfirmArchiveText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [classFilter, setClassFilter] = useState<string>("all");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [subjectFilter, setSubjectFilter] = useState<string>("all");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [formData, setFormData] = useState<CreateStudentDTO>({
     name: "",
     age: 0,
@@ -396,27 +404,87 @@ function ManageStudents() {
     );
   };
 
-  // Filter students based on search query
+  // Get unique classes from students
+  const uniqueClasses = [...new Set(
+    [...(students || []), ...(archivedStudents || [])]
+      .map(s => s.class)
+      .filter(Boolean)
+  )].sort((a, b) => {
+    const numA = parseInt(a);
+    const numB = parseInt(b);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return a.localeCompare(b);
+  });
+
+  // Get unique subjects from programs
+  const uniqueSubjects = programs.map(p => p.subject).filter(Boolean);
+
+  // Get max level (assuming levels 1-6 typical)
+  const maxLevel = 6;
+
+  // Filter students based on search query and filters
   const filterStudents = (studentList: Student[] | undefined) => {
     if (!studentList) return [];
-    if (!searchQuery.trim()) return studentList;
     
-    const query = searchQuery.toLowerCase().trim();
     return studentList.filter((student) => {
-      const name = student.name?.toLowerCase() || "";
-      const rollNo = student.roll_no?.toLowerCase() || "";
-      const className = student.class?.toLowerCase() || "";
-      const gender = student.gender?.toLowerCase() || "";
-      const caste = student.caste?.toLowerCase() || "";
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const name = student.name?.toLowerCase() || "";
+        const rollNo = student.roll_no?.toLowerCase() || "";
+        const className = student.class?.toLowerCase() || "";
+        const gender = student.gender?.toLowerCase() || "";
+        const caste = student.caste?.toLowerCase() || "";
+        
+        const matchesSearch = (
+          name.includes(query) ||
+          rollNo.includes(query) ||
+          className.includes(query) ||
+          gender.includes(query) ||
+          caste.includes(query)
+        );
+        
+        if (!matchesSearch) return false;
+      }
       
-      return (
-        name.includes(query) ||
-        rollNo.includes(query) ||
-        className.includes(query) ||
-        gender.includes(query) ||
-        caste.includes(query)
-      );
+      // Class filter
+      if (classFilter !== "all" && student.class !== classFilter) {
+        return false;
+      }
+      
+      // Level and subject filter
+      if (levelFilter !== "all" || subjectFilter !== "all") {
+        const levelInfo = getStudentLevelInfo(student);
+        
+        if (levelInfo.length === 0) {
+          // If filtering by level/subject, exclude unassessed students
+          if (levelFilter !== "all" || subjectFilter !== "all") {
+            return false;
+          }
+        } else {
+          // Check if any of the student's subjects/levels match the filters
+          const matchesFilter = levelInfo.some((info) => {
+            const matchesSubject = subjectFilter === "all" || info.subject.toLowerCase() === subjectFilter.toLowerCase();
+            const matchesLevel = levelFilter === "all" || info.level === parseInt(levelFilter);
+            return matchesSubject && matchesLevel;
+          });
+          
+          if (!matchesFilter) return false;
+        }
+      }
+      
+      return true;
     });
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = classFilter !== "all" || levelFilter !== "all" || subjectFilter !== "all";
+
+  // Clear all filters
+  const clearFilters = () => {
+    setClassFilter("all");
+    setLevelFilter("all");
+    setSubjectFilter("all");
   };
 
   const filteredActiveStudents = filterStudents(students);
@@ -477,33 +545,154 @@ function ManageStudents() {
             </Button>
           )}
         </div>
-        <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <div className="flex border rounded-md">
-            <Button
-              variant={viewMode === "active" ? "default" : "ghost"}
-              onClick={() => setViewMode("active")}
-              className="rounded-r-none"
-            >
-              Active Students
-            </Button>
-            <Button
-              variant={viewMode === "archived" ? "default" : "ghost"}
-              onClick={() => setViewMode("archived")}
-              className="rounded-l-none"
-            >
-              <Archive className="mr-2 h-4 w-4" />
-              Archived
-            </Button>
+        <div className="mt-4 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex border rounded-md">
+              <Button
+                variant={viewMode === "active" ? "default" : "ghost"}
+                onClick={() => setViewMode("active")}
+                className="rounded-r-none"
+              >
+                Active Students
+              </Button>
+              <Button
+                variant={viewMode === "archived" ? "default" : "ghost"}
+                onClick={() => setViewMode("archived")}
+                className="rounded-l-none"
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                Archived
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-none sm:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, roll, class..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Button 
+                variant={hasActiveFilters ? "default" : "outline"} 
+                onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                className="relative"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
+                {hasActiveFilters && (
+                  <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                    {[classFilter !== "all", subjectFilter !== "all", levelFilter !== "all"].filter(Boolean).length}
+                  </Badge>
+                )}
+                <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${isFiltersOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </div>
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, roll, class..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+
+          {/* Collapsible Filters */}
+          <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+            <CollapsibleContent>
+              <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm">Filter Students</h4>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2">
+                      <X className="h-3 w-3 mr-1" />
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Class</Label>
+                    <Select value={classFilter} onValueChange={setClassFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Classes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Classes</SelectItem>
+                        {uniqueClasses.map((cls) => (
+                          <SelectItem key={cls} value={cls}>
+                            Class {cls}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">Subject</Label>
+                    <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Subjects" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Subjects</SelectItem>
+                        {uniqueSubjects.map((subject) => (
+                          <SelectItem key={subject} value={subject}>
+                            {subject}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm">Level</Label>
+                    <Select value={levelFilter} onValueChange={setLevelFilter}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Levels" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Levels</SelectItem>
+                        {Array.from({ length: maxLevel }, (_, i) => i + 1).map((level) => (
+                          <SelectItem key={level} value={level.toString()}>
+                            Level {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+          
+          {/* Active Filters Display */}
+          {hasActiveFilters && !isFiltersOpen && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-muted-foreground">Active filters:</span>
+              {classFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  Class {classFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setClassFilter("all")} 
+                  />
+                </Badge>
+              )}
+              {subjectFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  {subjectFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setSubjectFilter("all")} 
+                  />
+                </Badge>
+              )}
+              {levelFilter !== "all" && (
+                <Badge variant="secondary" className="gap-1">
+                  Level {levelFilter}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setLevelFilter("all")} 
+                  />
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
