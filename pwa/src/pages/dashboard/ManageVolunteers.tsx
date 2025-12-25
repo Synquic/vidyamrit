@@ -7,6 +7,7 @@ import {
   getVolunteersBySchool,
   updateVolunteerStatus,
   extendVolunteerAccess,
+  sendVolunteerCredentialsEmail,
   type Volunteer,
   type CreateVolunteerDTO,
 } from "@/services/volunteers";
@@ -85,11 +86,17 @@ function ManageVolunteers() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [deletingVolunteer, setDeletingVolunteer] = useState<Volunteer | null>(null);
   const [createdVolunteer, setCreatedVolunteer] = useState<Volunteer | null>(null);
   const [rejectingRequest, setRejectingRequest] = useState<VolunteerRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailData, setEmailData] = useState({
+    emails: "",
+    subject: "",
+    body: "",
+  });
   const [formData, setFormData] = useState<CreateVolunteerDTO>({
     schoolId: "",
     durationHours: 24,
@@ -201,6 +208,21 @@ function ManageVolunteers() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.error || "Failed to reject request";
+      toast.error(message);
+    },
+  });
+
+  // Send credentials email mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: ({ volunteerId, data }: { volunteerId: string; data: any }) =>
+      sendVolunteerCredentialsEmail(volunteerId, data),
+    onSuccess: (data) => {
+      toast.success(data.message || "Email sent successfully");
+      setIsEmailDialogOpen(false);
+      setEmailData({ emails: "", subject: "", body: "" });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || "Failed to send email";
       toast.error(message);
     },
   });
@@ -766,9 +788,167 @@ function ManageVolunteers() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button onClick={() => setIsCredentialsDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (createdVolunteer) {
+                  // Pre-fill email data with default values
+                  const defaultSubject = `Volunteer Account Credentials - ${createdVolunteer.name}`;
+                  const defaultBody = `Dear Volunteer,
+
+Your volunteer account has been created. Please find your login credentials below:
+
+Account Details:
+- Account Name: ${createdVolunteer.name}
+- Email: ${createdVolunteer.email}
+- Password: ${createdVolunteer.password}
+- School: ${createdVolunteer.schoolId?.name || "Unknown"}
+- Expires At: ${new Date(createdVolunteer.expiresAt).toLocaleString()}
+
+Important Notes:
+- Multiple volunteers can use the same login credentials simultaneously
+- You will only have access to student management and baseline assessments
+- This account will expire on ${new Date(createdVolunteer.expiresAt).toLocaleString()}
+- Please keep these credentials secure and do not share them publicly
+
+If you have any questions, please contact the administrator.
+
+Best regards,
+Vidyamrit Team`;
+
+                  setEmailData({
+                    emails: "",
+                    subject: defaultSubject,
+                    body: defaultBody,
+                  });
+                  setIsEmailDialogOpen(true);
+                }
+              }}
+              className="w-full sm:w-auto"
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Send by Email
+            </Button>
+            <Button onClick={() => setIsCredentialsDialogOpen(false)} className="w-full sm:w-auto">
               I've Saved the Credentials
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Send Credentials via Email</DialogTitle>
+            <DialogDescription>
+              Enter recipient email addresses (separate multiple emails with commas) and customize the email content.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto px-1 my-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="emails">Recipient Email(s) *</Label>
+                <Textarea
+                  id="emails"
+                  placeholder="volunteer1@example.com, volunteer2@example.com"
+                  value={emailData.emails}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({ ...prev, emails: e.target.value }))
+                  }
+                  rows={3}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter one or more email addresses separated by commas
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="subject">Subject *</Label>
+                <Input
+                  id="subject"
+                  value={emailData.subject}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({ ...prev, subject: e.target.value }))
+                  }
+                  placeholder="Volunteer Account Credentials"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="body">Email Body *</Label>
+                <Textarea
+                  id="body"
+                  value={emailData.body}
+                  onChange={(e) =>
+                    setEmailData((prev) => ({ ...prev, body: e.target.value }))
+                  }
+                  rows={15}
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  The credentials will be included in the email body above
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEmailDialogOpen(false);
+                setEmailData({ emails: "", subject: "", body: "" });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!emailData.emails.trim()) {
+                  toast.error("Please enter at least one email address");
+                  return;
+                }
+                if (!emailData.subject.trim()) {
+                  toast.error("Please enter a subject");
+                  return;
+                }
+                if (!emailData.body.trim()) {
+                  toast.error("Please enter email body");
+                  return;
+                }
+                if (!createdVolunteer?.password) {
+                  toast.error("Password not available");
+                  return;
+                }
+
+                // Parse emails - split by comma and trim
+                const emailList = emailData.emails
+                  .split(",")
+                  .map((email) => email.trim())
+                  .filter((email) => email.length > 0);
+
+                if (emailList.length === 0) {
+                  toast.error("Please enter at least one valid email address");
+                  return;
+                }
+
+                sendEmailMutation.mutate({
+                  volunteerId: createdVolunteer.id,
+                  data: {
+                    emails: emailList,
+                    subject: emailData.subject,
+                    body: emailData.body,
+                    password: createdVolunteer.password,
+                  },
+                });
+              }}
+              disabled={sendEmailMutation.isPending}
+            >
+              {sendEmailMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              Send Email
             </Button>
           </DialogFooter>
         </DialogContent>

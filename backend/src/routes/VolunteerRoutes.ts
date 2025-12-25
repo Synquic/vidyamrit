@@ -11,6 +11,7 @@ import {
   deleteVolunteer,
   checkVolunteerAccess,
 } from "../controllers/volunteerController";
+import { sendVolunteerCredentialsEmail } from "../controllers/emailController";
 
 const router = Router();
 
@@ -52,6 +53,13 @@ router.delete(
   "/:volunteerId",
   roleMiddleware(UserRole.SUPER_ADMIN),
   deleteVolunteer
+);
+
+// Send volunteer credentials via email (Super Admin only)
+router.post(
+  "/:volunteerId/send-credentials",
+  roleMiddleware(UserRole.SUPER_ADMIN),
+  sendVolunteerCredentialsEmail
 );
 
 // Volunteer can check their own access

@@ -85,3 +85,22 @@ export const checkVolunteerAccess = async (): Promise<VolunteerAccess> => {
   const response = await authAxios.get(`${baseUrl}/access/check`);
   return response.data.access;
 };
+
+// Send volunteer credentials via email
+export interface SendCredentialsEmailDTO {
+  emails: string | string[]; // Single email or comma-separated string or array
+  subject?: string;
+  body?: string;
+  password: string; // Password is required to send credentials
+}
+
+export const sendVolunteerCredentialsEmail = async (
+  volunteerId: string,
+  data: SendCredentialsEmailDTO
+): Promise<{ success: boolean; message: string; recipients: string[] }> => {
+  const response = await authAxios.post(
+    `${baseUrl}/${volunteerId}/send-credentials`,
+    data
+  );
+  return response.data;
+};
