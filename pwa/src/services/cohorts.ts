@@ -19,6 +19,25 @@ export interface Cohort {
     attendanceDays?: number;
     expectedDaysForCurrentLevel?: number;
     totalExpectedDays?: number;
+    levelAdjustments?: {
+      [levelNumber: string]: {
+        originalDays: number;
+        adjustedDays: number;
+        adjustmentDate: string;
+        reason?: string;
+      };
+    };
+  };
+  levelProgress?: {
+    [levelNumber: string]: {
+      originalDaysRequired: number;
+      adjustedDaysRequired: number;
+      completedDays: number;
+      completedDates: string[];
+      isCompleted: boolean;
+      completedAt?: string;
+      lastUpdated: string;
+    };
   };
   createdAt?: string;
   updatedAt?: string;
@@ -201,5 +220,67 @@ export const toggleCohortHoliday = async (
   date: string;
 }> => {
   const response = await authAxios.post(`${baseUrl}/${cohortId}/toggle-holiday`, { date });
+  return response.data;
+};
+
+// Extend level duration
+export const extendLevelDuration = async (
+  cohortId: string,
+  additionalDays: number,
+  reason?: string
+): Promise<{
+  message: string;
+  cohort: Cohort;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/${cohortId}/extend-level`, {
+    additionalDays,
+    reason,
+  });
+  return response.data;
+};
+
+// Mark a day as completed
+export const markDayCompleted = async (
+  cohortId: string,
+  date: string,
+  level?: number
+): Promise<{
+  message: string;
+  levelProgress: any;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/${cohortId}/mark-day-completed`, {
+    date,
+    level,
+  });
+  return response.data;
+};
+
+// Unmark a day
+export const unmarkDay = async (
+  cohortId: string,
+  date: string,
+  level?: number
+): Promise<{
+  message: string;
+  levelProgress: any;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/${cohortId}/unmark-day`, {
+    date,
+    level,
+  });
+  return response.data;
+};
+
+// Mark level as complete
+export const markLevelComplete = async (
+  cohortId: string,
+  level?: number
+): Promise<{
+  message: string;
+  cohort: Cohort;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/${cohortId}/mark-level-complete`, {
+    level,
+  });
   return response.data;
 };

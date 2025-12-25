@@ -49,10 +49,23 @@ export interface CohortProgressData {
         timeframeUnit: string;
       }>;
     };
+    levelProgress?: {
+      [levelNumber: string]: {
+        originalDaysRequired: number;
+        adjustedDaysRequired: number;
+        completedDays: number;
+        completedDates: string[];
+        isCompleted: boolean;
+        completedAt?: string;
+        lastUpdated: string;
+      };
+    };
+    currentLevel?: number;
   };
   studentsProgress: StudentProgressData[];
   timeTracking: {
     cohortStartDate: string;
+    currentLevelStartDate?: string;
     estimatedCompletionDate: string;
     totalDurationWeeks: number;
     elapsedWeeks: number;

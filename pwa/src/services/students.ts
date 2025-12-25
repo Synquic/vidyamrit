@@ -146,3 +146,146 @@ export const getStudentLevel = async (id: string): Promise<StudentLevel> => {
   const response = await authAxios.get(`${baseUrl}/${id}/level`);
   return response.data;
 };
+
+// Comprehensive Student Report Interfaces
+export interface StudentComprehensiveReport {
+  student: {
+    _id: string;
+    name: string;
+    roll_no?: string;
+    age: number;
+    gender: string;
+    class: string;
+    caste?: string;
+    mobileNumber?: string;
+    aadharNumber?: string;
+    apaarId?: string;
+    school: {
+      _id: string;
+      name: string;
+      type?: string;
+    };
+    contactInfo: Array<{
+      name: string;
+      relation: string;
+      occupation?: string;
+      phone_no?: string;
+    }>;
+    createdAt: string;
+    updatedAt: string;
+    lastAssessmentDate?: string;
+  };
+  currentLevels: { [subject: string]: number };
+  knowledgeLevelHistory: Array<{
+    program: string;
+    programName: string;
+    subject: string;
+    level: number;
+    date: string;
+  }>;
+  assessments: Array<{
+    _id: string;
+    subject: string;
+    level: number;
+    date: string;
+    mentor: {
+      _id: string;
+      name: string;
+    };
+    school: {
+      _id: string;
+      name: string;
+    };
+  }>;
+  attendance: {
+    records: Array<{
+      _id: string;
+      date: string;
+      status: "present" | "absent" | "exam";
+      subject?: "hindi" | "math" | "english";
+      sessionType?: "regular" | "assessment" | "review";
+      mentor: {
+        _id: string;
+        name: string;
+      };
+      school: {
+        _id: string;
+        name: string;
+      };
+      notes?: string;
+    }>;
+    stats: {
+      totalDays: number;
+      present: number;
+      absent: number;
+      exam: number;
+      percentage: number;
+    };
+    byMonth: Array<{
+      month: string;
+      present: number;
+      absent: number;
+      exam: number;
+    }>;
+    bySubject: {
+      [subject: string]: {
+        present: number;
+        absent: number;
+        exam: number;
+      };
+    };
+  };
+  cohorts: Array<{
+    cohortId: string;
+    cohortName: string;
+    school: {
+      _id: string;
+      name: string;
+    } | null;
+    tutor: {
+      _id: string;
+      name: string;
+    } | null;
+    dateJoined: string;
+    dateLeaved: string | null;
+    isActive: boolean;
+  }>;
+  cohortProgress: {
+    cohortId: string;
+    cohortName: string;
+    currentLevel: number;
+    status: string;
+    failureCount: number;
+    lastAssessmentDate: string | null;
+    assessmentHistory: Array<{
+      date: string;
+      level: number;
+      passed: boolean;
+      status: string;
+      score: number | null;
+    }>;
+  } | null;
+  progressHistory: Array<{
+    flag: "improving" | "struggling" | "excelling" | "average" | "needs_attention";
+    subject: "hindi" | "math" | "english";
+    reason: string;
+    date: string;
+    mentorId?: string;
+  }>;
+  summary: {
+    totalAssessments: number;
+    averageLevel: number;
+    highestLevel: number;
+    attendancePercentage: number;
+  };
+}
+
+// Get comprehensive report for a student
+export const getStudentComprehensiveReport = async (
+  studentId: string
+): Promise<StudentComprehensiveReport> => {
+  const response = await authAxios.get(
+    `${baseUrl}/${studentId}/comprehensive-report`
+  );
+  return response.data;
+};

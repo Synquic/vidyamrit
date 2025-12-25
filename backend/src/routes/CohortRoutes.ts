@@ -12,6 +12,10 @@ import {
   createCohortsFromPlan,
   checkAssessmentReadiness,
   toggleCohortHoliday,
+  extendLevelDuration,
+  markDayCompleted,
+  unmarkDay,
+  markLevelComplete,
 } from "../controllers/cohortController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
@@ -103,6 +107,34 @@ cohortRouter.post(
   "/:id/toggle-holiday",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   toggleCohortHoliday
+);
+
+// Extend current level duration
+cohortRouter.post(
+  "/:id/extend-level",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  extendLevelDuration
+);
+
+// Mark a day as completed
+cohortRouter.post(
+  "/:id/mark-day-completed",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  markDayCompleted
+);
+
+// Unmark a day
+cohortRouter.post(
+  "/:id/unmark-day",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  unmarkDay
+);
+
+// Mark level as complete
+cohortRouter.post(
+  "/:id/mark-level-complete",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  markLevelComplete
 );
 
 export default cohortRouter;

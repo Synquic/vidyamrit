@@ -30,8 +30,10 @@ export const sendVolunteerCredentialsEmail = async (
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = emailList.filter((email: string) => !emailRegex.test(email.trim()));
-    
+    const invalidEmails = emailList.filter(
+      (email: string) => !emailRegex.test(email.trim())
+    );
+
     if (invalidEmails.length > 0) {
       return res.status(400).json({
         error: `Invalid email addresses: ${invalidEmails.join(", ")}`,
@@ -51,9 +53,10 @@ export const sendVolunteerCredentialsEmail = async (
     }
 
     // Get school name
+    const schoolIdObj = volunteer.schoolId as any;
     const schoolName =
-      typeof volunteer.schoolId === "object" && volunteer.schoolId?.name
-        ? volunteer.schoolId.name
+      typeof schoolIdObj === "object" && schoolIdObj?.name
+        ? schoolIdObj.name
         : "Unknown School";
 
     // Get password from request (it should be passed from frontend)
@@ -74,7 +77,8 @@ export const sendVolunteerCredentialsEmail = async (
         password: password,
         name: volunteer.name,
         schoolName: schoolName,
-        expiresAt: volunteer.expiresAt?.toISOString() || new Date().toISOString(),
+        expiresAt:
+          volunteer.expiresAt?.toISOString() || new Date().toISOString(),
       },
       subject,
       body
@@ -96,4 +100,3 @@ export const sendVolunteerCredentialsEmail = async (
     });
   }
 };
-

@@ -36,6 +36,7 @@ import AttendanceManagement from "@/pages/dashboard/AttendanceManagement";
 
 // Progress Pages
 import ProgressManagement from "@/pages/dashboard/ProgressManagement";
+import LevelAssessmentPage from "@/pages/dashboard/LevelAssessmentPage";
 
 // View Pages
 import ViewDashboard from "@/pages/dashboard/ViewDashboard";
@@ -226,6 +227,16 @@ export const router = createBrowserRouter([
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
           >
             <ProgressManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/progress/cohort/:cohortId/level-assessment",
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
+          >
+            <LevelAssessmentPage />
           </ProtectedRoute>
         ),
       },

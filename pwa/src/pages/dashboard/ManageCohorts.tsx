@@ -249,7 +249,8 @@ function ManageCohorts() {
     return !!(
       cohort.timeTracking?.cohortStartDate ||
       cohort.startDate ||
-      (cohort.timeTracking?.cohortStartDate && new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
+      (cohort.timeTracking?.cohortStartDate &&
+        new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
     );
   };
 
@@ -267,15 +268,16 @@ function ManageCohorts() {
   // Handle start cohort
   const handleStartCohort = (cohort: Cohort) => {
     setStartingCohort(cohort);
-    setCustomStartDate(new Date().toISOString().split('T')[0]);
+    setCustomStartDate(new Date().toISOString().split("T")[0]);
     setIsStartDialogOpen(true);
   };
 
   // Handle confirm start cohort
   const handleConfirmStartCohort = () => {
     if (!startingCohort?._id) return;
-    
-    const startDateToUse = customStartDate || new Date().toISOString().split('T')[0];
+
+    const startDateToUse =
+      customStartDate || new Date().toISOString().split("T")[0];
     startCohortMutation.mutate({
       id: startingCohort._id,
       startDate: startDateToUse,
@@ -656,6 +658,126 @@ function ManageCohorts() {
     return program ? `${program.name} (${program.subject})` : "Unknown Program";
   };
 
+  // Get student's levels grouped by subject/program
+  const getStudentLevels = (studentId: string) => {
+    const student = allStudents.find((s) => s._id === studentId);
+    if (
+      !student ||
+      !student.knowledgeLevel ||
+      student.knowledgeLevel.length === 0
+    ) {
+      return [];
+    }
+
+    // Group by program and get the latest level for each
+    const levelsByProgram: Record<
+      string,
+      { subject: string; level: number; date: string }
+    > = {};
+
+    student.knowledgeLevel.forEach((kl) => {
+      const programId = kl.program?.toString();
+      if (!programId) return;
+
+      // Get the program to find its subject
+      const program = programs.find((p) => p._id === programId);
+      const subject =
+        program?.subject || kl.subject || kl.programName || "Unknown";
+
+      // Keep the latest level for each program (if multiple assessments)
+      const existing = levelsByProgram[programId];
+      if (
+        !existing ||
+        new Date(kl.date).getTime() > new Date(existing.date).getTime()
+      ) {
+        levelsByProgram[programId] = {
+          subject,
+          level: kl.level,
+          date: kl.date,
+        };
+      }
+    });
+
+    return Object.values(levelsByProgram).map(({ subject, level }) => ({
+      subject,
+      level,
+    }));
+  };
+
+  // Calculate unassigned students grouped by program and level
+  const unassignedStudentsByProgram = useMemo(() => {
+    if (
+      !selectedSchool?._id ||
+      !editableCohorts.length ||
+      !allStudents.length
+    ) {
+      return {};
+    }
+
+    // Get all student IDs that are already assigned to cohorts
+    const assignedStudentIds = new Set<string>();
+    editableCohorts.forEach((cohort) => {
+      cohort.students.forEach((studentId) => {
+        assignedStudentIds.add(studentId);
+      });
+    });
+
+    // Get program IDs from editable cohorts
+    const programIdsInCohorts = new Set<string>();
+    editableCohorts.forEach((cohort) => {
+      if (cohort.programId) {
+        programIdsInCohorts.add(cohort.programId);
+      }
+    });
+
+    // Find unassigned students
+    const unassigned: Record<
+      string,
+      Record<number, Array<{ id: string; name: string }>>
+    > = {};
+
+    allStudents.forEach((student) => {
+      // Check if student belongs to selected school
+      const schoolId =
+        typeof student.schoolId === "string"
+          ? student.schoolId
+          : student.schoolId?._id;
+      if (schoolId !== selectedSchool._id) return;
+
+      // Check if student is already assigned
+      if (assignedStudentIds.has(student._id)) return;
+
+      // Check if student has knowledge levels for programs in cohorts
+      if (!student.knowledgeLevel || student.knowledgeLevel.length === 0)
+        return;
+
+      student.knowledgeLevel.forEach((kl) => {
+        const programId = kl.program?.toString();
+        if (!programId || !programIdsInCohorts.has(programId)) return;
+
+        if (!unassigned[programId]) {
+          unassigned[programId] = {};
+        }
+        if (!unassigned[programId][kl.level]) {
+          unassigned[programId][kl.level] = [];
+        }
+
+        // Check if student is already in this program/level group
+        const exists = unassigned[programId][kl.level].some(
+          (s) => s.id === student._id
+        );
+        if (!exists) {
+          unassigned[programId][kl.level].push({
+            id: student._id,
+            name: student.name,
+          });
+        }
+      });
+    });
+
+    return unassigned;
+  }, [selectedSchool?._id, editableCohorts, allStudents, programs]);
+
   const getStatusColor = (status?: string) => {
     switch (status) {
       case "active":
@@ -737,13 +859,15 @@ function ManageCohorts() {
               {isGenerating ? "Generating..." : `Generate Cohorts`}
             </Button>
           )}
-          <Button onClick={() => {
+          <Button
+            onClick={() => {
               setFormData((prev) => ({
                 ...prev,
                 schoolId: selectedSchool?._id || "",
               }));
               setIsOpen(true);
-            }}>
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Cohort
           </Button>
@@ -941,13 +1065,15 @@ function ManageCohorts() {
               Get started by creating your first cohort or generating cohorts
               automatically.
             </p>
-            <Button onClick={() => {
+            <Button
+              onClick={() => {
                 setFormData((prev) => ({
                   ...prev,
                   schoolId: selectedSchool?._id || "",
                 }));
                 setIsOpen(true);
-              }}>
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Create Cohort
             </Button>
@@ -1054,13 +1180,18 @@ function ManageCohorts() {
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">Started:</span>
                       <span className="font-medium">
-                        {formatDate(getCohortStartDate(cohort) || cohort.startDate)}
+                        {formatDate(
+                          getCohortStartDate(cohort) || cohort.startDate
+                        )}
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="h-4 w-4 text-orange-500" />
-                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                      <Badge
+                        variant="outline"
+                        className="bg-orange-50 text-orange-700 border-orange-200"
+                      >
                         Not Started
                       </Badge>
                     </div>
@@ -1185,23 +1316,49 @@ function ManageCohorts() {
               <Label>Students</Label>
               <ScrollArea className="h-48 border rounded-md p-2">
                 <div className="space-y-2">
-                  {filteredStudents.map((student) => (
-                    <div
-                      key={student._id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={student._id}
-                        checked={formData.students.includes(student._id)}
-                        onCheckedChange={(checked) =>
-                          handleStudentChange(student._id, checked as boolean)
-                        }
-                      />
-                      <Label htmlFor={student._id} className="text-sm">
-                        {student.name}
-                      </Label>
-                    </div>
-                  ))}
+                  {filteredStudents.map((student) => {
+                    const studentLevels = getStudentLevels(student._id);
+                    return (
+                      <div
+                        key={student._id}
+                        className="flex items-start space-x-2 py-1"
+                      >
+                        <Checkbox
+                          id={student._id}
+                          checked={formData.students.includes(student._id)}
+                          onCheckedChange={(checked) =>
+                            handleStudentChange(student._id, checked as boolean)
+                          }
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <Label
+                            htmlFor={student._id}
+                            className="text-sm font-medium cursor-pointer"
+                          >
+                            {student.name}
+                          </Label>
+                          {studentLevels.length > 0 ? (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {studentLevels.map((levelInfo, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                >
+                                  {levelInfo.subject}: Level {levelInfo.level}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              No assessments
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                   {filteredStudents.length === 0 && (
                     <p className="text-sm text-muted-foreground">
                       No students found for selected school
@@ -1214,16 +1371,37 @@ function ManageCohorts() {
                   <p className="text-sm text-muted-foreground">
                     Selected: {formData.students.length} student(s)
                   </p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {formData.students.map((studentId) => (
-                      <Badge
-                        key={studentId}
-                        variant="secondary"
-                        className="text-xs"
-                      >
-                        {getStudentName(studentId)}
-                      </Badge>
-                    ))}
+                  <div className="flex flex-col gap-2 mt-2 max-h-32 overflow-y-auto">
+                    {formData.students.map((studentId) => {
+                      const studentLevels = getStudentLevels(studentId);
+                      return (
+                        <div
+                          key={studentId}
+                          className="flex flex-col gap-1 p-2 bg-gray-50 rounded-md border"
+                        >
+                          <div className="font-medium text-sm">
+                            {getStudentName(studentId)}
+                          </div>
+                          {studentLevels.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {studentLevels.map((levelInfo, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                                >
+                                  {levelInfo.subject}: Level {levelInfo.level}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">
+                              No assessments
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1271,7 +1449,8 @@ function ManageCohorts() {
           <DialogHeader>
             <DialogTitle>Start Cohort</DialogTitle>
             <DialogDescription>
-              Set a start date for "{startingCohort?.name}". The cohort will begin tracking progress and attendance from this date.
+              Set a start date for "{startingCohort?.name}". The cohort will
+              begin tracking progress and attendance from this date.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1284,17 +1463,19 @@ function ManageCohorts() {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toISOString().split("T")[0]}
                   className="flex-1"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Select a date to start the cohort. Leave as today's date to start immediately.
+                Select a date to start the cohort. Leave as today's date to
+                start immediately.
               </p>
             </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Once started, the cohort will begin tracking:
+                <strong>Note:</strong> Once started, the cohort will begin
+                tracking:
                 <ul className="list-disc list-inside mt-1 space-y-1">
                   <li>Progress tracking from the start date</li>
                   <li>Attendance recording</li>
@@ -1650,7 +1831,28 @@ function ManageCohorts() {
                                       (c) => ({ ...c })
                                     );
 
-                                    // Find student name index in source cohort
+                                    // Handle unassigned students (sourceCohortIndex is "unassigned")
+                                    if (sourceCohortIndex === "unassigned") {
+                                      // Just add to target cohort
+                                      updated[globalIndex] = {
+                                        ...updated[globalIndex],
+                                        students: [
+                                          ...updated[globalIndex].students,
+                                          studentId,
+                                        ],
+                                        studentNames: [
+                                          ...updated[globalIndex].studentNames,
+                                          studentName,
+                                        ],
+                                      };
+                                      setEditableCohorts(updated);
+                                      toast.success(
+                                        `Added ${studentName} to ${cohort.name}`
+                                      );
+                                      return;
+                                    }
+
+                                    // Handle moving from one cohort to another
                                     const sourceCohortData =
                                       updated[sourceCohortIndex];
                                     const studentNameIdx =
@@ -1949,6 +2151,209 @@ function ManageCohorts() {
                 );
               })()
             )}
+
+            {/* Unassigned Students Section */}
+            {(() => {
+              const hasUnassigned =
+                Object.keys(unassignedStudentsByProgram).length > 0;
+              if (!hasUnassigned) return null;
+
+              return (
+                <div className="mt-6 pt-6 border-t-2 border-dashed">
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5 text-orange-600" />
+                      Unassigned Students
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Drag and drop students from below into cohorts above, or
+                      use the dropdown to move them.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {Object.entries(unassignedStudentsByProgram).map(
+                      ([programId, levels]) => {
+                        const program = programs.find(
+                          (p) => p._id === programId
+                        );
+                        const programName = program?.name || "Unknown Program";
+                        const programSubject = program?.subject || "";
+
+                        return (
+                          <div
+                            key={programId}
+                            className="border rounded-lg p-4 bg-orange-50/50 space-y-3"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-medium text-base">
+                                {programName}
+                                {programSubject && (
+                                  <span className="text-muted-foreground ml-2">
+                                    ({programSubject})
+                                  </span>
+                                )}
+                              </h4>
+                              <Badge
+                                variant="outline"
+                                className="bg-orange-100"
+                              >
+                                {Object.values(levels).reduce(
+                                  (sum, students) => sum + students.length,
+                                  0
+                                )}{" "}
+                                unassigned
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-3">
+                              {Object.entries(levels)
+                                .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                .map(([level, students]) => (
+                                  <div
+                                    key={level}
+                                    className="border rounded-md p-3 bg-white"
+                                  >
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">
+                                          Level {level}
+                                        </Badge>
+                                        <span className="text-sm text-muted-foreground">
+                                          {students.length} student
+                                          {students.length !== 1 ? "s" : ""}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <ScrollArea className="h-32 border rounded-md p-2">
+                                      <div className="space-y-2">
+                                        {students.map((student) => {
+                                          const handleDragStart = (
+                                            e: React.DragEvent
+                                          ) => {
+                                            e.dataTransfer.effectAllowed =
+                                              "move";
+                                            e.dataTransfer.setData(
+                                              "text/plain",
+                                              JSON.stringify({
+                                                studentId: student.id,
+                                                studentName: student.name,
+                                                sourceCohortIndex: "unassigned",
+                                              })
+                                            );
+                                            (
+                                              e.target as HTMLElement
+                                            ).style.opacity = "0.5";
+                                          };
+
+                                          const handleDragEnd = (
+                                            e: React.DragEvent
+                                          ) => {
+                                            (
+                                              e.target as HTMLElement
+                                            ).style.opacity = "1";
+                                          };
+
+                                          // Find all cohorts where this student could be moved
+                                          const availableCohorts =
+                                            editableCohorts
+                                              .map((cohort, idx) => ({
+                                                cohort: cohort,
+                                                index: idx,
+                                              }))
+                                              .filter(() => {
+                                                // Optionally filter by program - allow all for now
+                                                return true;
+                                              });
+
+                                          return (
+                                            <div
+                                              key={student.id}
+                                              draggable
+                                              onDragStart={handleDragStart}
+                                              onDragEnd={handleDragEnd}
+                                              className="flex items-center justify-between p-2 bg-white rounded border cursor-move hover:bg-gray-50 transition-colors"
+                                            >
+                                              <span className="text-sm flex-1">
+                                                {student.name}
+                                              </span>
+                                              {availableCohorts.length > 0 && (
+                                                <Select
+                                                  value=""
+                                                  onValueChange={(
+                                                    targetCohortIdxStr
+                                                  ) => {
+                                                    const targetCohortIdx =
+                                                      parseInt(
+                                                        targetCohortIdxStr
+                                                      );
+                                                    const updated =
+                                                      editableCohorts.map(
+                                                        (c) => ({ ...c })
+                                                      );
+
+                                                    // Add to target cohort
+                                                    updated[targetCohortIdx] = {
+                                                      ...updated[
+                                                        targetCohortIdx
+                                                      ],
+                                                      students: [
+                                                        ...updated[
+                                                          targetCohortIdx
+                                                        ].students,
+                                                        student.id,
+                                                      ],
+                                                      studentNames: [
+                                                        ...updated[
+                                                          targetCohortIdx
+                                                        ].studentNames,
+                                                        student.name,
+                                                      ],
+                                                    };
+
+                                                    setEditableCohorts(updated);
+                                                    toast.success(
+                                                      `Added ${student.name} to ${updated[targetCohortIdx].name}`
+                                                    );
+                                                  }}
+                                                >
+                                                  <SelectTrigger className="w-40 h-8">
+                                                    <SelectValue placeholder="Move to..." />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    {availableCohorts.map(
+                                                      ({
+                                                        cohort: otherCohort,
+                                                        index: otherIdx,
+                                                      }) => (
+                                                        <SelectItem
+                                                          key={otherIdx}
+                                                          value={otherIdx.toString()}
+                                                        >
+                                                          {otherCohort.name}
+                                                        </SelectItem>
+                                                      )
+                                                    )}
+                                                  </SelectContent>
+                                                </Select>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </ScrollArea>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <DialogFooter>

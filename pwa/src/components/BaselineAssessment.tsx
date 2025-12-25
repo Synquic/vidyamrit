@@ -54,6 +54,7 @@ interface Props {
   student?: Student | null;
   programs?: IProgram[];
   preSelectedProgramId?: string; // Program ID to auto-start
+  startingLevel?: number; // Level to start assessment from (default: 0)
   onAssessmentComplete?: () => void;
 }
 
@@ -63,6 +64,7 @@ export function BaselineAssessmentModal({
   student,
   programs = [],
   preSelectedProgramId,
+  startingLevel = 0,
   onAssessmentComplete,
 }: Props) {
   const { user } = useAuth();
@@ -203,8 +205,12 @@ export function BaselineAssessmentModal({
     }
     setCurrentProgramIndex(i);
     setModalState("testing");
-    setCurrentLevel(0);
-    setLastCompletedLevel(-1); // Reset last completed level
+    // Start from the specified starting level (or 0 if not provided)
+    const startLevel = startingLevel || 0;
+    setCurrentLevel(startLevel);
+    // If starting from a level > 0, set lastCompletedLevel to level - 1
+    // This means they've already passed levels 0 to startLevel - 1
+    setLastCompletedLevel(startLevel > 0 ? startLevel - 1 : -1);
     setOneWordInput("");
     setTotalQuestions(0);
     setCorrectAnswersForProgram(0);
@@ -214,7 +220,7 @@ export function BaselineAssessmentModal({
     levelCorrectAnswers.current = 0;
     levelWrongAnswers.current = 0;
 
-    toast.success(`Starting ${programs[i].name}`);
+    toast.success(`Starting ${programs[i].name} from Level ${startLevel + 1}`);
   };
 
   const evaluateLevel = async () => {
@@ -503,16 +509,15 @@ export function BaselineAssessmentModal({
                   <div
                     className={`bg-gray-100 dark:bg-gray-800 p-8 md:p-12 rounded-lg text-center break-words font-bold font-devanagari ${
                       hasMultipleLines
-                        ? "text-3xl md:text-4xl"
-                        : "text-5xl md:text-7xl lg:text-8xl"
+                        ? "text-3xl md:text-4xl leading-relaxed"
+                        : "text-5xl md:text-7xl lg:text-8xl leading-tight"
                     } min-h-[200px] md:min-h-[300px] flex items-center justify-center`}
                   >
-                    <div>
+                    <div className="space-y-3 md:space-y-4">
                       {questionLines.map((line, i) => (
-                        <span key={i}>
+                        <div key={i} className="block">
                           {line}
-                          {i < questionLines.length - 1 && <br />}
-                        </span>
+                        </div>
                       ))}
                     </div>
                   </div>

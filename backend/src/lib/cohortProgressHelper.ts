@@ -91,6 +91,22 @@ export function convertToWeeks(timeframe: number, unit: TimeframeUnit): number {
 }
 
 /**
+ * Convert program level timeframe to days (teaching days, Mon-Sat)
+ */
+export function convertToDays(timeframe: number, unit: TimeframeUnit): number {
+  switch (unit) {
+    case TimeframeUnit.DAYS:
+      return timeframe;
+    case TimeframeUnit.WEEKS:
+      return timeframe * 6; // 6 teaching days per week (Mon-Sat)
+    case TimeframeUnit.MONTHS:
+      return Math.ceil(timeframe * 30 * 6 / 7); // Approximate: 30 days * 6/7 teaching days ratio
+    default:
+      return timeframe * 6; // Default to weeks
+  }
+}
+
+/**
  * Check if a date is a holiday
  */
 function isHoliday(date: Date, holidays: Date[] = []): boolean {
@@ -213,34 +229,187 @@ export async function calculateLevelProgress(cohort: any): Promise<{
     };
   }
 
-  // Get required weeks for current level
-  const weeksRequired = convertToWeeks(levelInfo.timeframe, levelInfo.timeframeUnit);
-
-  // Get attendance dates for current level
+  // Get original days required from program
+  const originalDaysRequired = convertToDays(levelInfo.timeframe, levelInfo.timeframeUnit);
+  
+  // Get adjusted days if level has been extended
+  const levelProgressData = cohort.levelProgress?.get?.(currentLevel.toString()) || 
+                            (cohort.levelProgress && cohort.levelProgress[currentLevel]);
+  const adjustedDaysRequired = levelProgressData?.adjustedDaysRequired || originalDaysRequired;
+  
+  // Get completed days from levelProgress (supplemented by attendance)
+  const completedDays = levelProgressData?.completedDays || 0;
+  
+  // Also get attendance-based calculation for comparison
   const attendanceDates = getCurrentLevelAttendanceDates(cohort);
-  const weeksCompleted = calculateWeeksFromAttendance(attendanceDates);
+  const attendanceDays = attendanceDates.length;
+  
+  // Use the maximum of completedDays (from levelProgress) and attendanceDays
+  // This allows manual marking to supplement attendance
+  const effectiveCompletedDays = Math.max(completedDays, attendanceDays);
+
+  // Convert to weeks for display
+  const weeksRequired = adjustedDaysRequired / 6; // 6 teaching days per week
+  const weeksCompleted = effectiveCompletedDays / 6;
 
   // Calculate completion percentage
-  const completionPercentage = weeksRequired > 0 
-    ? Math.min(100, (weeksCompleted / weeksRequired) * 100)
+  const completionPercentage = adjustedDaysRequired > 0 
+    ? Math.min(100, (effectiveCompletedDays / adjustedDaysRequired) * 100)
     : 0;
 
-  // Check if ready for assessment (completed required weeks)
-  const isReadyForAssessment = weeksCompleted >= weeksRequired;
+  // Check if ready for assessment (completed required days)
+  const isReadyForAssessment = effectiveCompletedDays >= adjustedDaysRequired;
 
   // Calculate days remaining (if not ready)
   let daysRemaining: number | undefined;
-  if (!isReadyForAssessment && weeksRequired > weeksCompleted) {
-    const weeksRemaining = weeksRequired - weeksCompleted;
-    daysRemaining = Math.ceil(weeksRemaining * 6); // 6 teaching days per week (Mon-Sat)
+  if (!isReadyForAssessment && adjustedDaysRequired > effectiveCompletedDays) {
+    daysRemaining = Math.ceil(adjustedDaysRequired - effectiveCompletedDays);
   }
 
   return {
     weeksCompleted: Math.round(weeksCompleted * 10) / 10, // Round to 1 decimal
-    weeksRequired,
+    weeksRequired: Math.round(weeksRequired * 10) / 10,
     completionPercentage: Math.round(completionPercentage * 10) / 10,
     isReadyForAssessment,
     daysRemaining,
   };
+}
+
+/**
+ * Get adjusted start date for a level (considering all previous adjustments)
+ */
+export function getAdjustedLevelStartDate(cohort: any, level: number, program: any): Date {
+  if (level === 1) {
+    return new Date(cohort.timeTracking?.cohortStartDate || cohort.startDate || cohort.createdAt);
+  }
+
+  // For level > 1, calculate based on previous level completion
+  let currentDate = new Date(cohort.timeTracking?.cohortStartDate || cohort.startDate || cohort.createdAt);
+  
+  // Iterate through all previous levels to calculate cumulative duration
+  for (let i = 1; i < level; i++) {
+    const prevLevelInfo = program.getLevelByNumber(i);
+    if (!prevLevelInfo) continue;
+
+    // Get original days
+    const originalDays = convertToDays(prevLevelInfo.timeframe, prevLevelInfo.timeframeUnit);
+    
+    // Get adjusted days if level was extended
+    const prevLevelProgress = cohort.levelProgress?.get?.(i.toString()) || 
+                             (cohort.levelProgress && cohort.levelProgress[i]);
+    const adjustedDays = prevLevelProgress?.adjustedDaysRequired || originalDays;
+
+    // Add adjusted days to current date (skip Sundays)
+    let daysAdded = 0;
+    while (daysAdded < adjustedDays) {
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 1);
+      
+      // Skip Sundays
+      if (currentDate.getDay() !== 0) {
+        daysAdded++;
+      }
+    }
+  }
+
+  return currentDate;
+}
+
+/**
+ * Adjust level timeline when extending duration
+ */
+export async function adjustLevelTimeline(
+  cohort: any,
+  level: number,
+  additionalDays: number,
+  program: any
+): Promise<void> {
+  if (!cohort.levelProgress) {
+    cohort.levelProgress = new Map();
+  }
+
+  // Get or initialize level progress
+  const levelKey = level.toString();
+  let levelProgress = cohort.levelProgress.get?.(levelKey) || 
+                     (cohort.levelProgress[level] ? { ...cohort.levelProgress[level] } : null);
+
+  if (!levelProgress) {
+    // Initialize level progress
+    const levelInfo = program.getLevelByNumber(level);
+    if (!levelInfo) {
+      throw new Error(`Level ${level} not found in program`);
+    }
+
+    const originalDays = convertToDays(levelInfo.timeframe, levelInfo.timeframeUnit);
+    levelProgress = {
+      originalDaysRequired: originalDays,
+      adjustedDaysRequired: originalDays,
+      completedDays: 0,
+      completedDates: [],
+      isCompleted: false,
+      lastUpdated: new Date(),
+    };
+  }
+
+  // Update adjusted days
+  levelProgress.adjustedDaysRequired += additionalDays;
+  levelProgress.lastUpdated = new Date();
+
+  // Store back (handle both Map and object formats)
+  if (cohort.levelProgress instanceof Map) {
+    cohort.levelProgress.set(levelKey, levelProgress);
+  } else {
+    cohort.levelProgress[level] = levelProgress;
+  }
+
+  // Update timeTracking
+  if (!cohort.timeTracking) {
+    cohort.timeTracking = {
+      cohortStartDate: cohort.startDate || cohort.createdAt,
+      currentLevelStartDate: cohort.startDate || cohort.createdAt,
+      attendanceDays: 0,
+      expectedDaysForCurrentLevel: levelProgress.adjustedDaysRequired,
+      totalExpectedDays: 0,
+      levelAdjustments: new Map(),
+    };
+  }
+
+  // Update expected days for current level
+  cohort.timeTracking.expectedDaysForCurrentLevel = levelProgress.adjustedDaysRequired;
+
+  // Record adjustment
+  if (!cohort.timeTracking.levelAdjustments) {
+    cohort.timeTracking.levelAdjustments = new Map();
+  }
+  
+  const adjustment = {
+    originalDays: levelProgress.originalDaysRequired,
+    adjustedDays: levelProgress.adjustedDaysRequired,
+    adjustmentDate: new Date(),
+  };
+
+  if (cohort.timeTracking.levelAdjustments instanceof Map) {
+    cohort.timeTracking.levelAdjustments.set(levelKey, adjustment);
+  } else {
+    cohort.timeTracking.levelAdjustments[level] = adjustment;
+  }
+
+  // Recalculate total expected days for all remaining levels
+  let totalDays = 0;
+  for (let i = 1; i <= program.totalLevels; i++) {
+    const levelInfo = program.getLevelByNumber(i);
+    if (!levelInfo) continue;
+
+    const levelProgressData = cohort.levelProgress?.get?.(i.toString()) || 
+                              (cohort.levelProgress && cohort.levelProgress[i]);
+    
+    if (levelProgressData) {
+      totalDays += levelProgressData.adjustedDaysRequired;
+    } else {
+      totalDays += convertToDays(levelInfo.timeframe, levelInfo.timeframeUnit);
+    }
+  }
+
+  cohort.timeTracking.totalExpectedDays = totalDays;
 }
 

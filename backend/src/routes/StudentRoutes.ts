@@ -12,6 +12,7 @@ import {
   getStudentCohortStatus,
   getArchivedStudents,
   restoreStudent,
+  getStudentComprehensiveReport,
 } from "../controllers/studentController";
 
 const studentRouter = Router();
@@ -41,6 +42,12 @@ studentRouter.get(
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
   getStudentLevel
 ); // Get student's current level
+studentRouter.get(
+  "/:id/comprehensive-report",
+  authMiddleware,
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
+  getStudentComprehensiveReport
+); // Get comprehensive report for a student
 studentRouter.get(
   "/cohort-status/:schoolId",
   authMiddleware,

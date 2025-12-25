@@ -951,13 +951,13 @@ export default function BaselineAssessmentsPage() {
                             {programs.map((program) => (
                               <TableHead
                                 key={program._id}
-                                className="text-center min-w-[180px]"
+                                className="text-center min-w-[180px] px-3"
                               >
-                                <div className="flex flex-col items-center gap-1">
-                                  <span className="font-semibold capitalize">
+                                <div className="flex flex-col items-center gap-2">
+                                  <span className="font-semibold capitalize break-words text-center">
                                     {program.subject}
                                   </span>
-                                  <span className="text-xs font-normal text-muted-foreground">
+                                  <span className="text-xs font-normal text-muted-foreground break-words text-center">
                                     {program.name}
                                   </span>
                                 </div>
@@ -1015,26 +1015,26 @@ export default function BaselineAssessmentsPage() {
                               if (status.completed && status.level) {
                                 return (
                                   <div
-                                    className={`flex flex-col items-center gap-2 p-2 rounded ${
+                                    className={`flex flex-col items-center gap-3 p-3 rounded ${
                                       status.assessedToday
                                         ? "bg-green-50 border border-green-200"
                                         : ""
                                     }`}
                                   >
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-3">
                                       {status.assessedToday ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
                                       ) : (
-                                        <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                                       )}
-                                      <div className="flex flex-col items-center">
+                                      <div className="flex flex-col items-center gap-1.5">
                                         <Badge
                                           variant={
                                             status.assessedToday
                                               ? "default"
                                               : "secondary"
                                           }
-                                          className={`text-sm font-semibold px-3 py-1 ${
+                                          className={`text-sm font-semibold px-3 py-1 whitespace-nowrap ${
                                             status.assessedToday
                                               ? "bg-green-100 text-green-800 border-green-300"
                                               : "bg-blue-100 text-blue-800 border-blue-300"
@@ -1042,13 +1042,13 @@ export default function BaselineAssessmentsPage() {
                                         >
                                           Level {status.level}
                                         </Badge>
-                                        <span className="text-xs text-muted-foreground mt-1 capitalize">
+                                        <span className="text-xs text-muted-foreground capitalize text-center break-words">
                                           {program.subject}
                                         </span>
                                       </div>
                                     </div>
                                     {status.date && (
-                                      <span className="text-xs text-muted-foreground">
+                                      <span className="text-xs text-muted-foreground text-center break-words">
                                         {new Date(
                                           status.date
                                         ).toLocaleDateString("en-US", {
@@ -1059,7 +1059,7 @@ export default function BaselineAssessmentsPage() {
                                       </span>
                                     )}
                                     {status.assessedToday && (
-                                      <span className="text-xs font-medium text-green-700">
+                                      <span className="text-xs font-medium text-green-700 text-center break-words">
                                         Assessed Today
                                       </span>
                                     )}
@@ -1069,9 +1069,9 @@ export default function BaselineAssessmentsPage() {
 
                               // No assessment found - show Assess Now button
                               return (
-                                <div className="flex flex-col items-center justify-center gap-2 p-2">
-                                  <XCircle className="h-5 w-5 text-gray-400" />
-                                  <span className="text-sm text-muted-foreground">
+                                <div className="flex flex-col items-center justify-center gap-3 p-3">
+                                  <XCircle className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                  <span className="text-sm text-muted-foreground text-center break-words">
                                     Not Completed
                                   </span>
                                   <Button
@@ -1080,7 +1080,7 @@ export default function BaselineAssessmentsPage() {
                                     onClick={() =>
                                       handleAssessNow(student, program._id)
                                     }
-                                    className="mt-1"
+                                    className="mt-1 whitespace-nowrap"
                                   >
                                     Assess Now
                                   </Button>
@@ -1090,13 +1090,13 @@ export default function BaselineAssessmentsPage() {
 
                             return (
                               <TableRow key={student._id}>
-                                <TableCell className="text-center font-medium text-muted-foreground">
+                                <TableCell className="text-center font-medium text-muted-foreground px-3">
                                   {index + 1}
                                 </TableCell>
-                                <TableCell className="font-medium">
+                                <TableCell className="font-medium px-3 break-words">
                                   {student.name}
                                 </TableCell>
-                                <TableCell>{student.roll_no}</TableCell>
+                                <TableCell className="px-3 break-words">{student.roll_no}</TableCell>
                                 {programs.map((program) => {
                                   const status = getStudentBaselineStatus(
                                     student._id,
@@ -1105,7 +1105,7 @@ export default function BaselineAssessmentsPage() {
                                   return (
                                     <TableCell
                                       key={program._id}
-                                      className={`text-center ${
+                                      className={`text-center px-3 py-4 ${
                                         status.assessedToday
                                           ? "bg-green-50"
                                           : ""

@@ -493,9 +493,58 @@ export const recordCohortAttendance = async (req: AuthRequest, res: Response) =>
             };
           }
 
+          // Auto-mark day as completed when attendance is recorded
+          // Initialize levelProgress if needed
+          if (!cohort.levelProgress) {
+            cohort.levelProgress = new Map();
+          }
+
+          const levelKey = currentLevel.toString();
+          let levelProgress = cohort.levelProgress.get?.(levelKey) || 
+                            (cohort.levelProgress[currentLevel] ? { ...cohort.levelProgress[currentLevel] } : null);
+
+          if (!levelProgress) {
+            // Initialize level progress
+            const { convertToDays } = require("../lib/cohortProgressHelper");
+            const { TimeframeUnit } = require("../models/ProgramModel");
+            const originalDays = convertToDays(currentLevelInfo.timeframe, currentLevelInfo.timeframeUnit);
+            
+            levelProgress = {
+              originalDaysRequired: originalDays,
+              adjustedDaysRequired: originalDays,
+              completedDays: 0,
+              completedDates: [],
+              isCompleted: false,
+              lastUpdated: new Date(),
+            };
+          }
+
+          // Mark attendance date as completed (if not already marked)
+          const attendanceDate = new Date(date);
+          attendanceDate.setHours(0, 0, 0, 0);
+          const dateStr = attendanceDate.toISOString().split('T')[0];
+          
+          const isAlreadyMarked = levelProgress.completedDates.some((d: Date) => {
+            const dStr = new Date(d).toISOString().split('T')[0];
+            return dStr === dateStr;
+          });
+
+          if (!isAlreadyMarked) {
+            levelProgress.completedDates.push(attendanceDate);
+            levelProgress.completedDays += 1;
+            levelProgress.lastUpdated = new Date();
+
+            // Store back
+            if (cohort.levelProgress instanceof Map) {
+              cohort.levelProgress.set(levelKey, levelProgress);
+            } else {
+              cohort.levelProgress[currentLevel] = levelProgress;
+            }
+          }
+
           // Use helper to calculate level progress
           const { calculateLevelProgress } = require("../lib/cohortProgressHelper");
-          const levelProgress = await calculateLevelProgress(cohort);
+          const calculatedProgress = await calculateLevelProgress(cohort);
           
           // Update attendance days count (unique present dates)
           const presentDays = new Set();
@@ -507,12 +556,13 @@ export const recordCohortAttendance = async (req: AuthRequest, res: Response) =>
           
           cohort.timeTracking.attendanceDays = presentDays.size;
           
-          // Mark timeTracking as modified so Mongoose saves nested object changes
+          // Mark timeTracking and levelProgress as modified so Mongoose saves nested object changes
           cohort.markModified('timeTracking');
+          cohort.markModified('levelProgress');
           
           // Log if ready for assessment
-          if (levelProgress.isReadyForAssessment) {
-            logger.info(`Cohort ${cohortId} completed ${levelProgress.weeksCompleted}/${levelProgress.weeksRequired} weeks for level ${currentLevel}. Ready for assessment.`);
+          if (calculatedProgress.isReadyForAssessment) {
+            logger.info(`Cohort ${cohortId} completed ${calculatedProgress.weeksCompleted}/${calculatedProgress.weeksRequired} weeks for level ${currentLevel}. Ready for assessment.`);
           }
         }
       }

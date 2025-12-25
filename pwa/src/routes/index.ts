@@ -25,6 +25,7 @@ export const DASHBOARD_ROUTE_PATHS = {
   baselineAssessments: "/baseline-assessments",
   attendanceManagement: "/attendance",
   tutorProgress: "/progress/tutor",
+  levelAssessment: "/progress/cohort/:cohortId/level-assessment",
   schools: "/schools",
   views: "/views",
   viewDashboard: "/view-dashboard",

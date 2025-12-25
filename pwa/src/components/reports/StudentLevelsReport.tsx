@@ -627,6 +627,40 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
                           </TableRow>
                         );
                       })}
+                    {/* Summary Row - Sum of all students for each level */}
+                    {(() => {
+                      // Calculate totals for each level across all classes
+                      const levelTotals: { [level: number]: number } = {};
+                      let grandTotal = 0;
+
+                      Object.values(dataToRender).forEach((classData) => {
+                        const subjectData = (classData as any)[subject] || {};
+                        Array.from({ length: maxLevel }, (_, i) => i + 1).forEach((level) => {
+                          const count = subjectData[level] || 0;
+                          levelTotals[level] = (levelTotals[level] || 0) + count;
+                          grandTotal += count;
+                        });
+                      });
+
+                      return (
+                        <TableRow className="bg-muted/50 font-bold border-t-2 border-primary/20">
+                          <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">
+                            Total
+                          </TableCell>
+                          {Array.from({ length: maxLevel }, (_, i) => i + 1).map((level) => {
+                            const total = levelTotals[level] || 0;
+                            return (
+                              <TableCell key={level} className="text-center font-bold">
+                                {total > 0 ? total : "-"}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell className="text-center font-bold">
+                            {grandTotal > 0 ? grandTotal : "-"}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })()}
                   </TableBody>
                 </Table>
               </div>

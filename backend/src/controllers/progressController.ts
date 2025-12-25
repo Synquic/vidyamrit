@@ -155,6 +155,7 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
       const currentLevelInfo = program.getLevelByNumber(currentLevel);
       let daysUntilNextAssessment = 0;
       let nextAssessmentDue = new Date();
+      const levelStartDate = cohort.timeTracking?.currentLevelStartDate || cohortStartDate;
       
       if (currentLevelInfo) {
         // Convert timeframe to days
@@ -169,13 +170,13 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
         }
         
         // Calculate when current level should be completed
-        const levelStartDate = cohort.timeTracking?.currentLevelStartDate || cohortStartDate;
         nextAssessmentDue = new Date(levelStartDate.getTime() + (levelDurationDays * 24 * 60 * 60 * 1000));
         daysUntilNextAssessment = Math.ceil((nextAssessmentDue.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
       }
       
       timeTracking = {
         cohortStartDate,
+        currentLevelStartDate: levelStartDate,
         estimatedCompletionDate: new Date(cohortStartDate.getTime() + (totalDurationWeeks * 7 * 24 * 60 * 60 * 1000)),
         totalDurationWeeks,
         elapsedWeeks,
@@ -183,6 +184,27 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
         nextAssessmentDue,
         daysUntilNextAssessment
       };
+    }
+
+    // Convert levelProgress Map to object if needed
+    let levelProgressObj: any = null;
+    if (cohort.levelProgress) {
+      if (cohort.levelProgress instanceof Map) {
+        levelProgressObj = {};
+        cohort.levelProgress.forEach((value, key) => {
+          levelProgressObj[key] = {
+            originalDaysRequired: value.originalDaysRequired,
+            adjustedDaysRequired: value.adjustedDaysRequired,
+            completedDays: value.completedDays,
+            completedDates: value.completedDates,
+            isCompleted: value.isCompleted,
+            completedAt: value.completedAt,
+            lastUpdated: value.lastUpdated,
+          };
+        });
+      } else {
+        levelProgressObj = cohort.levelProgress;
+      }
     }
 
     res.json({
@@ -196,7 +218,9 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
           subject: (cohort as any).programId.subject,
           totalLevels: (cohort as any).programId.totalLevels,
           levels: (cohort as any).programId.levels
-        } : null
+        } : null,
+        levelProgress: levelProgressObj,
+        currentLevel: cohort.currentLevel || 1,
       },
       studentsProgress: progressData,
       timeTracking

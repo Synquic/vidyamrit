@@ -26,6 +26,13 @@ export interface NavigationItem {
 // Flat navigation structure with role-based access control
 export const navigationItems: NavigationItem[] = [
   {
+    title: "Reports",
+    url: DASHBOARD_ROUTE_PATHS.reports,
+    icon: BarChart3,
+    allowedRoles: [UserRole.SUPER_ADMIN],
+    description: "View and generate reports",
+  },
+  {
     title: "Student Management",
     url: DASHBOARD_ROUTE_PATHS.students,
     icon: GraduationCap,
@@ -94,13 +101,6 @@ export const navigationItems: NavigationItem[] = [
     icon: Eye,
     allowedRoles: [UserRole.SUPER_ADMIN],
     description: "Create and manage custom views for stakeholders",
-  },
-  {
-    title: "Reports",
-    url: DASHBOARD_ROUTE_PATHS.reports,
-    icon: BarChart3,
-    allowedRoles: [UserRole.SUPER_ADMIN],
-    description: "View and generate reports",
   },
 ];
 

@@ -286,6 +286,405 @@ export const checkAssessmentReadiness = async (req: AuthRequest, res: Response) 
   }
 };
 
+// Extend current level duration
+export const extendLevelDuration = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { additionalDays, reason } = req.body;
+
+    if (!additionalDays || additionalDays <= 0) {
+      return res.status(400).json({ error: "additionalDays must be a positive number" });
+    }
+
+    const cohort = await Cohort.findById(id).populate("programId");
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Check permissions
+    if (req.user?.role === UserRole.TUTOR) {
+      const cohortSchoolId = cohort.schoolId?.toString();
+      const userSchoolId = req.user.schoolId?.toString();
+      const userId = (req.user._id as any)?.toString();
+      if (cohort.tutorId?.toString() !== userId && 
+          cohortSchoolId !== userSchoolId) {
+        return res.status(403).json({ error: "Unauthorized to modify this cohort" });
+      }
+    } else if (req.user?.role !== UserRole.SUPER_ADMIN) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    if (!cohort.programId) {
+      return res.status(400).json({ error: "Cohort does not have a program assigned" });
+    }
+
+    const program = cohort.programId as any;
+    const currentLevel = cohort.currentLevel || 1;
+
+    // Import helper functions
+    const { adjustLevelTimeline, convertToDays } = require("../lib/cohortProgressHelper");
+    const { TimeframeUnit } = require("../models/ProgramModel");
+
+    // Adjust timeline
+    await adjustLevelTimeline(cohort, currentLevel, additionalDays, program);
+
+    // Update adjustment reason if provided
+    if (reason && cohort.timeTracking?.levelAdjustments) {
+      const levelKey = currentLevel.toString();
+      const adjustments = cohort.timeTracking.levelAdjustments as any;
+      const adjustment = adjustments instanceof Map 
+        ? adjustments.get(levelKey)
+        : adjustments[currentLevel];
+      if (adjustment) {
+        adjustment.reason = reason;
+        if (adjustments instanceof Map) {
+          adjustments.set(levelKey, adjustment);
+        } else {
+          adjustments[currentLevel] = adjustment;
+        }
+      }
+    }
+
+    await cohort.save();
+
+    // Return updated cohort with level progress
+    const updatedCohort = await Cohort.findById(id)
+      .populate("schoolId", "name")
+      .populate("tutorId", "name email")
+      .populate("programId");
+
+    res.json({
+      message: `Level ${currentLevel} duration extended by ${additionalDays} days`,
+      cohort: updatedCohort,
+    });
+  } catch (error: any) {
+    console.error("Error extending level duration:", error);
+    res.status(500).json({ error: error.message || "Error extending level duration" });
+  }
+};
+
+// Mark a day as completed
+export const markDayCompleted = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { date, level } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ error: "date is required" });
+    }
+
+    const cohort = await Cohort.findById(id);
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Check permissions
+    if (req.user?.role === UserRole.TUTOR) {
+      const cohortSchoolId = cohort.schoolId?.toString();
+      const userSchoolId = req.user.schoolId?.toString();
+      const userId = (req.user._id as any)?.toString();
+      if (cohort.tutorId?.toString() !== userId && 
+          cohortSchoolId !== userSchoolId) {
+        return res.status(403).json({ error: "Unauthorized to modify this cohort" });
+      }
+    } else if (req.user?.role !== UserRole.SUPER_ADMIN) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const targetLevel = level || cohort.currentLevel || 1;
+    const dateObj = new Date(date);
+    dateObj.setHours(0, 0, 0, 0);
+
+    // Initialize levelProgress if needed
+    if (!cohort.levelProgress) {
+      cohort.levelProgress = {} as any;
+    }
+
+    const levelKey = targetLevel.toString();
+    const levelProgressData = cohort.levelProgress as any;
+    let levelProgress = levelProgressData instanceof Map
+      ? levelProgressData.get(levelKey)
+      : (levelProgressData[targetLevel] ? { ...levelProgressData[targetLevel] } : null);
+
+    if (!levelProgress) {
+      // Initialize if program exists
+      if (cohort.programId) {
+        const Program = require("../models/ProgramModel").default;
+        const program = await Program.findById(cohort.programId);
+        if (program) {
+          const levelInfo = program.getLevelByNumber(targetLevel);
+          if (levelInfo) {
+            const { convertToDays } = require("../lib/cohortProgressHelper");
+            const { TimeframeUnit } = require("../models/ProgramModel");
+            const originalDays = convertToDays(levelInfo.timeframe, levelInfo.timeframeUnit);
+            
+            levelProgress = {
+              originalDaysRequired: originalDays,
+              adjustedDaysRequired: originalDays,
+              completedDays: 0,
+              completedDates: [],
+              isCompleted: false,
+              lastUpdated: new Date(),
+            };
+          }
+        }
+      }
+
+      if (!levelProgress) {
+        return res.status(400).json({ error: `Level ${targetLevel} not found in program` });
+      }
+    }
+
+    // Check if date is already marked
+    const dateStr = dateObj.toISOString();
+    const isAlreadyMarked = levelProgress.completedDates.some((d: Date) => {
+      const dStr = new Date(d).toISOString().split('T')[0];
+      return dStr === dateStr.split('T')[0];
+    });
+
+    if (!isAlreadyMarked) {
+      levelProgress.completedDates.push(dateObj);
+      levelProgress.completedDays += 1;
+      levelProgress.lastUpdated = new Date();
+
+      // Store back
+      const levelProgressData = cohort.levelProgress as any;
+      if (levelProgressData instanceof Map) {
+        levelProgressData.set(levelKey, levelProgress);
+      } else {
+        levelProgressData[targetLevel] = levelProgress;
+      }
+
+      await cohort.save();
+    }
+
+    res.json({
+      message: "Day marked as completed",
+      levelProgress: levelProgress,
+    });
+  } catch (error: any) {
+    console.error("Error marking day as completed:", error);
+    res.status(500).json({ error: error.message || "Error marking day as completed" });
+  }
+};
+
+// Unmark a day
+export const unmarkDay = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { date, level } = req.body;
+
+    if (!date) {
+      return res.status(400).json({ error: "date is required" });
+    }
+
+    const cohort = await Cohort.findById(id);
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Check permissions
+    if (req.user?.role === UserRole.TUTOR) {
+      const cohortSchoolId = cohort.schoolId?.toString();
+      const userSchoolId = req.user.schoolId?.toString();
+      const userId = (req.user._id as any)?.toString();
+      if (cohort.tutorId?.toString() !== userId && 
+          cohortSchoolId !== userSchoolId) {
+        return res.status(403).json({ error: "Unauthorized to modify this cohort" });
+      }
+    } else if (req.user?.role !== UserRole.SUPER_ADMIN) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    const targetLevel = level || cohort.currentLevel || 1;
+    const dateObj = new Date(date);
+    dateObj.setHours(0, 0, 0, 0);
+    const dateStr = dateObj.toISOString().split('T')[0];
+
+    if (!cohort.levelProgress) {
+      return res.status(400).json({ error: "No level progress data found" });
+    }
+
+    const levelKey = targetLevel.toString();
+    const levelProgressData = cohort.levelProgress as any;
+    const levelProgress = levelProgressData instanceof Map
+      ? levelProgressData.get(levelKey)
+      : (levelProgressData[targetLevel] ? { ...levelProgressData[targetLevel] } : null);
+
+    if (!levelProgress) {
+      return res.status(404).json({ error: `Level ${targetLevel} progress not found` });
+    }
+
+    // Remove date from completedDates
+    const initialLength = levelProgress.completedDates.length;
+    levelProgress.completedDates = levelProgress.completedDates.filter((d: Date) => {
+      const dStr = new Date(d).toISOString().split('T')[0];
+      return dStr !== dateStr;
+    });
+
+    if (levelProgress.completedDates.length < initialLength) {
+      levelProgress.completedDays = Math.max(0, levelProgress.completedDays - 1);
+      levelProgress.lastUpdated = new Date();
+
+      // Store back
+      if (cohort.levelProgress instanceof Map) {
+        cohort.levelProgress.set(levelKey, levelProgress);
+      } else {
+        cohort.levelProgress[targetLevel] = levelProgress;
+      }
+
+      await cohort.save();
+    }
+
+    res.json({
+      message: "Day unmarked",
+      levelProgress: levelProgress,
+    });
+  } catch (error: any) {
+    console.error("Error unmarking day:", error);
+    res.status(500).json({ error: error.message || "Error unmarking day" });
+  }
+};
+
+// Mark level as complete
+export const markLevelComplete = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { level } = req.body;
+
+    const cohort = await Cohort.findById(id).populate("programId");
+    if (!cohort) {
+      return res.status(404).json({ error: "Cohort not found" });
+    }
+
+    // Check permissions
+    if (req.user?.role === UserRole.TUTOR) {
+      const cohortSchoolId = cohort.schoolId?.toString();
+      const userSchoolId = req.user.schoolId?.toString();
+      const userId = (req.user._id as any)?.toString();
+      if (cohort.tutorId?.toString() !== userId && 
+          cohortSchoolId !== userSchoolId) {
+        return res.status(403).json({ error: "Unauthorized to modify this cohort" });
+      }
+    } else if (req.user?.role !== UserRole.SUPER_ADMIN) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    if (!cohort.programId) {
+      return res.status(400).json({ error: "Cohort does not have a program assigned" });
+    }
+
+    const targetLevel = level || cohort.currentLevel || 1;
+    const program = cohort.programId as any;
+
+    if (targetLevel !== cohort.currentLevel) {
+      return res.status(400).json({ error: "Can only mark current level as complete" });
+    }
+
+    // Get level progress
+    if (!cohort.levelProgress) {
+      return res.status(400).json({ error: "Level progress not initialized" });
+    }
+
+    const levelKey = targetLevel.toString();
+    const levelProgressData = cohort.levelProgress as any;
+    let levelProgress = levelProgressData instanceof Map
+      ? levelProgressData.get(levelKey)
+      : (levelProgressData[targetLevel] ? { ...levelProgressData[targetLevel] } : null);
+
+    if (!levelProgress) {
+      return res.status(404).json({ error: `Level ${targetLevel} progress not found` });
+    }
+
+    // Validate completion
+    if (levelProgress.completedDays < levelProgress.adjustedDaysRequired) {
+      return res.status(400).json({ 
+        error: `Cannot mark level complete. Only ${levelProgress.completedDays} of ${levelProgress.adjustedDaysRequired} days completed.` 
+      });
+    }
+
+    // Mark as complete
+    levelProgress.isCompleted = true;
+    levelProgress.completedAt = new Date();
+    levelProgress.lastUpdated = new Date();
+
+    // Store back (reuse levelProgressData declared above)
+    if (levelProgressData instanceof Map) {
+      levelProgressData.set(levelKey, levelProgress);
+    } else {
+      levelProgressData[targetLevel] = levelProgress;
+    }
+
+    // Advance to next level if exists
+    const nextLevel = program.getNextLevel(targetLevel);
+    if (nextLevel) {
+      cohort.currentLevel = targetLevel + 1;
+      
+      // Update currentLevelStartDate to next level start (already adjusted for carry-forward)
+      const { getAdjustedLevelStartDate } = require("../lib/cohortProgressHelper");
+      const nextLevelStartDate = getAdjustedLevelStartDate(cohort, targetLevel + 1, program);
+      
+      if (!cohort.timeTracking) {
+        cohort.timeTracking = {
+          cohortStartDate: cohort.startDate || cohort.createdAt,
+          currentLevelStartDate: nextLevelStartDate,
+          attendanceDays: 0,
+          expectedDaysForCurrentLevel: 0,
+          totalExpectedDays: 0,
+        };
+      } else {
+        cohort.timeTracking.currentLevelStartDate = nextLevelStartDate;
+      }
+
+      // Initialize next level progress if needed
+      const nextLevelKey = (targetLevel + 1).toString();
+      const nextLevelInfo = program.getLevelByNumber(targetLevel + 1);
+      if (nextLevelInfo) {
+        const { convertToDays } = require("../lib/cohortProgressHelper");
+        const { TimeframeUnit } = require("../models/ProgramModel");
+        const originalDays = convertToDays(nextLevelInfo.timeframe, nextLevelInfo.timeframeUnit);
+        
+        const nextLevelProgress = {
+          originalDaysRequired: originalDays,
+          adjustedDaysRequired: originalDays,
+          completedDays: 0,
+          completedDates: [],
+          isCompleted: false,
+          lastUpdated: new Date(),
+        };
+
+        const levelProgressData = cohort.levelProgress as any;
+        if (levelProgressData instanceof Map) {
+          levelProgressData.set(nextLevelKey, nextLevelProgress);
+        } else {
+          levelProgressData[targetLevel + 1] = nextLevelProgress;
+        }
+
+        // Update expected days for new current level
+        cohort.timeTracking.expectedDaysForCurrentLevel = originalDays;
+      }
+    } else {
+      // No next level - cohort is complete
+      cohort.status = 'completed';
+    }
+
+    await cohort.save();
+
+    const updatedCohort = await Cohort.findById(id)
+      .populate("schoolId", "name")
+      .populate("tutorId", "name email")
+      .populate("programId");
+
+    res.json({
+      message: `Level ${targetLevel} marked as complete`,
+      cohort: updatedCohort,
+    });
+  } catch (error: any) {
+    console.error("Error marking level as complete:", error);
+    res.status(500).json({ error: error.message || "Error marking level as complete" });
+  }
+};
+
 export const deleteCohort = async (req: AuthRequest, res: Response) => {
   try {
     // Find the cohort first

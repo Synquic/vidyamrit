@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3, FileText, ArrowRight, PieChart } from "lucide-react";
+import { BarChart3, FileText, ArrowRight, PieChart, UserSearch } from "lucide-react";
 import StudentLevelsReport from "@/components/reports/StudentLevelsReport";
 import StudentDistributionReport from "@/components/reports/StudentDistributionReport";
+import StudentSearch from "@/components/reports/StudentSearch";
+import IndividualStudentReport from "@/components/reports/IndividualStudentReport";
+import { Student } from "@/services/students";
 
 interface Report {
   id: string;
@@ -27,20 +30,49 @@ const availableReports: Report[] = [
     description: "View students by level, class, and category with visual charts",
     icon: PieChart,
   },
+  {
+    id: "individual-student",
+    title: "Individual Student Report",
+    description: "Generate comprehensive reports for individual students with detailed analytics",
+    icon: UserSearch,
+  },
   // Future reports can be added here
 ];
 
 export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   const handleReportClick = (reportId: string) => {
     setSelectedReport(reportId);
+    setSelectedStudent(null); // Reset student selection when switching reports
   };
 
   const handleBack = () => {
-    setSelectedReport(null);
+    if (selectedStudent) {
+      // If viewing a student report, go back to student search
+      setSelectedStudent(null);
+    } else {
+      // If in student search, go back to reports list
+      setSelectedReport(null);
+    }
   };
 
+  const handleSelectStudent = (student: Student) => {
+    setSelectedStudent(student);
+  };
+
+  // Show individual student report if student is selected
+  if (selectedReport === "individual-student" && selectedStudent) {
+    return <IndividualStudentReport student={selectedStudent} onBack={handleBack} />;
+  }
+
+  // Show student search if individual student report is selected but no student chosen
+  if (selectedReport === "individual-student" && !selectedStudent) {
+    return <StudentSearch onSelectStudent={handleSelectStudent} onBack={handleBack} />;
+  }
+
+  // Show other reports
   if (selectedReport) {
     if (selectedReport === "student-levels") {
       return <StudentLevelsReport onBack={handleBack} />;

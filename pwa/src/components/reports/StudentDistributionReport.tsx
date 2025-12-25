@@ -292,6 +292,55 @@ export default function StudentDistributionReport({
     }));
   }, [students]);
 
+  // Class-wise level distribution for each subject
+  const classWiseLevelData = useMemo(() => {
+    const result: Record<
+      string,
+      Array<{
+        className: string;
+        totalStudents: number;
+        levelDistribution: Record<number, number>;
+      }>
+    > = {};
+
+    students.forEach((student) => {
+      const levelInfo = getStudentLevelInfo(student);
+      const className = student.class || "Unknown";
+
+      levelInfo.forEach((info) => {
+        if (!result[info.subject]) {
+          result[info.subject] = [];
+        }
+
+        let classData = result[info.subject].find((c) => c.className === className);
+        if (!classData) {
+          classData = {
+            className,
+            totalStudents: 0,
+            levelDistribution: {},
+          };
+          result[info.subject].push(classData);
+        }
+
+        classData.totalStudents += 1;
+        classData.levelDistribution[info.level] =
+          (classData.levelDistribution[info.level] || 0) + 1;
+      });
+    });
+
+    // Sort classes naturally
+    Object.keys(result).forEach((subject) => {
+      result[subject].sort((a, b) => {
+        const aNum = parseInt(a.className.match(/\d+/)?.[0] || "999");
+        const bNum = parseInt(b.className.match(/\d+/)?.[0] || "999");
+        if (aNum !== bNum) return aNum - bNum;
+        return a.className.localeCompare(b.className);
+      });
+    });
+
+    return result;
+  }, [students, assessments, programs]);
+
   // Level-wise by subject chart data
   const levelChartData = useMemo(() => {
     const allLevels = new Set<number>();
@@ -394,18 +443,67 @@ export default function StudentDistributionReport({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Bar Chart */}
+                  {/* Bar Chart - Class-wise with level segments */}
                   <div>
-                    <h3 className="text-sm font-medium mb-4">Bar Chart</h3>
+                    <h3 className="text-sm font-medium mb-4">Bar Chart - Class Distribution</h3>
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="level" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="count" fill="#3b82f6" name="Students" />
-                      </BarChart>
+                      {(() => {
+                        const classData = classWiseLevelData[subject] || [];
+                        const allLevels = new Set<number>();
+                        data.forEach((d) => allLevels.add(d.level));
+                        const sortedLevels = Array.from(allLevels).sort((a, b) => a - b);
+
+                        // Transform data for stacked bar chart
+                        const chartData = classData.map((classItem) => {
+                          const dataPoint: any = { className: classItem.className };
+                          sortedLevels.forEach((level) => {
+                            dataPoint[`L${level}`] = classItem.levelDistribution[level] || 0;
+                          });
+                          return dataPoint;
+                        });
+
+                        return (
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="className" />
+                            <YAxis />
+                            <Tooltip
+                              formatter={(value: number, name: string, props: any) => {
+                                if (value === 0) return null;
+                                const level = name.replace("L", "");
+                                const className = props.payload?.className || "";
+                                // Find the total students in this class
+                                const classItem = classData.find(
+                                  (c) => c.className === className
+                                );
+                                const classTotal = classItem?.totalStudents || 1;
+                                const percentage =
+                                  classTotal > 0
+                                    ? ((value / classTotal) * 100).toFixed(1)
+                                    : 0;
+                                return [
+                                  `Level ${level}: ${value} students (${percentage}% of ${className})`,
+                                  "",
+                                ];
+                              }}
+                            />
+                            <Legend
+                              formatter={(value: string) => {
+                                return value.replace("L", "Level ");
+                              }}
+                            />
+                            {sortedLevels.map((level, index) => (
+                              <Bar
+                                key={`level-${level}`}
+                                dataKey={`L${level}`}
+                                stackId="class"
+                                fill={COLORS[index % COLORS.length]}
+                                name={`L${level}`}
+                              />
+                            ))}
+                          </BarChart>
+                        );
+                      })()}
                     </ResponsiveContainer>
                   </div>
 
@@ -445,7 +543,7 @@ export default function StudentDistributionReport({
                           }}
                         />
                         <Pie
-                          data={data}
+                          data={[...data].sort((a, b) => a.level - b.level)}
                           cx="50%"
                           cy="45%"
                           labelLine={false}
@@ -458,12 +556,14 @@ export default function StudentDistributionReport({
                           dataKey="count"
                           nameKey="level"
                         >
-                          {data.map((_, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={COLORS[index % COLORS.length]}
-                            />
-                          ))}
+                          {[...data]
+                            .sort((a, b) => a.level - b.level)
+                            .map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
+                            ))}
                         </Pie>
                       </RechartsPieChart>
                     </ResponsiveContainer>

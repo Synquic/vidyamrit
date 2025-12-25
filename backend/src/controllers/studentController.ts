@@ -7,6 +7,10 @@ import {
   UpdateUserRequest,
   UserParams,
 } from "../types/requests";
+import Assessment from "../models/AssessmentModel";
+import Attendance from "../models/AttendanceModel";
+import Cohort from "../models/CohortModel";
+import logger from "../utils/logger";
 
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
@@ -484,5 +488,272 @@ export const getStudentCohortStatus = async (
   } catch (error) {
     console.error("Error fetching student cohort status:", error);
     res.status(500).json({ error: "Failed to fetch student cohort status" });
+  }
+};
+
+// Get comprehensive report for a student
+export const getStudentComprehensiveReport = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+    const query: any = { _id: id, isArchived: { $ne: true } };
+
+    // If not super admin, only allow fetching students from same school
+    if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+      query.school = req.user.schoolId;
+    }
+
+    // Get student with populated school
+    const student = await Student.findOne(query)
+      .populate("school", "name type")
+      .populate("knowledgeLevel.program", "name subject");
+
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const studentId = student._id;
+    const schoolId = student.school;
+
+    // Get all assessments for this student
+    const assessments = await Assessment.find({ student: studentId })
+      .populate("mentor", "name")
+      .populate("school", "name")
+      .sort({ date: -1 });
+
+    // Get all attendance records for this student
+    const attendanceRecords = await Attendance.find({ student: studentId })
+      .populate("mentor", "name")
+      .populate("school", "name")
+      .sort({ date: -1 });
+
+    // Calculate current levels per subject
+    const currentLevels: { [key: string]: number } = {};
+    const knowledgeLevelHistory = (student.knowledgeLevel || [])
+      .filter((kl) => kl && kl.subject && typeof kl.subject === "string") // Filter out entries without valid subject
+      .map((kl) => ({
+        program: kl.program,
+        programName: kl.programName || kl.subject || "Unknown",
+        subject: kl.subject,
+        level: kl.level,
+        date: kl.date,
+      }));
+
+    // Group knowledge levels by subject and get latest
+    const subjectLevels = new Map<string, { level: number; date: Date }>();
+    (student.knowledgeLevel || []).forEach((kl) => {
+      if (!kl || !kl.subject || typeof kl.subject !== "string") return; // Skip if subject is undefined or not a string
+      try {
+        const subject = kl.subject.toLowerCase();
+        const existing = subjectLevels.get(subject);
+        if (!existing || new Date(kl.date) > new Date(existing.date)) {
+          subjectLevels.set(subject, { level: kl.level, date: kl.date });
+        }
+      } catch (err) {
+        logger.warn(`Skipping knowledge level entry due to error: ${err}`);
+      }
+    });
+    subjectLevels.forEach((value, key) => {
+      currentLevels[key] = value.level;
+    });
+
+    // Process cohort memberships
+    const cohortIds = student.cohort
+      .filter((c) => !c.dateLeaved)
+      .map((c) => c.cohortId);
+
+    const cohorts = await Cohort.find({ _id: { $in: cohortIds } })
+      .populate("schoolId", "name")
+      .populate("tutorId", "name")
+      .select("name schoolId tutorId status startDate");
+
+    const cohortDetails = student.cohort.map((c) => {
+      const cohort = cohorts.find(
+        (co) => (co._id as any)?.toString() === c.cohortId.toString()
+      );
+      return {
+        cohortId: c.cohortId,
+        cohortName: cohort?.name || "Unknown",
+        school: cohort?.schoolId || null,
+        tutor: cohort?.tutorId || null,
+        dateJoined: c.dateJoined,
+        dateLeaved: c.dateLeaved || null,
+        isActive: !c.dateLeaved,
+      };
+    });
+
+    // Get cohort progress if student is in active cohort
+    let cohortProgress = null;
+    const activeCohortMembership = student.cohort.find((c) => !c.dateLeaved);
+    if (activeCohortMembership) {
+      const activeCohort = await Cohort.findById(activeCohortMembership.cohortId)
+        .populate("schoolId", "name")
+        .populate("tutorId", "name");
+
+      if (activeCohort) {
+        const progress = activeCohort.progress.find(
+          (p) => (p.studentId as any)?.toString() === (studentId as any)?.toString()
+        );
+
+        if (progress) {
+          cohortProgress = {
+            cohortId: activeCohort._id,
+            cohortName: activeCohort.name,
+            currentLevel: progress.currentLevel,
+            status: progress.status,
+            failureCount: progress.failureCount || 0,
+            lastAssessmentDate: progress.lastAssessmentDate || null,
+            assessmentHistory: (progress.assessmentHistory || []).map((ah) => ({
+              date: ah.date,
+              level: ah.level,
+              passed: ah.passed,
+              status: ah.status,
+              score: ah.score || null,
+            })),
+          };
+        }
+      }
+    }
+
+    // Calculate attendance statistics
+    const attendanceStats = {
+      totalDays: attendanceRecords.length,
+      present: attendanceRecords.filter((a) => a.status === "present").length,
+      absent: attendanceRecords.filter((a) => a.status === "absent").length,
+      exam: attendanceRecords.filter((a) => a.status === "exam").length,
+      percentage:
+        attendanceRecords.length > 0
+          ? Math.round(
+              (attendanceRecords.filter((a) => a.status === "present").length /
+                attendanceRecords.length) *
+                100
+            )
+          : 0,
+    };
+
+    // Group attendance by month
+    const attendanceByMonth = new Map<
+      string,
+      { present: number; absent: number; exam: number }
+    >();
+    attendanceRecords.forEach((record) => {
+      const date = new Date(record.date);
+      const month = date.getMonth() + 1;
+      const monthKey = `${date.getFullYear()}-${month.toString().padStart(2, "0")}`;
+      const existing = attendanceByMonth.get(monthKey) || {
+        present: 0,
+        absent: 0,
+        exam: 0,
+      };
+      if (record.status === "present") existing.present++;
+      else if (record.status === "absent") existing.absent++;
+      else if (record.status === "exam") existing.exam++;
+      attendanceByMonth.set(monthKey, existing);
+    });
+
+    const attendanceByMonthArray = Array.from(attendanceByMonth.entries()).map(
+      ([month, stats]) => ({
+        month,
+        ...stats,
+      })
+    );
+
+    // Group attendance by subject
+    const attendanceBySubject: {
+      [key: string]: { present: number; absent: number; exam: number };
+    } = {};
+    attendanceRecords.forEach((record) => {
+      const subject = record.subject || "general";
+      if (!attendanceBySubject[subject]) {
+        attendanceBySubject[subject] = { present: 0, absent: 0, exam: 0 };
+      }
+      if (record.status === "present") attendanceBySubject[subject].present++;
+      else if (record.status === "absent")
+        attendanceBySubject[subject].absent++;
+      else if (record.status === "exam") attendanceBySubject[subject].exam++;
+    });
+
+    // Calculate summary statistics
+    const allLevels = student.knowledgeLevel.map((kl) => kl.level);
+    const summary = {
+      totalAssessments: assessments.length + student.knowledgeLevel.length,
+      averageLevel:
+        allLevels.length > 0
+          ? Math.round(
+              (allLevels.reduce((a, b) => a + b, 0) / allLevels.length) * 10
+            ) / 10
+          : 0,
+      highestLevel: allLevels.length > 0 ? Math.max(...allLevels) : 0,
+      attendancePercentage: attendanceStats.percentage,
+    };
+
+    // Transform student object
+    const studentObj = student.toObject() as any;
+    const response = {
+      student: {
+        _id: studentObj._id,
+        name: studentObj.name,
+        roll_no: studentObj.roll_no,
+        age: studentObj.age,
+        gender: studentObj.gender,
+        class: studentObj.class,
+        caste: studentObj.caste,
+        mobileNumber: studentObj.mobileNumber,
+        aadharNumber: studentObj.aadharNumber,
+        apaarId: studentObj.apaarId,
+        school: studentObj.school,
+        contactInfo: studentObj.contactInfo,
+        createdAt: studentObj.createdAt,
+        updatedAt: studentObj.updatedAt,
+        lastAssessmentDate: studentObj.lastAssessmentDate,
+      },
+      currentLevels,
+      knowledgeLevelHistory,
+      assessments: assessments
+        .filter((a) => a && a.subject) // Filter out assessments without subject
+        .map((a) => ({
+          _id: a._id,
+          subject: a.subject,
+          level: a.level,
+          date: a.date,
+          mentor: a.mentor,
+          school: a.school,
+        })),
+      attendance: {
+        records: attendanceRecords.map((a) => ({
+          _id: a._id,
+          date: a.date,
+          status: a.status,
+          subject: a.subject,
+          sessionType: a.sessionType,
+          mentor: a.mentor,
+          school: a.school,
+          notes: a.notes,
+        })),
+        stats: attendanceStats,
+        byMonth: attendanceByMonthArray,
+        bySubject: attendanceBySubject,
+      },
+      cohorts: cohortDetails,
+      cohortProgress,
+      progressHistory: studentObj.progressHistory || [],
+      summary,
+    };
+
+    logger.info(`Comprehensive report generated for student ${studentId}`);
+    res.json(response);
+  } catch (error: any) {
+    logger.error("Error fetching comprehensive student report:", error);
+    logger.error("Error stack:", error?.stack);
+    logger.error("Error details:", {
+      message: error?.message,
+      name: error?.name,
+    });
+    res.status(500).json({
+      error: "Failed to fetch comprehensive report",
+      details: process.env.NODE_ENV === "development" ? error?.message : undefined,
+    });
   }
 };

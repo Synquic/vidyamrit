@@ -1,4 +1,3 @@
-import {} from "react";
 import { useParams, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -32,6 +31,7 @@ import {
   ProgressStatus,
 } from "@/services/progress";
 import { TimelineProgress } from "@/components/progress/TimelineProgress";
+import { LevelDurationTracker } from "@/components/progress/LevelDurationTracker";
 import { toast } from "sonner";
 import { Link } from "react-router";
 import { useSchoolContext } from "@/contexts/SchoolContext";
@@ -544,6 +544,15 @@ function CohortProgressDetail() {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
+  // Handle start level assessment - navigate to level assessment page
+  const handleStartLevelAssessment = () => {
+    if (!cohortId) {
+      toast.error("Cohort ID not available");
+      return;
+    }
+    navigate(`/progress/cohort/${cohortId}/level-assessment`);
+  };
+
   const getStatusIcon = (status: ProgressStatus) => {
     switch (status) {
       case "green":
@@ -793,10 +802,7 @@ function CohortProgressDetail() {
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                    onClick={() => {
-                      // Navigate to assessment page - you'll need to create this route
-                      toast.info("Level assessment feature coming soon");
-                    }}
+                    onClick={handleStartLevelAssessment}
                   >
                     Start Level Assessment
                   </Button>
@@ -832,6 +838,29 @@ function CohortProgressDetail() {
             ) : null}
           </CardContent>
         </Card>
+      )}
+
+      {/* Level Duration Management */}
+      {assessmentReadiness && cohortData.cohort.program && cohortId && (
+        <LevelDurationTracker
+          cohortId={cohortId}
+          currentLevel={assessmentReadiness.currentLevel}
+          levelInfo={{
+            levelNumber: assessmentReadiness.currentLevel,
+            title: assessmentReadiness.levelTitle,
+            timeframe: cohortData.cohort.program.levels.find(
+              (l: any) => l.levelNumber === assessmentReadiness.currentLevel
+            )?.timeframe || 2,
+            timeframeUnit: cohortData.cohort.program.levels.find(
+              (l: any) => l.levelNumber === assessmentReadiness.currentLevel
+            )?.timeframeUnit || "weeks",
+          }}
+          levelProgress={
+            cohortData.cohort.levelProgress?.[assessmentReadiness.currentLevel.toString()] ||
+            cohortData.cohort.levelProgress?.[assessmentReadiness.currentLevel]
+          }
+          levelStartDate={cohortData.timeTracking?.currentLevelStartDate || cohortData.timeTracking?.cohortStartDate}
+        />
       )}
 
       {/* Enhanced Program Timeline & Time Tracking */}
