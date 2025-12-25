@@ -81,6 +81,7 @@ export default function BaselineAssessmentsPage() {
     caste: "",
     mobileNumber: "",
     aadharNumber: "",
+    apaarId: "",
     schoolId: "",
     contactInfo: [],
     knowledgeLevel: [],
@@ -260,6 +261,7 @@ export default function BaselineAssessmentsPage() {
         caste: "",
         mobileNumber: "",
         aadharNumber: "",
+        apaarId: "",
         schoolId: selectedSchool._id,
         contactInfo: [],
         knowledgeLevel: [],
@@ -525,6 +527,20 @@ export default function BaselineAssessmentsPage() {
                       setNewStudent({
                         ...newStudent,
                         aadharNumber: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="apaarId">APAAR ID (Optional)</Label>
+                  <Input
+                    id="apaarId"
+                    value={newStudent.apaarId || ""}
+                    placeholder="Enter student APAAR ID"
+                    onChange={(e) =>
+                      setNewStudent({
+                        ...newStudent,
+                        apaarId: e.target.value,
                       })
                     }
                   />

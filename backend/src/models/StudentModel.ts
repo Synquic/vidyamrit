@@ -19,6 +19,7 @@ export interface IProgressHistory {
 export interface IStudent extends Document {
   roll_no?: string;
   aadharNumber?: string;
+  apaarId?: string;
   name: string;
   age: number;
   gender: string;
@@ -100,6 +101,7 @@ const ProgressHistorySchema = new mongoose.Schema({
 const StudentSchema = new mongoose.Schema({
   roll_no: { type: String, required: false },
   aadharNumber: { type: String, required: false },
+  apaarId: { type: String, required: false },
   name: { type: String, required: true },
   age: { type: Number, required: true },
   gender: { type: String, required: true },

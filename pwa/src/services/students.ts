@@ -12,6 +12,7 @@ export interface Student {
   caste?: string;
   mobileNumber?: string;
   aadharNumber?: string;
+  apaarId?: string;
   role: string;
   roll_no?: string; // Auto-generated, not displayed in UI
   isArchived?: boolean;
@@ -61,6 +62,7 @@ export interface CreateStudentDTO {
   caste?: string;
   mobileNumber?: string;
   aadharNumber?: string;
+  apaarId?: string;
   schoolId: string;
   contactInfo: Array<object>;
   knowledgeLevel: Array<object>;
@@ -76,6 +78,7 @@ export interface UpdateStudentDTO {
   caste?: string;
   mobileNumber?: string;
   aadharNumber?: string;
+  apaarId?: string;
   schoolId: string;
 }
 

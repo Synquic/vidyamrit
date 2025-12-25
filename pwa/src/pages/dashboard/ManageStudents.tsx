@@ -81,6 +81,7 @@ function ManageStudents() {
     caste: "",
     mobileNumber: "",
     aadharNumber: "",
+    apaarId: "",
     class: "",
     schoolId: selectedSchool?._id || "",
     contactInfo: [],
@@ -239,6 +240,7 @@ function ManageStudents() {
         caste,
         mobileNumber,
         aadharNumber,
+        apaarId,
         schoolId,
       } = formData;
       updateMutation.mutate({
@@ -251,6 +253,7 @@ function ManageStudents() {
           caste,
           mobileNumber,
           aadharNumber,
+          apaarId,
           schoolId,
         },
       });
@@ -268,6 +271,7 @@ function ManageStudents() {
       caste: student.caste || "",
       mobileNumber: student.mobileNumber || "",
       aadharNumber: student.aadharNumber || "",
+      apaarId: student.apaarId || "",
       class: student.class,
       schoolId: student.schoolId._id,
       contactInfo: student.contactInfo || [],
@@ -287,6 +291,7 @@ function ManageStudents() {
       caste: "",
       mobileNumber: "",
       aadharNumber: "",
+      apaarId: "",
       class: "",
       schoolId: selectedSchool?._id || "",
       contactInfo: [],
@@ -881,6 +886,20 @@ function ManageStudents() {
                   setFormData((prev) => ({
                     ...prev,
                     aadharNumber: e.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="apaarId">APAAR ID (Optional)</Label>
+              <Input
+                id="apaarId"
+                value={formData.apaarId || ""}
+                placeholder="Enter student APAAR ID"
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    apaarId: e.target.value,
                   }))
                 }
               />

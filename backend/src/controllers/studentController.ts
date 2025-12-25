@@ -18,6 +18,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       caste,
       mobileNumber,
       aadharNumber,
+      apaarId,
       schoolId,
       contactInfo = [],
       knowledgeLevel = [],
@@ -66,6 +67,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const student = new Student({
       roll_no: finalRollNo,
       aadharNumber: aadharNumber || undefined,
+      apaarId: apaarId || undefined,
       name,
       age,
       gender,
@@ -189,6 +191,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       "caste",
       "mobileNumber",
       "aadharNumber",
+      "apaarId",
       "school", // Use 'school' field as expected by the model
       "contactInfo",
       "knowledgeLevel",
@@ -202,7 +205,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
           filteredUpdate[key] = updateFields.schoolId;
         } else if (updateFields[key] !== undefined) {
           // Handle optional fields - set to undefined if empty string
-          if ((key === "caste" || key === "mobileNumber" || key === "aadharNumber") && updateFields[key] === "") {
+          if ((key === "caste" || key === "mobileNumber" || key === "aadharNumber" || key === "apaarId") && updateFields[key] === "") {
             filteredUpdate[key] = undefined;
           } else {
             filteredUpdate[key] = updateFields[key];
