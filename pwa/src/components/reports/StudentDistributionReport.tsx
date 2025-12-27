@@ -72,6 +72,66 @@ const COLORS = [
   "#ec4899",
 ];
 
+// Custom Tooltip Content Component with colored cubes
+const CustomTooltipContent = ({ active, payload, sortedLevels, classData }: any) => {
+  if (!active || !payload || !payload.length) {
+    return null;
+  }
+
+  const className = payload[0]?.payload?.className || "";
+  const classItem = classData?.find((c: any) => c.className === className);
+  const classTotal = classItem?.totalStudents || 1;
+
+  return (
+    <div
+      style={{
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        border: "none",
+        borderRadius: "8px",
+        padding: "12px 16px",
+        color: "#ffffff",
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      }}
+    >
+      {payload
+        .filter((item: any) => item.value > 0)
+        .map((item: any, index: number) => {
+          const level = parseInt(item.name.replace("L", ""));
+          const value = item.value;
+          const levelIndex = sortedLevels?.indexOf(level) ?? index;
+          const color = COLORS[levelIndex % COLORS.length];
+          const percentage =
+            classTotal > 0 ? ((value / classTotal) * 100).toFixed(1) : 0;
+
+          return (
+            <div
+              key={item.name}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: index < payload.length - 1 ? "6px" : "0",
+              }}
+            >
+              <div
+                style={{
+                  width: "12px",
+                  height: "12px",
+                  backgroundColor: color,
+                  borderRadius: "2px",
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ color: "#ffffff" }}>
+                Level {level}: {value} students ({percentage}% of {className})
+              </span>
+            </div>
+          );
+        })}
+    </div>
+  );
+};
+
 export default function StudentDistributionReport({
   onBack,
 }: StudentDistributionReportProps) {
@@ -468,26 +528,20 @@ export default function StudentDistributionReport({
                             <XAxis dataKey="className" />
                             <YAxis />
                             <Tooltip
-                              formatter={(value: number, name: string, props: any) => {
-                                if (value === 0) return null;
-                                const level = name.replace("L", "");
-                                const className = props.payload?.className || "";
-                                // Find the total students in this class
-                                const classItem = classData.find(
-                                  (c) => c.className === className
-                                );
-                                const classTotal = classItem?.totalStudents || 1;
-                                const percentage =
-                                  classTotal > 0
-                                    ? ((value / classTotal) * 100).toFixed(1)
-                                    : 0;
-                                return [
-                                  `Level ${level}: ${value} students (${percentage}% of ${className})`,
-                                  "",
-                                ];
+                              wrapperStyle={{
+                                zIndex: 9999,
                               }}
+                              content={
+                                <CustomTooltipContent
+                                  sortedLevels={sortedLevels}
+                                  classData={classData}
+                                />
+                              }
                             />
                             <Legend
+                              wrapperStyle={{
+                                zIndex: 1,
+                              }}
                               formatter={(value: string) => {
                                 return value.replace("L", "Level ");
                               }}

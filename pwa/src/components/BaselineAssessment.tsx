@@ -509,11 +509,11 @@ export function BaselineAssessmentModal({
                   <div
                     className={`bg-gray-100 dark:bg-gray-800 p-8 md:p-12 rounded-lg text-center break-words font-bold font-devanagari ${
                       hasMultipleLines
-                        ? "text-3xl md:text-4xl leading-relaxed"
-                        : "text-5xl md:text-7xl lg:text-8xl leading-tight"
+                        ? "text-2xl md:text-3xl leading-normal"
+                        : "text-3xl md:text-4xl lg:text-5xl leading-tight"
                     } min-h-[200px] md:min-h-[300px] flex items-center justify-center`}
                   >
-                    <div className="space-y-3 md:space-y-4">
+                    <div className="space-y-1 md:space-y-1">
                       {questionLines.map((line, i) => (
                         <div key={i} className="block">
                           {line}
