@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +48,10 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function StudentSearch({ onSelectStudent, onBack }: StudentSearchProps) {
+export default function StudentSearch({
+  onSelectStudent,
+  onBack,
+}: StudentSearchProps) {
   const { user } = useAuth();
   const { selectedSchool } = useSchoolContext();
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,7 +71,7 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
   // Filter students based on search query
   const filteredStudents = useMemo(() => {
     if (!debouncedSearch.trim()) {
-      return allStudents.slice(0, 50); // Limit initial results
+      return allStudents; // Show all students
     }
 
     const query = debouncedSearch.toLowerCase().trim();
@@ -91,7 +100,9 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Individual Student Report</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">
+              Individual Student Report
+            </h1>
             <p className="text-muted-foreground mt-1 md:mt-2">
               Search for a student to generate a comprehensive report
             </p>
@@ -111,7 +122,12 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
               Search Students
             </CardTitle>
             <CardDescription>
-              Search by student name or roll number. {shouldFetchAll ? "Searching across all schools." : `Searching within ${selectedSchool?.name || "selected school"}.`}
+              Search by student name or roll number.{" "}
+              {shouldFetchAll
+                ? "Searching across all schools."
+                : `Searching within ${
+                    selectedSchool?.name || "selected school"
+                  }.`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -134,7 +150,9 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
                 <div className="text-center py-12">
                   <User className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">
-                    {debouncedSearch.trim() ? "No students found" : "No students available"}
+                    {debouncedSearch.trim()
+                      ? "No students found"
+                      : "No students available"}
                   </h3>
                   <p className="text-muted-foreground">
                     {debouncedSearch.trim()
@@ -173,7 +191,9 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
                             {student.roll_no ? (
                               <Badge variant="outline">{student.roll_no}</Badge>
                             ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
+                              <span className="text-muted-foreground text-sm">
+                                -
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -211,7 +231,8 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
 
               {filteredStudents.length > 0 && (
                 <p className="text-sm text-muted-foreground text-center">
-                  Showing {filteredStudents.length} student{filteredStudents.length !== 1 ? "s" : ""}
+                  Showing {filteredStudents.length} student
+                  {filteredStudents.length !== 1 ? "s" : ""}
                   {debouncedSearch.trim() && ` matching "${debouncedSearch}"`}
                 </p>
               )}
@@ -222,4 +243,3 @@ export default function StudentSearch({ onSelectStudent, onBack }: StudentSearch
     </div>
   );
 }
-
