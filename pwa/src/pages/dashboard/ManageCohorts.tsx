@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createCohort,
@@ -70,6 +71,7 @@ import {
 
 function ManageCohorts() {
   const { selectedSchool } = useSchoolContext();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
@@ -1215,7 +1217,8 @@ function ManageCohorts() {
                             <Badge
                               key={sid}
                               variant="secondary"
-                              className="text-xs"
+                              className="text-xs cursor-pointer hover:bg-secondary/80"
+                              onClick={() => navigate(`/reports/student/${sid}`)}
                             >
                               {getStudentName(sid)}
                             </Badge>
@@ -1295,6 +1298,9 @@ function ManageCohorts() {
 
             <div className="space-y-2">
               <Label htmlFor="tutorId">Tutor (Optional)</Label>
+              <div style={{ color: "red", fontSize: "12px" }}>
+                A cohort must have tutor assigned to mark attendance.
+              </div>
               <Select
                 value={formData.tutorId || "none"}
                 onValueChange={(value) =>
@@ -1338,12 +1344,13 @@ function ManageCohorts() {
                           className="mt-1"
                         />
                         <div className="flex-1 min-w-0">
-                          <Label
-                            htmlFor={student._id}
-                            className="text-sm font-medium cursor-pointer"
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/reports/student/${student._id}`)}
+                            className="text-sm font-medium text-primary hover:underline cursor-pointer text-left"
                           >
                             {student.name}
-                          </Label>
+                          </button>
                           {studentLevels.length > 0 ? (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {studentLevels.map((levelInfo, idx) => (
@@ -1385,9 +1392,13 @@ function ManageCohorts() {
                           key={studentId}
                           className="flex flex-col gap-1 p-2 bg-gray-50 rounded-md border"
                         >
-                          <div className="font-medium text-sm">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/reports/student/${studentId}`)}
+                            className="font-medium text-sm text-primary hover:underline cursor-pointer text-left"
+                          >
                             {getStudentName(studentId)}
-                          </div>
+                          </button>
                           {studentLevels.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {studentLevels.map((levelInfo, idx) => (
@@ -2046,9 +2057,13 @@ function ManageCohorts() {
                                               onDragEnd={handleDragEnd}
                                               className="flex items-center justify-between p-2 bg-white rounded border cursor-move hover:bg-gray-50 transition-colors"
                                             >
-                                              <span className="text-sm flex-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => navigate(`/reports/student/${studentId}`)}
+                                                className="text-sm flex-1 text-primary hover:underline cursor-pointer text-left"
+                                              >
                                                 {studentName}
-                                              </span>
+                                              </button>
                                               {otherCohorts.length > 0 && (
                                                 <Select
                                                   value=""
@@ -2281,9 +2296,13 @@ function ManageCohorts() {
                                               onDragEnd={handleDragEnd}
                                               className="flex items-center justify-between p-2 bg-white rounded border cursor-move hover:bg-gray-50 transition-colors"
                                             >
-                                              <span className="text-sm flex-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => navigate(`/reports/student/${student.id}`)}
+                                                className="text-sm flex-1 text-primary hover:underline cursor-pointer text-left"
+                                              >
                                                 {student.name}
-                                              </span>
+                                              </button>
                                               {availableCohorts.length > 0 && (
                                                 <Select
                                                   value=""

@@ -12,6 +12,11 @@ export const routePermissions: Record<string, UserRole[]> = {
     UserRole.TUTOR,
     UserRole.VOLUNTEER,
   ],
+  [DASHBOARD_ROUTE_PATHS.studentReport]: [
+    UserRole.SUPER_ADMIN,
+    UserRole.TUTOR,
+    UserRole.VOLUNTEER,
+  ],
   [DASHBOARD_ROUTE_PATHS.cohorts]: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
   [DASHBOARD_ROUTE_PATHS.baselineAssessments]: [
     UserRole.SUPER_ADMIN,

@@ -949,9 +949,13 @@ function CohortProgressDetail() {
                       {getStatusIcon(progress.status)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/reports/student/${student._id}`)}
+                        className="font-medium text-sm sm:text-base text-primary hover:underline truncate cursor-pointer text-left"
+                      >
                         {student.name}
-                      </h3>
+                      </button>
                       <p className="text-xs text-gray-600 truncate">
                         Roll No: {student.roll_no} • Class: {student.class}
                       </p>

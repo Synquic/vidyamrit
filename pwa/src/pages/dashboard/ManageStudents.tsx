@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createStudent,
@@ -61,6 +62,7 @@ import {
 
 function ManageStudents() {
   const { selectedSchool } = useSchoolContext();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
@@ -723,7 +725,14 @@ function ManageStudents() {
                     <TableCell className="text-center font-medium text-muted-foreground">
                       {index + 1}
                     </TableCell>
-                    <TableCell>{student.name}</TableCell>
+                    <TableCell>
+                      <button
+                        className="text-primary hover:underline font-medium text-left cursor-pointer"
+                        onClick={() => navigate(`/reports/student/${student._id}`)}
+                      >
+                        {student.name}
+                      </button>
+                    </TableCell>
                     <TableCell>{student.age}</TableCell>
                     <TableCell>{student.gender}</TableCell>
                     <TableCell>{student.caste || "N/A"}</TableCell>
@@ -786,7 +795,14 @@ function ManageStudents() {
                     <TableCell className="text-center font-medium text-muted-foreground">
                       {index + 1}
                     </TableCell>
-                    <TableCell>{student.name}</TableCell>
+                    <TableCell>
+                      <button
+                        className="text-primary hover:underline font-medium text-left cursor-pointer"
+                        onClick={() => navigate(`/reports/student/${student._id}`)}
+                      >
+                        {student.name}
+                      </button>
+                    </TableCell>
                     <TableCell>{student.age}</TableCell>
                     <TableCell>{student.gender}</TableCell>
                     <TableCell>{student.caste || "N/A"}</TableCell>

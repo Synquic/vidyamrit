@@ -1,17 +1,32 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { useTranslation } from 'react-i18next';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { 
-  Calendar, Users, CheckCircle, XCircle, Clock, BookOpen, 
-  ArrowLeft, Save, RotateCcw, PartyPopper, TrendingUp, AlertCircle,
-  ChevronRight, AlertTriangle, Play
-} from 'lucide-react';
-import { getTutorProgressSummary, getCohortProgress } from '@/services/progress';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import {
+  Calendar,
+  Users,
+  CheckCircle,
+  XCircle,
+  Clock,
+  BookOpen,
+  ArrowLeft,
+  Save,
+  RotateCcw,
+  PartyPopper,
+  TrendingUp,
+  AlertCircle,
+  ChevronRight,
+  AlertTriangle,
+  Play,
+} from "lucide-react";
+import {
+  getTutorProgressSummary,
+  getCohortProgress,
+} from "@/services/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -19,33 +34,40 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { 
-  getTutorAttendanceSummary, 
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import {
+  getTutorAttendanceSummary,
   getCohortAttendance,
   recordCohortAttendance,
   AttendanceStatus,
-  CohortAttendanceRecord
-} from '@/services/attendance';
-import { toggleCohortHoliday, getCohorts, startCohort } from '@/services/cohorts';
-import { toast } from 'sonner';
-import { Link } from 'react-router';
-import { useSchoolContext } from '@/contexts/SchoolContext';
+  CohortAttendanceRecord,
+} from "@/services/attendance";
+import {
+  toggleCohortHoliday,
+  getCohorts,
+  startCohort,
+} from "@/services/cohorts";
+import { toast } from "sonner";
+import { Link } from "react-router";
+import { useSchoolContext } from "@/contexts/SchoolContext";
 
 // Overview Component (TutorAttendance functionality)
 function AttendanceOverview() {
   const { t } = useTranslation();
   const { selectedSchool, isSchoolContextActive } = useSchoolContext();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
   const [startingCohort, setStartingCohort] = useState<any>(null);
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const queryClient = useQueryClient();
 
-  const schoolId = isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
+  const schoolId =
+    isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
 
   // Fetch upcoming assessments
   const { data: progressSummary = [] } = useQuery({
@@ -79,20 +101,18 @@ function AttendanceOverview() {
     queryKey: ["tutor-attendance-summary", selectedDate, schoolId],
     queryFn: async () => {
       const data = await getTutorAttendanceSummary(selectedDate, schoolId);
-      
-      const validSummaries = data.filter(summary => {
-        const isValid = summary && 
-          summary.cohort && 
-          summary.cohort._id && 
-          summary.attendance;
-        
+
+      const validSummaries = data.filter((summary) => {
+        const isValid =
+          summary && summary.cohort && summary.cohort._id && summary.attendance;
+
         if (!isValid) {
-          console.warn('Invalid summary filtered out:', summary);
+          console.warn("Invalid summary filtered out:", summary);
         }
-        
+
         return isValid;
       });
-      
+
       return validSummaries;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -138,18 +158,19 @@ function AttendanceOverview() {
 
   // Helper function to check if cohort has started
   const isCohortStarted = (cohortId: string): boolean => {
-    const cohort = cohorts.find(c => c._id === cohortId);
+    const cohort = cohorts.find((c) => c._id === cohortId);
     if (!cohort) return false;
     return !!(
       cohort.timeTracking?.cohortStartDate ||
       cohort.startDate ||
-      (cohort.timeTracking?.cohortStartDate && new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
+      (cohort.timeTracking?.cohortStartDate &&
+        new Date(cohort.timeTracking.cohortStartDate).getTime() > 0)
     );
   };
 
   // Get cohort start date
   const getCohortStartDate = (cohortId: string): string | null => {
-    const cohort = cohorts.find(c => c._id === cohortId);
+    const cohort = cohorts.find((c) => c._id === cohortId);
     if (!cohort) return null;
     if (cohort.timeTracking?.cohortStartDate) {
       return cohort.timeTracking.cohortStartDate;
@@ -177,15 +198,16 @@ function AttendanceOverview() {
   // Handle start cohort
   const handleStartCohort = (cohort: any) => {
     setStartingCohort(cohort);
-    setCustomStartDate(new Date().toISOString().split('T')[0]);
+    setCustomStartDate(new Date().toISOString().split("T")[0]);
     setIsStartDialogOpen(true);
   };
 
   // Handle confirm start cohort
   const handleConfirmStartCohort = () => {
     if (!startingCohort?._id) return;
-    
-    const startDateToUse = customStartDate || new Date().toISOString().split('T')[0];
+
+    const startDateToUse =
+      customStartDate || new Date().toISOString().split("T")[0];
     startCohortMutation.mutate({
       id: startingCohort._id,
       startDate: startDateToUse,
@@ -193,9 +215,9 @@ function AttendanceOverview() {
   };
 
   const getAttendanceRateBadgeVariant = (rate: number) => {
-    if (rate >= 90) return 'default';
-    if (rate >= 75) return 'secondary';
-    return 'destructive';
+    if (rate >= 90) return "default";
+    if (rate >= 75) return "secondary";
+    return "destructive";
   };
 
   if (loading) {
@@ -238,7 +260,7 @@ function AttendanceOverview() {
             View and manage attendance across all cohorts
           </p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
@@ -248,30 +270,34 @@ function AttendanceOverview() {
               onChange={(e) => {
                 const selected = new Date(e.target.value);
                 const dayOfWeek = selected.getDay();
-                
+
                 // Prevent Sunday selection (day 0)
                 if (dayOfWeek === 0) {
-                  toast.error('Sunday is a holiday. Please select a teaching day (Monday-Saturday).');
+                  toast.error(
+                    "Sunday is a holiday. Please select a teaching day (Monday-Saturday)."
+                  );
                   // Auto-select next Monday
                   const nextMonday = new Date(selected);
                   const daysUntilMonday = (8 - dayOfWeek) % 7 || 7;
                   nextMonday.setDate(selected.getDate() + daysUntilMonday);
-                  setSelectedDate(nextMonday.toISOString().split('T')[0]);
+                  setSelectedDate(nextMonday.toISOString().split("T")[0]);
                   return;
                 }
-                
+
                 setSelectedDate(e.target.value);
               }}
               onFocus={(e) => {
                 // Set min date to prevent selecting past Sundays
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                e.currentTarget.min = today.toISOString().split('T')[0];
+                e.currentTarget.min = today.toISOString().split("T")[0];
               }}
               className="flex-1 sm:flex-none px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
-          <span className="text-xs text-gray-500 hidden sm:inline">(Mon-Sat only)</span>
+          <span className="text-xs text-gray-500 hidden sm:inline">
+            (Mon-Sat only)
+          </span>
         </div>
       </div>
 
@@ -289,7 +315,8 @@ function AttendanceOverview() {
               {upcomingAssessments.map((summary: any, idx) => {
                 const assessmentDate = new Date(summary.nextAssessmentDue || 0);
                 const daysUntil = Math.ceil(
-                  (assessmentDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                  (assessmentDate.getTime() - new Date().getTime()) /
+                    (1000 * 60 * 60 * 24)
                 );
                 return (
                   <div
@@ -301,11 +328,22 @@ function AttendanceOverview() {
                         {summary.cohort?.name || "Unknown Cohort"}
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
-                        {summary.program?.name || summary.program?.subject || "Program"} - Level {summary.currentLevel || "N/A"}
+                        {summary.program?.name ||
+                          summary.program?.subject ||
+                          "Program"}{" "}
+                        - Level {summary.currentLevel || "N/A"}
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant={daysUntil <= 1 ? "destructive" : daysUntil <= 3 ? "secondary" : "outline"}>
+                      <Badge
+                        variant={
+                          daysUntil <= 1
+                            ? "destructive"
+                            : daysUntil <= 3
+                            ? "secondary"
+                            : "outline"
+                        }
+                      >
                         {daysUntil === 0
                           ? "Today"
                           : daysUntil === 1
@@ -329,104 +367,118 @@ function AttendanceOverview() {
         <Card>
           <CardContent className="text-center py-8">
             <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
-              {t('attendance.noCohorts')}
-            </p>
+            <p className="text-gray-500 text-lg">{t("attendance.noCohorts")}</p>
             <p className="text-gray-400 text-sm mt-2">
-              {t('attendance.noCohortsDescription')}
+              {t("attendance.noCohortsDescription")}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {attendanceSummary
-            .filter(summary => summary && summary.cohort && summary.attendance)
+            .filter(
+              (summary) => summary && summary.cohort && summary.attendance
+            )
             .map((summary) => (
-            <Card key={summary.cohort._id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-gray-600 font-medium">
-                      {summary.cohort.school?.name || 'School not assigned'}
-                    </p>
-                    <Badge variant="outline" className="flex-shrink-0">
-                      {summary.attendance.totalStudents} students
-                    </Badge>
+              <Card
+                key={summary.cohort._id}
+                className="hover:shadow-md transition-shadow"
+              >
+                <CardHeader className="pb-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm text-gray-600 font-medium">
+                        {summary.cohort.school?.name || "School not assigned"}
+                      </p>
+                      <Badge variant="outline" className="flex-shrink-0">
+                        {summary.attendance.totalStudents} students
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-lg">
+                      <span className="break-words">{summary.cohort.name}</span>
+                    </CardTitle>
                   </div>
-                  <CardTitle className="text-lg">
-                    <span className="break-words">{summary.cohort.name}</span>
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {/* Start Status */}
-                {!isCohortStarted(summary.cohort._id) ? (
-                  <div className="flex items-center gap-2 text-sm p-2 bg-orange-50 border border-orange-200 rounded-md">
-                    <Clock className="h-4 w-4 text-orange-600" />
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                      Not Started
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>Started: {formatDate(getCohortStartDate(summary.cohort._id))}</span>
-                  </div>
-                )}
+                </CardHeader>
 
-                {/* Attendance Stats */}
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span>Present: {summary.attendance.presentCount}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-600" />
-                    <span>Absent: {summary.attendance.absentCount}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span>Unmarked: {summary.attendance.unmarkedCount}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={getAttendanceRateBadgeVariant(summary.attendance.attendanceRate)}
-                      className="text-xs"
-                    >
-                      {summary.attendance.attendanceRate.toFixed(1)}%
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2">
+                <CardContent className="space-y-4">
+                  {/* Start Status */}
                   {!isCohortStarted(summary.cohort._id) ? (
-                    <Button
-                      onClick={() => handleStartCohort(summary.cohort)}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                    >
-                      <Play className="mr-2 h-4 w-4" />
-                      Start Cohort
-                    </Button>
+                    <div className="flex items-center gap-2 text-sm p-2 bg-orange-50 border border-orange-200 rounded-md">
+                      <Clock className="h-4 w-4 text-orange-600" />
+                      <Badge
+                        variant="outline"
+                        className="bg-orange-50 text-orange-700 border-orange-200"
+                      >
+                        Not Started
+                      </Badge>
+                    </div>
                   ) : (
-                    <Button 
-                      asChild 
-                      className="w-full"
-                      variant={summary.attendance.unmarkedCount > 0 ? "default" : "outline"}
-                    >
-                      <Link to={`/attendance/cohort/${summary.cohort._id}`}>
-                        {summary.attendance.unmarkedCount > 0 
-                          ? t('attendance.markAttendance')
-                          : t('attendance.viewAttendance')
-                        }
-                      </Link>
-                    </Button>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        Started:{" "}
+                        {formatDate(getCohortStartDate(summary.cohort._id))}
+                      </span>
+                    </div>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  {/* Attendance Stats */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span>Present: {summary.attendance.presentCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-red-600" />
+                      <span>Absent: {summary.attendance.absentCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span>Unmarked: {summary.attendance.unmarkedCount}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={getAttendanceRateBadgeVariant(
+                          summary.attendance.attendanceRate
+                        )}
+                        className="text-xs"
+                      >
+                        {summary.attendance.attendanceRate.toFixed(1)}%
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2">
+                    {!isCohortStarted(summary.cohort._id) ? (
+                      <Button
+                        onClick={() => handleStartCohort(summary.cohort)}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        <Play className="mr-2 h-4 w-4" />
+                        Start Cohort
+                      </Button>
+                    ) : (
+                      <Button
+                        asChild
+                        className="w-full"
+                        variant={
+                          summary.attendance.unmarkedCount > 0
+                            ? "default"
+                            : "outline"
+                        }
+                      >
+                        <Link to={`/attendance/cohort/${summary.cohort._id}`}>
+                          {summary.attendance.unmarkedCount > 0
+                            ? t("attendance.markAttendance")
+                            : t("attendance.viewAttendance")}
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
         </div>
       )}
 
@@ -435,7 +487,7 @@ function AttendanceOverview() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              {t('attendance.todaySummary')}
+              {t("attendance.todaySummary")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -445,31 +497,40 @@ function AttendanceOverview() {
                   {attendanceSummary.length}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {t('attendance.totalCohorts')}
+                  {t("attendance.totalCohorts")}
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {attendanceSummary.reduce((sum, s) => sum + s.attendance.totalStudents, 0)}
+                  {attendanceSummary.reduce(
+                    (sum, s) => sum + s.attendance.totalStudents,
+                    0
+                  )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {t('attendance.totalStudents')}
+                  {t("attendance.totalStudents")}
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {attendanceSummary.reduce((sum, s) => sum + s.attendance.presentCount, 0)}
+                  {attendanceSummary.reduce(
+                    (sum, s) => sum + s.attendance.presentCount,
+                    0
+                  )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {t('attendance.totalPresent')}
+                  {t("attendance.totalPresent")}
                 </div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-orange-600">
-                  {attendanceSummary.reduce((sum, s) => sum + s.attendance.unmarkedCount, 0)}
+                  {attendanceSummary.reduce(
+                    (sum, s) => sum + s.attendance.unmarkedCount,
+                    0
+                  )}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {t('attendance.totalUnmarked')}
+                  {t("attendance.totalUnmarked")}
                 </div>
               </div>
             </div>
@@ -497,8 +558,9 @@ function AttendanceOverview() {
                 const assessmentDate = summary.timeTracking?.nextAssessmentDue
                   ? new Date(summary.timeTracking.nextAssessmentDue)
                   : null;
-                const daysUntil = summary.timeTracking?.daysUntilNextAssessment || 0;
-                
+                const daysUntil =
+                  summary.timeTracking?.daysUntilNextAssessment || 0;
+
                 return (
                   <div
                     key={summary.cohort._id}
@@ -509,11 +571,13 @@ function AttendanceOverview() {
                         {summary.cohort.name}
                       </div>
                       <div className="text-sm text-gray-600">
-                        {summary.cohort.program?.subject || "N/A"} • Level {summary.cohort.currentLevel || "N/A"}
+                        {summary.cohort.program?.subject || "N/A"} • Level{" "}
+                        {summary.cohort.currentLevel || "N/A"}
                       </div>
                       {assessmentDate && (
                         <div className="text-xs text-gray-500 mt-1">
-                          Due: {assessmentDate.toLocaleDateString("en-IN", {
+                          Due:{" "}
+                          {assessmentDate.toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
@@ -525,7 +589,9 @@ function AttendanceOverview() {
                       {daysUntil <= 3 && daysUntil >= 0 && (
                         <Badge variant="destructive" className="text-xs">
                           <AlertCircle className="h-3 w-3 mr-1" />
-                          {daysUntil === 0 ? "Today" : `${daysUntil} day${daysUntil > 1 ? "s" : ""}`}
+                          {daysUntil === 0
+                            ? "Today"
+                            : `${daysUntil} day${daysUntil > 1 ? "s" : ""}`}
                         </Badge>
                       )}
                       {daysUntil > 3 && (
@@ -548,7 +614,8 @@ function AttendanceOverview() {
           <DialogHeader>
             <DialogTitle>Start Cohort</DialogTitle>
             <DialogDescription>
-              Set a start date for "{startingCohort?.name}". The cohort will begin tracking progress and attendance from this date.
+              Set a start date for "{startingCohort?.name}". The cohort will
+              begin tracking progress and attendance from this date.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -561,17 +628,19 @@ function AttendanceOverview() {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toISOString().split("T")[0]}
                   className="flex-1"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Select a date to start the cohort. Leave as today's date to start immediately.
+                Select a date to start the cohort. Leave as today's date to
+                start immediately.
               </p>
             </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Once started, the cohort will begin tracking:
+                <strong>Note:</strong> Once started, the cohort will begin
+                tracking:
                 <ul className="list-disc list-inside mt-1 space-y-1">
                   <li>Progress tracking from the start date</li>
                   <li>Attendance recording</li>
@@ -620,11 +689,15 @@ function AttendanceOverview() {
 function CohortAttendanceDetail() {
   const { cohortId } = useParams<{ cohortId: string }>();
   const navigate = useNavigate();
-  
+
   const [saving, setSaving] = useState(false);
   const [markingHoliday, setMarkingHoliday] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [attendanceRecords, setAttendanceRecords] = useState<{[studentId: string]: AttendanceStatus}>({});
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [attendanceRecords, setAttendanceRecords] = useState<{
+    [studentId: string]: AttendanceStatus;
+  }>({});
   const [isHoliday, setIsHoliday] = useState(false);
   const queryClient = useQueryClient();
 
@@ -636,7 +709,7 @@ function CohortAttendanceDetail() {
         const data = await getCohortProgress(cohortId!);
         return data;
       } catch (error) {
-        console.error('Error fetching cohort progress:', error);
+        console.error("Error fetching cohort progress:", error);
         return null;
       }
     },
@@ -653,10 +726,10 @@ function CohortAttendanceDetail() {
   // Get inline style for smooth gradient color based on days
   const getGradientStyle = (days: number | null) => {
     if (days === null) return {};
-    
+
     // Clamp days between -7 and 21 for color calculation
     const clampedDays = Math.max(-7, Math.min(21, days));
-    
+
     // Calculate hue: red (0) -> orange (30) -> yellow (60) -> green (120)
     // -7 days = 0 (red), 0 days = 15 (red-orange), 7 days = 45 (orange), 14 days = 90 (yellow-green), 21+ days = 120 (green)
     let hue: number;
@@ -673,7 +746,7 @@ function CohortAttendanceDetail() {
       // 14+ days: yellow-green to green (80 to 120)
       hue = 80 + ((clampedDays - 14) / 7) * 40;
     }
-    
+
     return {
       backgroundColor: `hsl(${hue}, 85%, 95%)`,
       borderColor: `hsl(${hue}, 70%, 70%)`,
@@ -684,7 +757,7 @@ function CohortAttendanceDetail() {
   // Get assessment message based on days
   const getAssessmentMessage = (days: number | null): string => {
     if (days === null) return "No data";
-    
+
     if (days < 0) {
       // Overdue
       const overdueDays = Math.abs(days);
@@ -710,18 +783,20 @@ function CohortAttendanceDetail() {
     queryKey: ["cohort-attendance", cohortId, selectedDate],
     queryFn: async () => {
       try {
-        const data = await getCohortAttendance(cohortId!, { date: selectedDate });
-        
+        const data = await getCohortAttendance(cohortId!, {
+          date: selectedDate,
+        });
+
         // Initialize attendance records with existing data
         const existingAttendance = data.attendance[selectedDate] || [];
-        const records: {[studentId: string]: AttendanceStatus} = {};
-        
-        existingAttendance.forEach(record => {
+        const records: { [studentId: string]: AttendanceStatus } = {};
+
+        existingAttendance.forEach((record) => {
           records[record.student._id] = record.status;
         });
-        
+
         setAttendanceRecords(records);
-        
+
         // Check if selected date is a holiday
         const holidays = data.cohort.holidays || [];
         const selected = new Date(selectedDate);
@@ -732,11 +807,11 @@ function CohortAttendanceDetail() {
           return holidayDate.toDateString() === selected.toDateString();
         });
         setIsHoliday(isHolidayDate);
-        
+
         return data;
       } catch (error) {
-        console.error('Error fetching cohort attendance:', error);
-        toast.error('Failed to load cohort attendance');
+        console.error("Error fetching cohort attendance:", error);
+        toast.error("Failed to load cohort attendance");
         return null;
       }
     },
@@ -748,14 +823,14 @@ function CohortAttendanceDetail() {
   useEffect(() => {
     if (cohortData) {
       const existingAttendance = cohortData.attendance[selectedDate] || [];
-      const records: {[studentId: string]: AttendanceStatus} = {};
-      
-      existingAttendance.forEach(record => {
+      const records: { [studentId: string]: AttendanceStatus } = {};
+
+      existingAttendance.forEach((record) => {
         records[record.student._id] = record.status;
       });
-      
+
       setAttendanceRecords(records);
-      
+
       // Check if selected date is a holiday
       const holidays = cohortData.cohort.holidays || [];
       const selected = new Date(selectedDate);
@@ -770,26 +845,26 @@ function CohortAttendanceDetail() {
   }, [selectedDate, cohortData]);
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
-    setAttendanceRecords(prev => ({
+    setAttendanceRecords((prev) => ({
       ...prev,
-      [studentId]: status
+      [studentId]: status,
     }));
   };
 
   const markAllPresent = () => {
     if (!cohortData) return;
-    const records: {[studentId: string]: AttendanceStatus} = {};
-    cohortData.cohort.students.forEach(student => {
-      records[student._id] = 'present';
+    const records: { [studentId: string]: AttendanceStatus } = {};
+    cohortData.cohort.students.forEach((student) => {
+      records[student._id] = "present";
     });
     setAttendanceRecords(records);
   };
 
   const markAllAbsent = () => {
     if (!cohortData) return;
-    const records: {[studentId: string]: AttendanceStatus} = {};
-    cohortData.cohort.students.forEach(student => {
-      records[student._id] = 'absent';
+    const records: { [studentId: string]: AttendanceStatus } = {};
+    cohortData.cohort.students.forEach((student) => {
+      records[student._id] = "absent";
     });
     setAttendanceRecords(records);
   };
@@ -804,21 +879,23 @@ function CohortAttendanceDetail() {
     try {
       setMarkingHoliday(true);
       const result = await toggleCohortHoliday(cohortId, selectedDate);
-      
+
       setIsHoliday(result.isHoliday);
       toast.success(result.message);
-      
+
       // Clear attendance records if marking as holiday
       if (result.isHoliday) {
         setAttendanceRecords({});
       }
-      
+
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["cohort-attendance", cohortId, selectedDate] });
+      queryClient.invalidateQueries({
+        queryKey: ["cohort-attendance", cohortId, selectedDate],
+      });
       queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
     } catch (error: any) {
-      console.error('Error toggling holiday:', error);
-      toast.error(error.response?.data?.error || 'Failed to mark holiday');
+      console.error("Error toggling holiday:", error);
+      toast.error(error.response?.data?.error || "Failed to mark holiday");
     } finally {
       setMarkingHoliday(false);
     }
@@ -829,39 +906,45 @@ function CohortAttendanceDetail() {
 
     // Prevent saving if it's a holiday
     if (isHoliday) {
-      toast.error('Cannot save attendance on a holiday. Please unmark the holiday first.');
+      toast.error(
+        "Cannot save attendance on a holiday. Please unmark the holiday first."
+      );
       return;
     }
 
     try {
       setSaving(true);
-      
-      const attendanceData: CohortAttendanceRecord[] = Object.entries(attendanceRecords).map(
-        ([studentId, status]) => ({
-          studentId,
-          status
-        })
-      );
+
+      const attendanceData: CohortAttendanceRecord[] = Object.entries(
+        attendanceRecords
+      ).map(([studentId, status]) => ({
+        studentId,
+        status,
+      }));
 
       if (attendanceData.length === 0) {
-        toast.error('Please mark attendance for at least one student');
+        toast.error("Please mark attendance for at least one student");
         return;
       }
 
       await recordCohortAttendance({
         cohortId,
         attendanceRecords: attendanceData,
-        date: selectedDate
+        date: selectedDate,
       });
 
-      toast.success(`Attendance saved successfully for ${attendanceData.length} students`);
-      
+      toast.success(
+        `Attendance saved successfully for ${attendanceData.length} students`
+      );
+
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["cohort-attendance", cohortId, selectedDate] });
+      queryClient.invalidateQueries({
+        queryKey: ["cohort-attendance", cohortId, selectedDate],
+      });
       queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
     } catch (error) {
-      console.error('Error saving attendance:', error);
-      toast.error('Failed to save attendance');
+      console.error("Error saving attendance:", error);
+      toast.error("Failed to save attendance");
     } finally {
       setSaving(false);
     }
@@ -897,15 +980,19 @@ function CohortAttendanceDetail() {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Cohort not found</p>
-        <Button onClick={() => navigate('/attendance')} className="mt-4">
+        <Button onClick={() => navigate("/attendance")} className="mt-4">
           Go Back
         </Button>
       </div>
     );
   }
 
-  const presentCount = Object.values(attendanceRecords).filter(status => status === 'present').length;
-  const absentCount = Object.values(attendanceRecords).filter(status => status === 'absent').length;
+  const presentCount = Object.values(attendanceRecords).filter(
+    (status) => status === "present"
+  ).length;
+  const absentCount = Object.values(attendanceRecords).filter(
+    (status) => status === "absent"
+  ).length;
   const totalMarked = Object.keys(attendanceRecords).length;
   const totalStudents = cohortData.cohort.students.length;
 
@@ -913,10 +1000,10 @@ function CohortAttendanceDetail() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/attendance')}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/attendance")}
           className="p-2 self-start sm:self-auto"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -927,7 +1014,8 @@ function CohortAttendanceDetail() {
             <span className="truncate">{cohortData.cohort.name}</span>
           </h1>
           <p className="text-sm sm:text-base text-gray-600 truncate">
-            {cohortData.cohort.school?.name || 'School not assigned'} • {totalStudents} students
+            {cohortData.cohort.school?.name || "School not assigned"} •{" "}
+            {totalStudents} students
           </p>
         </div>
       </div>
@@ -946,29 +1034,33 @@ function CohortAttendanceDetail() {
                   onChange={(e) => {
                     const selected = new Date(e.target.value);
                     const dayOfWeek = selected.getDay();
-                    
+
                     // Prevent Sunday selection (day 0)
                     if (dayOfWeek === 0) {
-                      toast.error('Sunday is a holiday. Please select a teaching day (Monday-Saturday).');
+                      toast.error(
+                        "Sunday is a holiday. Please select a teaching day (Monday-Saturday)."
+                      );
                       // Auto-select next Monday
                       const nextMonday = new Date(selected);
                       const daysUntilMonday = (8 - dayOfWeek) % 7 || 7;
                       nextMonday.setDate(selected.getDate() + daysUntilMonday);
-                      setSelectedDate(nextMonday.toISOString().split('T')[0]);
+                      setSelectedDate(nextMonday.toISOString().split("T")[0]);
                       return;
                     }
-                    
+
                     setSelectedDate(e.target.value);
                   }}
                   onFocus={(e) => {
                     // Set min date to prevent selecting past Sundays
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    e.currentTarget.min = today.toISOString().split('T')[0];
+                    e.currentTarget.min = today.toISOString().split("T")[0];
                   }}
                   className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
-                <span className="text-xs text-gray-500 hidden sm:inline">(Mon-Sat only)</span>
+                <span className="text-xs text-gray-500 hidden sm:inline">
+                  (Mon-Sat only)
+                </span>
               </div>
 
               {/* Progress Indicator - Days until assessment with gradient color */}
@@ -990,9 +1082,9 @@ function CohortAttendanceDetail() {
 
             {/* Row 2: Quick Action Buttons */}
             <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={markAllPresent}
                 disabled={isHoliday}
                 className="flex-1 sm:flex-none"
@@ -1001,9 +1093,9 @@ function CohortAttendanceDetail() {
                 <span className="hidden sm:inline">All Present</span>
                 <span className="sm:hidden">All P</span>
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={markAllAbsent}
                 disabled={isHoliday}
                 className="flex-1 sm:flex-none"
@@ -1012,9 +1104,9 @@ function CohortAttendanceDetail() {
                 <span className="hidden sm:inline">All Absent</span>
                 <span className="sm:hidden">All A</span>
               </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={clearAll}
                 disabled={isHoliday}
                 className="flex-1 sm:flex-none"
@@ -1025,46 +1117,62 @@ function CohortAttendanceDetail() {
             </div>
 
             {/* Row 3: Holiday Button (full width) */}
-            <Button 
-              variant={isHoliday ? "default" : "outline"} 
-              size="sm" 
+            <Button
+              variant={isHoliday ? "default" : "outline"}
+              size="sm"
               onClick={handleMarkHoliday}
               disabled={markingHoliday}
-              className={`w-full ${isHoliday ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+              className={`w-full ${
+                isHoliday ? "bg-purple-600 hover:bg-purple-700 text-white" : ""
+              }`}
             >
               <PartyPopper className="h-4 w-4 mr-2" />
               {isHoliday ? "Unmark Holiday" : "Mark Holiday"}
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           {isHoliday && (
             <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-md">
               <div className="flex items-center gap-2 text-purple-700">
                 <PartyPopper className="h-4 w-4" />
-                <span className="font-medium">This date is marked as a holiday. No teaching will occur on this day.</span>
+                <span className="font-medium">
+                  This date is marked as a holiday. No teaching will occur on
+                  this day.
+                </span>
               </div>
             </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
             <div>
-              <div className="text-base sm:text-lg font-bold text-green-600">{presentCount}</div>
+              <div className="text-base sm:text-lg font-bold text-green-600">
+                {presentCount}
+              </div>
               <div className="text-xs sm:text-sm text-gray-600">Present</div>
             </div>
             <div>
-              <div className="text-base sm:text-lg font-bold text-red-600">{absentCount}</div>
+              <div className="text-base sm:text-lg font-bold text-red-600">
+                {absentCount}
+              </div>
               <div className="text-xs sm:text-sm text-gray-600">Absent</div>
             </div>
             <div>
-              <div className="text-base sm:text-lg font-bold text-orange-600">{totalStudents - totalMarked}</div>
+              <div className="text-base sm:text-lg font-bold text-orange-600">
+                {totalStudents - totalMarked}
+              </div>
               <div className="text-xs sm:text-sm text-gray-600">Unmarked</div>
             </div>
             <div>
               <div className="text-base sm:text-lg font-bold text-blue-600">
-                {totalMarked > 0 ? ((presentCount / totalMarked) * 100).toFixed(1) : 0}%
+                {totalMarked > 0
+                  ? ((presentCount / totalMarked) * 100).toFixed(1)
+                  : 0}
+                %
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Attendance Rate</div>
+              <div className="text-xs sm:text-sm text-gray-600">
+                Attendance Rate
+              </div>
             </div>
           </div>
         </CardContent>
@@ -1076,54 +1184,82 @@ function CohortAttendanceDetail() {
           <Card className="border-purple-200 bg-purple-50">
             <CardContent className="p-8 text-center">
               <PartyPopper className="h-12 w-12 text-purple-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-purple-700 mb-2">Holiday - No Teaching</h3>
+              <h3 className="text-lg font-semibold text-purple-700 mb-2">
+                Holiday - No Teaching
+              </h3>
               <p className="text-purple-600">
-                This date is marked as a holiday. Attendance cannot be marked on holidays.
+                This date is marked as a holiday. Attendance cannot be marked on
+                holidays.
               </p>
             </CardContent>
           </Card>
         ) : (
           cohortData.cohort.students.map((student) => {
             const currentStatus = attendanceRecords[student._id];
-            
+
             return (
-              <Card key={student._id} className={`transition-colors ${
-                currentStatus === 'present' ? 'border-green-200 bg-green-50' :
-                currentStatus === 'absent' ? 'border-red-200 bg-red-50' :
-                'border-gray-200'
-              }`}>
+              <Card
+                key={student._id}
+                className={`transition-colors ${
+                  currentStatus === "present"
+                    ? "border-green-200 bg-green-50"
+                    : currentStatus === "absent"
+                    ? "border-red-200 bg-red-50"
+                    : "border-gray-200"
+                }`}
+              >
                 <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 truncate">{student.name}</h3>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">
-                        Roll No: {student.roll_no} • Class: {student.class}
-                      </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex-1 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/reports/student/${student._id}`)
+                          }
+                          className="font-medium text-primary hover:underline truncate cursor-pointer text-left"
+                        >
+                          {student.name}
+                        </button>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                          Roll No: {student.roll_no} • Class: {student.class}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        variant={
+                          currentStatus === "present" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() =>
+                          handleStatusChange(student._id, "present")
+                        }
+                        className={`flex-1 sm:flex-none ${
+                          currentStatus === "present"
+                            ? "bg-green-600 hover:bg-green-700"
+                            : ""
+                        }`}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Present
+                      </Button>
+                      <Button
+                        variant={
+                          currentStatus === "absent" ? "destructive" : "outline"
+                        }
+                        size="sm"
+                        onClick={() =>
+                          handleStatusChange(student._id, "absent")
+                        }
+                        className="flex-1 sm:flex-none"
+                      >
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Absent
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button
-                      variant={currentStatus === 'present' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handleStatusChange(student._id, 'present')}
-                      className={`flex-1 sm:flex-none ${currentStatus === 'present' ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Present
-                    </Button>
-                    <Button
-                      variant={currentStatus === 'absent' ? 'destructive' : 'outline'}
-                      size="sm"
-                      onClick={() => handleStatusChange(student._id, 'absent')}
-                      className="flex-1 sm:flex-none"
-                    >
-                      <XCircle className="h-4 w-4 mr-1" />
-                      Absent
-                    </Button>
-                  </div>
-                </div>
                 </CardContent>
               </Card>
             );
@@ -1139,8 +1275,8 @@ function CohortAttendanceDetail() {
               <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
                 {totalMarked} of {totalStudents} students marked
               </div>
-              <Button 
-                onClick={saveAttendance} 
+              <Button
+                onClick={saveAttendance}
                 disabled={saving || totalMarked === 0 || isHoliday}
                 className="w-full sm:w-auto px-6 sm:px-8"
               >
@@ -1181,10 +1317,13 @@ export default function AttendanceManagement() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Users className="h-6 w-6" />
-          {t('attendance.title')}
+          {t("attendance.title")}
         </h1>
         <p className="text-gray-600 mt-1">
-          {t('attendance.subtitle')}
+          {t("attendance.subtitle")}
+          <div style={{ color: "red", fontWeight: "bold" }}>
+            a cohort must have tutor assigned to mark attendence.
+          </div>
         </p>
       </div>
 
@@ -1193,4 +1332,3 @@ export default function AttendanceManagement() {
     </div>
   );
 }
-

@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -14,6 +17,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Loader2,
@@ -29,6 +42,7 @@ import {
   Award,
   Phone,
   FileText,
+  Trash2,
 } from "lucide-react";
 import {
   LineChart,
@@ -47,9 +61,11 @@ import {
 } from "recharts";
 import {
   getStudentComprehensiveReport,
+  deleteStudent,
   Student,
 } from "@/services/students";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 interface IndividualStudentReportProps {
   student: Student;
@@ -76,6 +92,10 @@ export default function IndividualStudentReport({
   onBack,
 }: IndividualStudentReportProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState("");
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
     data: report,
@@ -86,6 +106,37 @@ export default function IndividualStudentReport({
     queryFn: () => getStudentComprehensiveReport(student._id),
     enabled: !!student._id,
   });
+
+  // Delete student mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["archivedStudents"] });
+      toast.success("Student deleted successfully");
+      // Navigate back to students list or reports
+      navigate("/students");
+    },
+    onError: (error: any) => {
+      let errorMessage = "Failed to delete student";
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+    },
+  });
+
+  const handleDeleteStudent = () => {
+    if (!student?._id) return;
+    const expectedName = report?.student?.name || student?.name || "";
+    if (confirmDeleteText.trim() !== expectedName.trim()) {
+      toast.error("Student name does not match. Please enter the exact name.");
+      return;
+    }
+    deleteMutation.mutate(student._id);
+  };
 
   // Prepare level progression data for chart
   const levelProgressionData = useMemo(() => {
@@ -205,10 +256,19 @@ export default function IndividualStudentReport({
               Comprehensive report for {report?.student?.name || "Student"}
             </p>
           </div>
-          <Button variant="outline" onClick={onBack}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Student
+            </Button>
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </div>
         </div>
 
         {/* Student Overview Card */}
@@ -1002,6 +1062,65 @@ export default function IndividualStudentReport({
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open);
+            if (!open) {
+              setConfirmDeleteText("");
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-destructive">
+                Delete Student Permanently?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action <strong>cannot be undone</strong>. This will permanently delete the student
+                <strong> "{report?.student?.name || student?.name}"</strong> and all their associated data
+                including assessments, attendance records, and cohort memberships.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <Label htmlFor="confirm-delete" className="text-sm font-medium">
+                Type the student's full name to confirm:{" "}
+                <span className="font-semibold text-destructive">
+                  "{report?.student?.name || student?.name}"
+                </span>
+              </Label>
+              <Input
+                id="confirm-delete"
+                value={confirmDeleteText}
+                onChange={(e) => setConfirmDeleteText(e.target.value)}
+                placeholder="Enter student's full name"
+                className="mt-2"
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setConfirmDeleteText("")}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteStudent}
+                disabled={
+                  deleteMutation.isPending ||
+                  confirmDeleteText.trim() !== (report?.student?.name || student?.name || "").trim()
+                }
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

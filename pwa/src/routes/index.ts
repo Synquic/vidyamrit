@@ -18,6 +18,7 @@ export const DASHBOARD_ROUTE_PATHS = {
   dashboard: "/dashboard",
   //
   students: "/students",
+  studentReport: "/reports/student/:studentId",
   mentors: "/mentors",
   volunteers: "/volunteers",
   managePrograms: "/programs",

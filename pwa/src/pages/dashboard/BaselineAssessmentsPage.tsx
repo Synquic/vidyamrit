@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import {
@@ -62,6 +63,7 @@ import { toast } from "sonner";
 export default function BaselineAssessmentsPage() {
   const { user } = useAuth();
   const { selectedSchool } = useSchoolContext();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [todaysAssessments, setTodaysAssessments] = useState<Assessment[]>([]);
   const [allAssessments, setAllAssessments] = useState<Assessment[]>([]);
@@ -1094,7 +1096,13 @@ export default function BaselineAssessmentsPage() {
                                   {index + 1}
                                 </TableCell>
                                 <TableCell className="font-medium px-3 break-words">
-                                  {student.name}
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(`/reports/student/${student._id}`)}
+                                    className="text-primary hover:underline cursor-pointer text-left"
+                                  >
+                                    {student.name}
+                                  </button>
                                 </TableCell>
                                 <TableCell className="px-3 break-words">{student.roll_no}</TableCell>
                                 {programs.map((program) => {

@@ -43,6 +43,7 @@ import ViewDashboard from "@/pages/dashboard/ViewDashboard";
 
 // Reports Pages
 import ReportsPage from "@/pages/dashboard/ReportsPage";
+import StudentReportPage from "@/pages/dashboard/StudentReportPage";
 
 export const router = createBrowserRouter([
   {
@@ -217,6 +218,16 @@ export const router = createBrowserRouter([
             requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.reports]}
           >
             <ReportsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.studentReport,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.studentReport]}
+          >
+            <StudentReportPage />
           </ProtectedRoute>
         ),
       },
