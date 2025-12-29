@@ -94,7 +94,7 @@ function ManageCohorts() {
   const [formData, setFormData] = useState<CreateCohortDTO>({
     name: "",
     schoolId: selectedSchool?._id || "",
-    tutorId: "",
+    tutorId: undefined,
     students: [],
   });
 
@@ -388,14 +388,20 @@ function ManageCohorts() {
   });
 
   const handleSubmit = () => {
+    // Ensure tutorId is undefined (not empty string) when no tutor is selected
+    const dataToSubmit = {
+      ...formData,
+      tutorId: formData.tutorId || undefined,
+    };
+
     if (editingCohort) {
-      const { name, tutorId, students } = formData;
+      const { name, tutorId, students } = dataToSubmit;
       updateMutation.mutate({
         id: editingCohort._id,
         data: { name, tutorId, students },
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataToSubmit);
     }
   };
 
@@ -425,7 +431,7 @@ function ManageCohorts() {
     setFormData({
       name: "",
       schoolId: selectedSchool?._id || "",
-      tutorId: "",
+      tutorId: undefined,
       students: [],
     });
   };

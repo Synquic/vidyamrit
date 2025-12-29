@@ -16,6 +16,11 @@ export interface DashboardAnalytics {
     totalAssessments: number;
     attendanceRate: number;
     assessmentSuccessRate: number;
+    // New assessment-based metrics
+    studentsWithAssessments: number;
+    assessmentCoverage: number;
+    averageStudentLevel: number;
+    recentlyAssessedStudents: number;
   };
   charts: {
     progressDistribution: Array<{ _id: string; count: number }>;

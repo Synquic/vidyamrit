@@ -27,7 +27,7 @@ const availableReports: Report[] = [
   {
     id: "student-distribution",
     title: "Student Distribution Analysis",
-    description: "View students by level, class, and category with visual charts",
+    description: "View students by level, class, and category with visual charts ( all schools combined )",
     icon: PieChart,
   },
   {

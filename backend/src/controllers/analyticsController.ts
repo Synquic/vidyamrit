@@ -4,6 +4,7 @@ import Student from "../models/StudentModel";
 import Cohort from "../models/CohortModel";
 import User from "../models/UserModel";
 import ProgramAssessment from "../models/ProgramAssessmentModel";
+import Assessment from "../models/AssessmentModel";
 import Attendance from "../models/AttendanceModel";
 import logger from "../utils/logger";
 import mongoose from "mongoose";
@@ -16,85 +17,191 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     const user = (req as any).user;
 
     // Get filter based on user role
-    const schoolFilter = user.role === "super_admin" ? {} : { school: user.schoolId };
-    const cohortFilter = user.role === "super_admin" ? {} : { schoolId: user.schoolId };
+    const schoolFilter =
+      user.role === "super_admin" ? {} : { school: user.schoolId };
+    const cohortFilter =
+      user.role === "super_admin" ? {} : { schoolId: user.schoolId };
 
     // Total Schools
     const totalSchools = await School.countDocuments();
-    const activeSchools = await School.countDocuments({
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+
+    // Active schools - schools with students who have been assessed in last 30 days
+    // OR schools created/updated in last 30 days
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    // Get schools with recent baseline assessments (from Assessment model)
+    const schoolsWithRecentAssessments = await Assessment.distinct("school", {
+      date: { $gte: thirtyDaysAgo },
     });
 
-    // Schools with baseline assessments
-    const schoolsWithBaseline = await Cohort.distinct("schoolId", {
-      "progress.assessmentHistory": { $exists: true, $ne: [] }
+    // Get schools with recent student knowledgeLevel entries
+    const schoolsWithRecentKnowledge = await Student.distinct("school", {
+      "knowledgeLevel.date": { $gte: thirtyDaysAgo },
     });
+
+    // Combine and deduplicate
+    const activeSchoolIds = new Set(
+      [
+        ...schoolsWithRecentAssessments.map((id) => id?.toString()),
+        ...schoolsWithRecentKnowledge.map((id) => id?.toString()),
+      ].filter(Boolean)
+    );
+
+    const activeSchools =
+      activeSchoolIds.size ||
+      (await School.countDocuments({
+        updatedAt: { $gte: thirtyDaysAgo },
+      }));
+
+    // Schools with baseline assessments
+    // Check students who have knowledgeLevel entries OR assessments in Assessment model
+    const schoolsWithStudentBaseline = await Student.distinct("school", {
+      $or: [
+        { "knowledgeLevel.0": { $exists: true } },
+        { lastAssessmentDate: { $exists: true } },
+      ],
+    });
+
+    const schoolsWithAssessmentBaseline = await Assessment.distinct("school");
+
+    const uniqueSchoolsWithBaseline = new Set(
+      [
+        ...schoolsWithStudentBaseline.map((id) => id?.toString()),
+        ...schoolsWithAssessmentBaseline.map((id) => id?.toString()),
+      ].filter(Boolean)
+    );
 
     // Total Students
     const totalStudents = await Student.countDocuments(schoolFilter);
+
+    // Active students - students who are not archived
     const activeStudents = await Student.countDocuments({
       ...schoolFilter,
-      isArchived: false,
-      lastAssessmentDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+      isArchived: { $ne: true },
     });
+
     const droppedStudents = await Student.countDocuments({
       ...schoolFilter,
-      isArchived: true
+      isArchived: true,
     });
 
     // Total Cohorts
     const totalCohorts = await Cohort.countDocuments(cohortFilter);
     const activeCohorts = await Cohort.countDocuments({
       ...cohortFilter,
-      status: "active"
+      status: "active",
     });
     const completedCohorts = await Cohort.countDocuments({
       ...cohortFilter,
-      status: "completed"
+      status: "completed",
     });
 
     // Tutors/Mentors
     const totalTutors = await User.countDocuments({
       role: { $in: ["tutor", "mentor"] },
-      ...(user.role !== "super_admin" && { schoolId: user.schoolId })
+      ...(user.role !== "super_admin" && { schoolId: user.schoolId }),
     });
     const engagedTutors = await Cohort.distinct("tutorId", {
       ...cohortFilter,
       status: "active",
-      tutorId: { $ne: null }
+      tutorId: { $ne: null },
     });
 
-    // Total Assessments
-    const totalAssessments = await ProgramAssessment.countDocuments({
-      status: "completed"
+    // Total Assessments - combine from multiple sources
+    // 1. Legacy Assessment model (baseline assessments)
+    const legacyAssessmentCount = await Assessment.countDocuments();
+
+    // 2. ProgramAssessment model (new baseline system)
+    const programAssessmentCount = await ProgramAssessment.countDocuments({
+      status: "completed",
     });
 
-    // Attendance Stats
+    // 3. Count from Student.knowledgeLevel entries (each entry is an assessment)
+    const studentKnowledgeLevelCount = await Student.aggregate([
+      { $match: schoolFilter },
+      {
+        $project: {
+          knowledgeLevelCount: { $size: { $ifNull: ["$knowledgeLevel", []] } },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$knowledgeLevelCount" } } },
+    ]);
+
+    const knowledgeLevelTotal = studentKnowledgeLevelCount[0]?.total || 0;
+
+    // Total assessments is the sum of all sources
+    // Note: knowledgeLevel might overlap with Assessment model, so we take the max
+    const totalAssessments =
+      Math.max(legacyAssessmentCount, knowledgeLevelTotal) +
+      programAssessmentCount;
+
+    // Assessment Coverage Stats (replacing empty attendance data)
+    // Students who have at least one knowledge level assessment
+    const studentsWithAssessments = await Student.countDocuments({
+      ...schoolFilter,
+      "knowledgeLevel.0": { $exists: true },
+    });
+
+    // Calculate assessment coverage percentage
+    const assessmentCoverage =
+      totalStudents > 0
+        ? ((studentsWithAssessments / totalStudents) * 100).toFixed(2)
+        : "0";
+
+    // Average level across all assessed students
+    const avgLevelData = await Student.aggregate([
+      { $match: { ...schoolFilter, "knowledgeLevel.0": { $exists: true } } },
+      { $unwind: "$knowledgeLevel" },
+      { $group: { _id: null, avgLevel: { $avg: "$knowledgeLevel.level" } } },
+    ]);
+    const averageStudentLevel = avgLevelData[0]?.avgLevel?.toFixed(1) || "0";
+
+    // Students assessed in last 7 days (recent activity)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentlyAssessedStudents = await Student.countDocuments({
+      ...schoolFilter,
+      $or: [
+        { "knowledgeLevel.date": { $gte: sevenDaysAgo } },
+        { lastAssessmentDate: { $gte: sevenDaysAgo } },
+      ],
+    });
+
+    // Fallback: Check Attendance data (may be empty)
     const attendanceFilter: any = {};
     if (user.role !== "super_admin" && user.schoolId) {
       attendanceFilter.school = new mongoose.Types.ObjectId(user.schoolId);
     }
 
     const attendanceStats = await Attendance.aggregate([
-      ...(Object.keys(attendanceFilter).length > 0 ? [{ $match: attendanceFilter }] : []),
+      ...(Object.keys(attendanceFilter).length > 0
+        ? [{ $match: attendanceFilter }]
+        : []),
       {
         $group: {
           _id: null,
           totalRecords: { $sum: 1 },
           presentCount: {
-            $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] }
+            $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] },
           },
           absentCount: {
-            $sum: { $cond: [{ $eq: ["$status", "absent"] }, 1, 0] }
-          }
-        }
-      }
+            $sum: { $cond: [{ $eq: ["$status", "absent"] }, 1, 0] },
+          },
+        },
+      },
     ]);
 
-    const attendanceData = attendanceStats[0] || { totalRecords: 0, presentCount: 0, absentCount: 0 };
-    const attendanceRate = attendanceData.totalRecords > 0
-      ? ((attendanceData.presentCount / attendanceData.totalRecords) * 100).toFixed(2)
-      : "0";
+    const attendanceData = attendanceStats[0] || {
+      totalRecords: 0,
+      presentCount: 0,
+      absentCount: 0,
+    };
+    const attendanceRate =
+      attendanceData.totalRecords > 0
+        ? (
+            (attendanceData.presentCount / attendanceData.totalRecords) *
+            100
+          ).toFixed(2)
+        : "0";
 
     // Student progress distribution
     const progressDistribution = await Student.aggregate([
@@ -103,9 +210,9 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       {
         $group: {
           _id: "$progressHistory.flag",
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     // Monthly trends - students enrollment
@@ -115,13 +222,13 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
         $group: {
           _id: {
             year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" }
+            month: { $month: "$createdAt" },
           },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       { $sort: { "_id.year": 1, "_id.month": 1 } },
-      { $limit: 12 }
+      { $limit: 12 },
     ]);
 
     // Cohort performance
@@ -133,11 +240,11 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
           currentLevel: 1,
           totalStudents: { $size: "$students" },
           averageProgress: {
-            $avg: "$progress.currentLevel"
-          }
-        }
+            $avg: "$progress.currentLevel",
+          },
+        },
       },
-      { $limit: 10 }
+      { $limit: 10 },
     ]);
 
     // Assessment success rate from ProgramAssessment
@@ -154,30 +261,57 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
           totalAssessments: { $sum: 1 },
           totalQuestions: { $sum: "$totalQuestions" },
           totalCorrect: { $sum: "$totalCorrectAnswers" },
-          avgAccuracy: { $avg: "$accuracy" }
-        }
-      }
+          avgAccuracy: { $avg: "$accuracy" },
+        },
+      },
     ]);
 
     const successData = assessmentSuccess[0] || {
       totalAssessments: 0,
       totalQuestions: 0,
       totalCorrect: 0,
-      avgAccuracy: 0
+      avgAccuracy: 0,
     };
 
-    const successRate = successData.totalQuestions > 0
-      ? ((successData.totalCorrect / successData.totalQuestions) * 100).toFixed(2)
-      : "0";
+    // Calculate success rate
+    // If we have ProgramAssessment data, use accuracy from that
+    // Otherwise, calculate based on students who have improved or have assessments
+    let successRate = "0";
+
+    if (successData.totalQuestions > 0) {
+      successRate = (
+        (successData.totalCorrect / successData.totalQuestions) *
+        100
+      ).toFixed(2);
+    } else if (totalAssessments > 0) {
+      // Calculate based on students with knowledge levels
+      // Success = students who have at least one assessment with level > 0
+      const studentsWithProgress = await Student.countDocuments({
+        ...schoolFilter,
+        "knowledgeLevel.level": { $gt: 0 },
+      });
+
+      const totalStudentsWithAssessments = await Student.countDocuments({
+        ...schoolFilter,
+        "knowledgeLevel.0": { $exists: true },
+      });
+
+      if (totalStudentsWithAssessments > 0) {
+        successRate = (
+          (studentsWithProgress / totalStudentsWithAssessments) *
+          100
+        ).toFixed(2);
+      }
+    }
 
     // School type distribution
     const schoolTypeDistribution = await School.aggregate([
       {
         $group: {
           _id: "$type",
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     // Recent activities
@@ -196,8 +330,11 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     res.json({
       overview: {
         totalSchools,
-        activeSchools,
-        schoolsWithBaseline: schoolsWithBaseline.length,
+        activeSchools:
+          typeof activeSchools === "number"
+            ? activeSchools
+            : activeSchoolIds.size,
+        schoolsWithBaseline: uniqueSchoolsWithBaseline.size,
         totalStudents,
         activeStudents,
         droppedStudents,
@@ -208,7 +345,12 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
         engagedTutors: engagedTutors.length,
         totalAssessments,
         attendanceRate: parseFloat(attendanceRate),
-        assessmentSuccessRate: parseFloat(successRate)
+        assessmentSuccessRate: parseFloat(successRate),
+        // New assessment-based metrics
+        studentsWithAssessments,
+        assessmentCoverage: parseFloat(assessmentCoverage),
+        averageStudentLevel: parseFloat(averageStudentLevel),
+        recentlyAssessedStudents,
       },
       charts: {
         progressDistribution,
@@ -217,17 +359,16 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
         schoolTypeDistribution,
         attendanceData: {
           present: attendanceData.presentCount,
-          absent: attendanceData.absentCount
-        }
+          absent: attendanceData.absentCount,
+        },
       },
-      recentActivities
+      recentActivities,
     });
-
   } catch (error: any) {
     logger.error("Error fetching dashboard analytics:", error);
     res.status(500).json({
       message: "Error fetching dashboard analytics",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -239,11 +380,15 @@ export const getSchoolAnalytics = async (req: Request, res: Response) => {
   try {
     const { schoolId } = req.params;
 
-    const students = await Student.countDocuments({ school: new mongoose.Types.ObjectId(schoolId) });
-    const cohorts = await Cohort.countDocuments({ schoolId: new mongoose.Types.ObjectId(schoolId) });
+    const students = await Student.countDocuments({
+      school: new mongoose.Types.ObjectId(schoolId),
+    });
+    const cohorts = await Cohort.countDocuments({
+      schoolId: new mongoose.Types.ObjectId(schoolId),
+    });
     const activeCohorts = await Cohort.countDocuments({
       schoolId: new mongoose.Types.ObjectId(schoolId),
-      status: "active"
+      status: "active",
     });
 
     const attendance = await Attendance.aggregate([
@@ -252,9 +397,9 @@ export const getSchoolAnalytics = async (req: Request, res: Response) => {
         $group: {
           _id: null,
           total: { $sum: 1 },
-          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } }
-        }
-      }
+          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
+        },
+      },
     ]);
 
     const attendanceRate = attendance[0]
@@ -266,14 +411,13 @@ export const getSchoolAnalytics = async (req: Request, res: Response) => {
       totalStudents: students,
       totalCohorts: cohorts,
       activeCohorts,
-      attendanceRate: parseFloat(attendanceRate)
+      attendanceRate: parseFloat(attendanceRate),
     });
-
   } catch (error: any) {
     logger.error("Error fetching school analytics:", error);
     res.status(500).json({
       message: "Error fetching school analytics",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -297,51 +441,56 @@ export const getPerformanceTrends = async (req: Request, res: Response) => {
         groupBy = {
           year: { $year: "$date" },
           month: { $month: "$date" },
-          day: { $dayOfMonth: "$date" }
+          day: { $dayOfMonth: "$date" },
         };
         break;
       case "week":
         groupBy = {
           year: { $year: "$date" },
-          week: { $week: "$date" }
+          week: { $week: "$date" },
         };
         break;
       case "year":
         groupBy = {
-          year: { $year: "$date" }
+          year: { $year: "$date" },
         };
         break;
       default: // month
         groupBy = {
           year: { $year: "$date" },
-          month: { $month: "$date" }
+          month: { $month: "$date" },
         };
     }
 
     const attendanceTrends = await Attendance.aggregate([
-      ...(Object.keys(attendanceFilter).length > 0 ? [{ $match: attendanceFilter }] : []),
+      ...(Object.keys(attendanceFilter).length > 0
+        ? [{ $match: attendanceFilter }]
+        : []),
       {
         $group: {
           _id: groupBy,
           totalRecords: { $sum: 1 },
-          presentCount: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
-          absentCount: { $sum: { $cond: [{ $eq: ["$status", "absent"] }, 1, 0] } }
-        }
+          presentCount: {
+            $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] },
+          },
+          absentCount: {
+            $sum: { $cond: [{ $eq: ["$status", "absent"] }, 1, 0] },
+          },
+        },
       },
       { $sort: { "_id.year": 1, "_id.month": 1, "_id.week": 1, "_id.day": 1 } },
-      { $limit: 30 }
+      { $limit: 30 },
     ]);
 
     res.json({
       period,
-      trends: attendanceTrends
+      trends: attendanceTrends,
     });
-
   } catch (error: any) {
     logger.error("Error fetching performance trends:", error);
     res.status(500).json({
       message: "Error fetching performance trends",
-      error: error.message
+      error: error.message,
     });
   }
 };

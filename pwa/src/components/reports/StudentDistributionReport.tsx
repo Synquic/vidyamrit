@@ -17,7 +17,23 @@ import {
   GraduationCap,
   BookOpen,
   Table as TableIcon,
+  ChevronDown,
+  X,
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getStudents, Student } from "@/services/students";
 import { getSchools, School } from "@/services/schools";
 import { programsService, IProgram } from "@/services/programs";
@@ -73,7 +89,12 @@ const COLORS = [
 ];
 
 // Custom Tooltip Content Component with colored cubes
-const CustomTooltipContent = ({ active, payload, sortedLevels, classData }: any) => {
+const CustomTooltipContent = ({
+  active,
+  payload,
+  sortedLevels,
+  classData,
+}: any) => {
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -90,7 +111,8 @@ const CustomTooltipContent = ({ active, payload, sortedLevels, classData }: any)
         borderRadius: "8px",
         padding: "12px 16px",
         color: "#ffffff",
-        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+        boxShadow:
+          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
       }}
     >
       {payload
@@ -144,7 +166,12 @@ export default function StudentDistributionReport({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewType, setViewType] = useState<ViewType>("level");
-  console.log(schools);
+
+  // Block and School filtering state
+  const [selectedBlock, setSelectedBlock] = useState<string>("all");
+  const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(
+    new Set()
+  );
   // Redirect if not super admin
   useEffect(() => {
     if (user && user.role !== UserRole.SUPER_ADMIN) {
@@ -178,6 +205,61 @@ export default function StudentDistributionReport({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get unique blocks from schools
+  const availableBlocks = useMemo(() => {
+    const blocks = new Set<string>();
+    schools.forEach((school) => {
+      if (school.block) {
+        blocks.add(school.block);
+      }
+    });
+    return Array.from(blocks).sort();
+  }, [schools]);
+
+  // Filter schools by selected block
+  const filteredSchools = useMemo(() => {
+    if (selectedBlock === "all") {
+      return schools;
+    }
+    return schools.filter((school) => school.block === selectedBlock);
+  }, [schools, selectedBlock]);
+
+  // Get effective selected schools (if none selected, use all filtered schools)
+  const effectiveSelectedSchoolIds = useMemo(() => {
+    if (selectedSchoolIds.size === 0) {
+      return new Set(
+        filteredSchools.map((s) => s._id).filter(Boolean) as string[]
+      );
+    }
+    const filteredIds = new Set(filteredSchools.map((s) => s._id));
+    return new Set(
+      Array.from(selectedSchoolIds).filter((id) => filteredIds.has(id))
+    );
+  }, [selectedSchoolIds, filteredSchools]);
+
+  // Filter students by selected schools
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const studentSchoolId =
+        typeof student.schoolId === "string"
+          ? student.schoolId
+          : student.schoolId?._id;
+      return studentSchoolId && effectiveSelectedSchoolIds.has(studentSchoolId);
+    });
+  }, [students, effectiveSelectedSchoolIds]);
+
+  // Select all schools in current block filter
+  const selectAllSchools = () => {
+    setSelectedSchoolIds(
+      new Set(filteredSchools.map((s) => s._id).filter(Boolean) as string[])
+    );
+  };
+
+  // Deselect all schools
+  const deselectAllSchools = () => {
+    setSelectedSchoolIds(new Set());
   };
 
   // Helper function to get student level info
@@ -282,7 +364,7 @@ export default function StudentDistributionReport({
       Record<number, { count: number; students: Student[] }>
     > = {};
 
-    students.forEach((student) => {
+    filteredStudents.forEach((student) => {
       const levelInfo = getStudentLevelInfo(student);
       levelInfo.forEach((info) => {
         if (!levelCounts[info.subject]) {
@@ -304,14 +386,14 @@ export default function StudentDistributionReport({
         students: data.students,
       })),
     }));
-  }, [students, assessments, programs]);
+  }, [filteredStudents, assessments, programs]);
 
   // Class-wise distribution with student details
   const classWiseData = useMemo(() => {
     const classCounts: Record<string, { count: number; students: Student[] }> =
       {};
 
-    students.forEach((student) => {
+    filteredStudents.forEach((student) => {
       const className = student.class || "Unknown";
       if (!classCounts[className]) {
         classCounts[className] = { count: 0, students: [] };
@@ -327,7 +409,7 @@ export default function StudentDistributionReport({
         students: data.students,
       }))
       .sort((a, b) => a.className.localeCompare(b.className));
-  }, [students]);
+  }, [filteredStudents]);
 
   // Category-wise distribution with student details
   const categoryWiseData = useMemo(() => {
@@ -336,7 +418,7 @@ export default function StudentDistributionReport({
       { count: number; students: Student[] }
     > = {};
 
-    students.forEach((student) => {
+    filteredStudents.forEach((student) => {
       const category = student.caste || "Not Specified";
       if (!categoryCounts[category]) {
         categoryCounts[category] = { count: 0, students: [] };
@@ -350,7 +432,7 @@ export default function StudentDistributionReport({
       count: data.count,
       students: data.students,
     }));
-  }, [students]);
+  }, [filteredStudents]);
 
   // Class-wise level distribution for each subject
   const classWiseLevelData = useMemo(() => {
@@ -363,7 +445,7 @@ export default function StudentDistributionReport({
       }>
     > = {};
 
-    students.forEach((student) => {
+    filteredStudents.forEach((student) => {
       const levelInfo = getStudentLevelInfo(student);
       const className = student.class || "Unknown";
 
@@ -372,7 +454,9 @@ export default function StudentDistributionReport({
           result[info.subject] = [];
         }
 
-        let classData = result[info.subject].find((c) => c.className === className);
+        let classData = result[info.subject].find(
+          (c) => c.className === className
+        );
         if (!classData) {
           classData = {
             className,
@@ -399,7 +483,7 @@ export default function StudentDistributionReport({
     });
 
     return result;
-  }, [students, assessments, programs]);
+  }, [filteredStudents, assessments, programs]);
 
   // Level-wise by subject chart data
   const levelChartData = useMemo(() => {
@@ -456,34 +540,183 @@ export default function StudentDistributionReport({
         </Button>
       </div>
 
-      {/* View Type Toggle */}
+      {/* Filters & View Type - Compact Horizontal Layout */}
       <Card>
-        <CardHeader>
-          <CardTitle>View Type</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button
-              variant={viewType === "level" ? "default" : "outline"}
-              onClick={() => setViewType("level")}
-            >
-              <GraduationCap className="mr-2 h-4 w-4" />
-              Level-wise
-            </Button>
-            <Button
-              variant={viewType === "class" ? "default" : "outline"}
-              onClick={() => setViewType("class")}
-            >
-              <BookOpen className="mr-2 h-4 w-4" />
-              Class-wise
-            </Button>
-            <Button
-              variant={viewType === "category" ? "default" : "outline"}
-              onClick={() => setViewType("category")}
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Category-wise
-            </Button>
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* View Type Toggle */}
+            <div className="flex items-center gap-2">
+              <Label className="font-medium text-sm whitespace-nowrap">
+                View:
+              </Label>
+              <div className="flex gap-1">
+                <Button
+                  variant={viewType === "level" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewType("level")}
+                >
+                  <GraduationCap className="mr-1 h-3 w-3" />
+                  Level
+                </Button>
+                <Button
+                  variant={viewType === "class" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewType("class")}
+                >
+                  <BookOpen className="mr-1 h-3 w-3" />
+                  Class
+                </Button>
+                <Button
+                  variant={viewType === "category" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewType("category")}
+                >
+                  <Users className="mr-1 h-3 w-3" />
+                  Category
+                </Button>
+              </div>
+            </div>
+
+            <div className="h-6 w-px bg-border hidden sm:block" />
+
+            {/* Block Filter */}
+            <div className="flex items-center gap-2">
+              <Label className="font-medium text-sm whitespace-nowrap">
+                Block:
+              </Label>
+              <Select
+                value={selectedBlock}
+                onValueChange={(value) => {
+                  setSelectedBlock(value);
+                  setSelectedSchoolIds(new Set());
+                }}
+              >
+                <SelectTrigger className="w-[180px] h-8">
+                  <SelectValue placeholder="Select Block" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Blocks</SelectItem>
+                  {availableBlocks.map((block) => (
+                    <SelectItem key={block} value={block}>
+                      {block}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="h-6 w-px bg-border hidden sm:block" />
+
+            {/* School Selection - Multi-select with Dropdown */}
+            <div className="flex items-center gap-2">
+              <Label className="font-medium text-sm whitespace-nowrap">
+                Schools:
+              </Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-[200px] justify-between"
+                  >
+                    <span className="truncate">
+                      {selectedSchoolIds.size === 0
+                        ? `All Schools (${filteredSchools.length})`
+                        : `${selectedSchoolIds.size} school${
+                            selectedSchoolIds.size > 1 ? "s" : ""
+                          } selected`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[280px] p-0" align="start">
+                  <div className="p-2 border-b flex justify-between items-center">
+                    <span className="text-sm font-medium">Select Schools</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={selectAllSchools}
+                      >
+                        All
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={deselectAllSchools}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="max-h-[200px] overflow-y-auto p-2 space-y-1">
+                    {filteredSchools.length === 0 ? (
+                      <p className="text-sm text-muted-foreground p-2">
+                        No schools found
+                      </p>
+                    ) : (
+                      filteredSchools.map((school) => (
+                        <div
+                          key={school._id}
+                          className="flex items-center space-x-2 p-1.5 rounded hover:bg-muted cursor-pointer"
+                          onClick={() => {
+                            // Simple toggle - add or remove from set
+                            setSelectedSchoolIds((prev) => {
+                              const newSet = new Set(prev);
+                              if (newSet.has(school._id!)) {
+                                newSet.delete(school._id!);
+                              } else {
+                                newSet.add(school._id!);
+                              }
+                              return newSet;
+                            });
+                          }}
+                        >
+                          <Checkbox
+                            id={`school-${school._id}`}
+                            checked={selectedSchoolIds.has(school._id!)}
+                            onCheckedChange={() => {
+                              setSelectedSchoolIds((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(school._id!)) {
+                                  newSet.delete(school._id!);
+                                } else {
+                                  newSet.add(school._id!);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor={`school-${school._id}`}
+                            className="text-sm cursor-pointer flex-1 truncate"
+                          >
+                            {school.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {selectedSchoolIds.size > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={deselectAllSchools}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* Student Count Badge */}
+            <Badge variant="secondary" className="ml-auto">
+              {filteredStudents.length} students
+            </Badge>
           </div>
         </CardContent>
       </Card>
@@ -505,19 +738,26 @@ export default function StudentDistributionReport({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Bar Chart - Class-wise with level segments */}
                   <div>
-                    <h3 className="text-sm font-medium mb-4">Bar Chart - Class Distribution</h3>
+                    <h3 className="text-sm font-medium mb-4">
+                      Bar Chart - Class Distribution
+                    </h3>
                     <ResponsiveContainer width="100%" height={300}>
                       {(() => {
                         const classData = classWiseLevelData[subject] || [];
                         const allLevels = new Set<number>();
                         data.forEach((d) => allLevels.add(d.level));
-                        const sortedLevels = Array.from(allLevels).sort((a, b) => a - b);
+                        const sortedLevels = Array.from(allLevels).sort(
+                          (a, b) => a - b
+                        );
 
                         // Transform data for stacked bar chart
                         const chartData = classData.map((classItem) => {
-                          const dataPoint: any = { className: classItem.className };
+                          const dataPoint: any = {
+                            className: classItem.className,
+                          };
                           sortedLevels.forEach((level) => {
-                            dataPoint[`L${level}`] = classItem.levelDistribution[level] || 0;
+                            dataPoint[`L${level}`] =
+                              classItem.levelDistribution[level] || 0;
                           });
                           return dataPoint;
                         });
@@ -1049,6 +1289,51 @@ export default function StudentDistributionReport({
           </CardContent>
         </Card>
       )}
+
+      {/* Summary Stats */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>
+            Summary
+            {selectedBlock !== "all" && ` - ${selectedBlock}`}
+            {selectedSchoolIds.size > 0 &&
+              ` (${effectiveSelectedSchoolIds.size} schools selected)`}
+          </CardTitle>
+          <CardDescription>Overview of filtered data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl md:text-3xl font-bold">
+                {effectiveSelectedSchoolIds.size}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Schools</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl md:text-3xl font-bold">
+                {filteredStudents.length}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Total Students
+              </div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl md:text-3xl font-bold">
+                {classWiseData.length}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Classes</div>
+            </div>
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl md:text-3xl font-bold">
+                {levelWiseData.length}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Subjects with Data
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

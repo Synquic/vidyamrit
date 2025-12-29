@@ -2,7 +2,10 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { AuthContext } from "../../contexts/AuthContext";
 import { DASHBOARD_ROUTE_PATHS } from "@/routes";
-import { getDashboardAnalytics, DashboardAnalytics } from "@/services/analytics";
+import {
+  getDashboardAnalytics,
+  DashboardAnalytics,
+} from "@/services/analytics";
 import {
   BarChart,
   Bar,
@@ -15,7 +18,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
 } from "recharts";
 import {
   Users,
@@ -29,7 +32,7 @@ import {
   UserCheck,
   UserX,
   Target,
-  Award
+  Award,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -92,7 +95,7 @@ function DashboardPage() {
     danger: "#ef4444",
     info: "#3b82f6",
     purple: "#8b5cf6",
-    pink: "#ec4899"
+    pink: "#ec4899",
   };
 
   // Progress flag color mapping
@@ -101,51 +104,84 @@ function DashboardPage() {
     improving: COLORS.info,
     average: COLORS.warning,
     struggling: COLORS.danger,
-    needs_attention: COLORS.purple
+    needs_attention: COLORS.purple,
   };
 
   // Format progress distribution data
-  const progressData = charts.progressDistribution.map(item => ({
+  const progressData = charts.progressDistribution.map((item) => ({
     name: item._id,
     value: item.count,
-    color: progressFlagColors[item._id] || COLORS.primary
+    color: progressFlagColors[item._id] || COLORS.primary,
   }));
 
   // Format monthly enrollment data
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const enrollmentData = charts.monthlyEnrollment.map(item => ({
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const enrollmentData = charts.monthlyEnrollment.map((item) => ({
     month: `${monthNames[item._id.month - 1]} ${item._id.year}`,
-    students: item.count
+    students: item.count,
   }));
 
-  // Format attendance data for pie chart
-  const attendanceChartData = [
-    { name: "Present", value: charts.attendanceData.present, color: COLORS.success },
-    { name: "Absent", value: charts.attendanceData.absent, color: COLORS.danger }
-  ];
-
   // Stats card component
-  const StatsCard = ({ title, value, subtitle, icon: Icon, trend, trendValue, color }: any) => (
+  interface StatsCardProps {
+    title: string;
+    value: number;
+    subtitle: string;
+    icon: React.ComponentType<{ className?: string }>;
+    trend?: "up" | "down";
+    trendValue?: string;
+    color: string;
+  }
+
+  const StatsCard = ({
+    title,
+    value,
+    subtitle,
+    icon: Icon,
+    trend,
+    trendValue,
+    color,
+  }: StatsCardProps) => (
     <div className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 border border-gray-100">
       <div className="flex items-start justify-between mb-4">
         <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
         {trend && (
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-            trend === "up" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-          }`}>
-            {trend === "up" ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+              trend === "up"
+                ? "bg-green-50 text-green-600"
+                : "bg-red-50 text-red-600"
+            }`}
+          >
+            {trend === "up" ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : (
+              <TrendingDown className="w-3 h-3" />
+            )}
             {trendValue}
           </div>
         )}
       </div>
       <div>
-        <h3 className="text-3xl font-bold text-gray-900 mb-1">{value.toLocaleString()}</h3>
+        <h3 className="text-3xl font-bold text-gray-900 mb-1">
+          {value.toLocaleString()}
+        </h3>
         <p className="text-sm font-medium text-gray-600">{title}</p>
-        {subtitle && (
-          <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-xs text-gray-500 mt-2">{subtitle}</p>}
       </div>
     </div>
   );
@@ -158,7 +194,8 @@ function DashboardPage() {
           {t("Admin Dashboard")}
         </h1>
         <p className="text-gray-600">
-          Welcome back, {user.name}! Here's what's happening with your organization.
+          Welcome back, {user.name}! Here's what's happening with your
+          organization.
         </p>
       </div>
 
@@ -174,10 +211,13 @@ function DashboardPage() {
         <StatsCard
           title="Total Students"
           value={overview.totalStudents}
-          subtitle={`${overview.activeStudents} active students`}
+          subtitle={`from all schools`}
           icon={Users}
           trend="up"
-          trendValue={`${((overview.activeStudents / overview.totalStudents) * 100).toFixed(1)}%`}
+          trendValue={`${(
+            (overview.activeStudents / overview.totalStudents) *
+            100
+          ).toFixed(1)}%`}
           color="from-blue-500 to-blue-600"
         />
         <StatsCard
@@ -222,7 +262,9 @@ function DashboardPage() {
         <StatsCard
           title="Total Assessments"
           value={overview.totalAssessments}
-          subtitle={`${overview.assessmentSuccessRate.toFixed(1)}% success rate`}
+          subtitle={`${overview.assessmentSuccessRate.toFixed(
+            1
+          )}% success rate`}
           icon={Award}
           trend="up"
           trendValue={`${overview.assessmentSuccessRate.toFixed(1)}%`}
@@ -234,7 +276,9 @@ function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Attendance Rate</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Assessment Coverage
+            </h2>
             <Activity className="w-6 h-6 text-orange-600" />
           </div>
           <div className="flex items-center gap-4">
@@ -256,29 +300,38 @@ function DashboardPage() {
                   strokeWidth="12"
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * 56}`}
-                  strokeDashoffset={`${2 * Math.PI * 56 * (1 - overview.attendanceRate / 100)}`}
+                  strokeDashoffset={`${
+                    2 *
+                    Math.PI *
+                    56 *
+                    (1 - (overview.assessmentCoverage || 0) / 100)
+                  }`}
                   strokeLinecap="round"
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-2xl font-bold text-gray-900">
-                  {overview.attendanceRate.toFixed(1)}%
+                  {(overview.assessmentCoverage || 0).toFixed(1)}%
                 </span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-2">Overall attendance across all cohorts</p>
+              <p className="text-sm text-gray-600 mb-2">
+                Students with baseline assessments
+              </p>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
                   <span className="text-gray-600">
-                    {charts.attendanceData.present} Present
+                    {overview.studentsWithAssessments || 0} Assessed
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-gray-300"></div>
                   <span className="text-gray-600">
-                    {charts.attendanceData.absent} Absent
+                    {overview.totalStudents -
+                      (overview.studentsWithAssessments || 0)}{" "}
+                    Pending
                   </span>
                 </div>
               </div>
@@ -288,7 +341,9 @@ function DashboardPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Assessment Success</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Assessment Success
+            </h2>
             <CheckCircle className="w-6 h-6 text-orange-600" />
           </div>
           <div className="flex items-center gap-4">
@@ -310,7 +365,12 @@ function DashboardPage() {
                   strokeWidth="12"
                   fill="none"
                   strokeDasharray={`${2 * Math.PI * 56}`}
-                  strokeDashoffset={`${2 * Math.PI * 56 * (1 - overview.assessmentSuccessRate / 100)}`}
+                  strokeDashoffset={`${
+                    2 *
+                    Math.PI *
+                    56 *
+                    (1 - overview.assessmentSuccessRate / 100)
+                  }`}
                   strokeLinecap="round"
                 />
               </svg>
@@ -321,7 +381,9 @@ function DashboardPage() {
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-600 mb-2">Students passing assessments</p>
+              <p className="text-sm text-gray-600 mb-2">
+                Students passing assessments
+              </p>
               <p className="text-xs text-gray-500">
                 Based on {overview.totalAssessments} total assessments
               </p>
@@ -334,7 +396,9 @@ function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
         {/* Monthly Enrollment Trend */}
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Monthly Student Enrollment</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">
+            Monthly Student Enrollment
+          </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={enrollmentData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -352,7 +416,7 @@ function DashboardPage() {
                   backgroundColor: "white",
                   border: "1px solid #e5e7eb",
                   borderRadius: "8px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                 }}
               />
               <Line
@@ -367,10 +431,12 @@ function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Student Progress Distribution */}
-        {progressData.length > 0 && (
+        {/* Student Progress Distribution - Show if data exists */}
+        {progressData.length > 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Student Progress Distribution</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              Student Progress Distribution
+            </h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -392,7 +458,54 @@ function DashboardPage() {
                     backgroundColor: "white",
                     border: "1px solid #e5e7eb",
                     borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          /* Fallback: Assessment Status Distribution */
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              Assessment Status
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={[
+                    {
+                      name: "Assessed",
+                      value: overview.studentsWithAssessments || 0,
+                      color: COLORS.success,
+                    },
+                    {
+                      name: "Pending",
+                      value: Math.max(
+                        0,
+                        overview.totalStudents -
+                          (overview.studentsWithAssessments || 0)
+                      ),
+                      color: COLORS.warning,
+                    },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  <Cell fill={COLORS.success} />
+                  <Cell fill={COLORS.warning} />
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
                 />
               </PieChart>
@@ -400,41 +513,12 @@ function DashboardPage() {
           </div>
         )}
 
-        {/* Attendance Distribution */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Attendance Distribution</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={attendanceChartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry) => `${entry.name}: ${entry.value}`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {attendanceChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Cohort Performance */}
-        {charts.cohortPerformance.length > 0 && (
+        {/* Cohort Performance - Show if data exists */}
+        {charts.cohortPerformance.length > 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Top Performing Cohorts</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              Top Performing Cohorts
+            </h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={charts.cohortPerformance.slice(0, 5)}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -452,12 +536,81 @@ function DashboardPage() {
                     backgroundColor: "white",
                     border: "1px solid #e5e7eb",
                     borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)"
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
                 />
-                <Bar dataKey="averageProgress" fill={COLORS.secondary} radius={[8, 8, 0, 0]} />
+                <Bar
+                  dataKey="averageProgress"
+                  fill={COLORS.secondary}
+                  radius={[8, 8, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          /* Fallback: Recent Activity Summary */
+          <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
+              Recent Activity Summary
+            </h2>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <UserCheck className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      Students Assessed (Last 7 Days)
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Recently completed baseline assessments
+                    </p>
+                  </div>
+                </div>
+                <span className="text-2xl font-bold text-green-600">
+                  {overview.recentlyAssessedStudents || 0}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Target className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      Average Student Level
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Across all assessed students
+                    </p>
+                  </div>
+                </div>
+                <span className="text-2xl font-bold text-blue-600">
+                  Level {overview.averageStudentLevel || 0}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Award className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      Total Assessments Completed
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      All-time baseline assessments
+                    </p>
+                  </div>
+                </div>
+                <span className="text-2xl font-bold text-purple-600">
+                  {overview.totalAssessments}
+                </span>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -465,12 +618,19 @@ function DashboardPage() {
       {/* School Type Distribution */}
       {charts.schoolTypeDistribution.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">School Type Distribution</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-6">
+            School Type Distribution
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {charts.schoolTypeDistribution.map((item, index) => (
-              <div key={index} className="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100">
+              <div
+                key={index}
+                className="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-600 capitalize">{item._id}</span>
+                  <span className="text-sm font-medium text-gray-600 capitalize">
+                    {item._id}
+                  </span>
                   <School className="w-5 h-5 text-orange-600" />
                 </div>
                 <p className="text-3xl font-bold text-gray-900">{item.count}</p>

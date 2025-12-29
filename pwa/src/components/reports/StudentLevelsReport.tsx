@@ -1,9 +1,24 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -12,14 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
   CollapsibleContent,
@@ -36,10 +43,15 @@ import {
   User,
   Calendar,
   BookOpen,
-  Table as TableIcon,
-  Grid,
-  Building2,
+  LayoutGrid,
+  List,
+  X,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getStudents, Student } from "@/services/students";
 import { getSchools, School as SchoolType } from "@/services/schools";
 import { programsService, IProgram } from "@/services/programs";
@@ -48,17 +60,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/user";
 import { useNavigate } from "react-router";
 import { DASHBOARD_ROUTE_PATHS } from "@/routes";
-import { Label } from "@/components/ui/label";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+
+type ViewMode = "expandable" | "matrix";
 
 interface StudentLevelsReportProps {
   onBack: () => void;
@@ -83,10 +86,9 @@ interface StudentLevelInfo {
   programId: string;
 }
 
-type ViewMode = "tabular" | "matrix";
-type SchoolViewMode = "individual" | "combined";
-
-export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps) {
+export default function StudentLevelsReport({
+  onBack,
+}: StudentLevelsReportProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
@@ -95,19 +97,19 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
-  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("matrix");
-  const [schoolViewMode, setSchoolViewMode] = useState<SchoolViewMode>("individual");
-  const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(new Set());
-  const [selectedBlock, setSelectedBlock] = useState<string>("all");
-  const [schoolSearchQuery, setSchoolSearchQuery] = useState("");
+  const [expandedSchools, setExpandedSchools] = useState<Set<string>>(
+    new Set()
+  );
+  const [expandedClasses, setExpandedClasses] = useState<Set<string>>(
+    new Set()
+  );
 
-  // Reset selected schools when block changes
-  useEffect(() => {
-    setSelectedSchoolIds(new Set());
-    setSchoolSearchQuery("");
-  }, [selectedBlock]);
+  // New state for enhanced filtering
+  const [viewMode, setViewMode] = useState<ViewMode>("expandable");
+  const [selectedBlock, setSelectedBlock] = useState<string>("all");
+  const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(
+    new Set()
+  );
 
   // Redirect if not super admin
   useEffect(() => {
@@ -126,12 +128,13 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
       setError(null);
 
       // Fetch all schools, students, programs, and assessments (Super Admin can access all)
-      const [schoolsData, studentsData, programsResponse, assessmentsData] = await Promise.all([
-        getSchools(),
-        getStudents(), // No schoolId = all students for Super Admin
-        programsService.getPrograms({ includeInactive: "false" }),
-        getAssessments(), // Fetch all assessments for fallback to old data structure
-      ]);
+      const [schoolsData, studentsData, programsResponse, assessmentsData] =
+        await Promise.all([
+          getSchools(),
+          getStudents(), // No schoolId = all students for Super Admin
+          programsService.getPrograms({ includeInactive: "false" }),
+          getAssessments(), // Fetch all assessments for fallback to old data structure
+        ]);
 
       setSchools(schoolsData);
       setStudents(studentsData);
@@ -145,121 +148,50 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
     }
   };
 
-  // Get student's latest level info per subject helper
-  const getStudentLevelInfo = (student: Student): StudentLevelInfo[] => {
-    const subjectLevels: { [subject: string]: StudentLevelInfo } = {};
-    
-    // Priority 1: Check for new data structure (with program, subject, etc.)
-    if (student.knowledgeLevel && student.knowledgeLevel.length > 0) {
-      let hasNewStructure = false;
-      
-      student.knowledgeLevel.forEach((kl: any) => {
-        if (!kl) return;
-        
-        // Check if this is the new structure (has program and subject)
-        const hasNewStructureFields = kl.program && kl.subject;
-        
-        if (hasNewStructureFields) {
-          hasNewStructure = true;
-          
-          const subject = kl.subject || kl.programName || 'Unknown';
-          const level = Number(kl.level);
-          const date = kl.date;
-          const programId = kl.program 
-            ? (typeof kl.program === 'string' ? kl.program : String(kl.program))
-            : '';
-          const programName = kl.programName || kl.subject || subject;
-          
-          // Validate date
-          const klDate = new Date(date);
-          if (isNaN(klDate.getTime())) {
-            return; // Skip invalid dates
-          }
-          
-          // Validate level
-          if (isNaN(level) || level <= 0) {
-            return; // Skip invalid levels
-          }
-          
-          // Keep the latest assessment for each subject
-          if (!subjectLevels[subject] || klDate > new Date(subjectLevels[subject].date)) {
-            subjectLevels[subject] = {
-              subject: subject,
-              programName: programName,
-              level: level,
-              date: date,
-              programId: programId,
-            };
-          }
-        }
-      });
-      
-      // If we found new structure data, return it
-      if (hasNewStructure) {
-        return Object.values(subjectLevels).sort((a, b) => 
-          a.subject.localeCompare(b.subject)
-        );
+  // Get unique blocks from schools
+  const availableBlocks = useMemo(() => {
+    const blocks = new Set<string>();
+    schools.forEach((school) => {
+      if (school.block) {
+        blocks.add(school.block);
       }
-    }
-    
-    // Priority 2: Fallback to old structure - use Assessment model
-    // Check if student has old knowledgeLevel structure (just level and date)
-    const hasOldStructure = student.knowledgeLevel && student.knowledgeLevel.some(
-      (kl: any) => kl && kl.level && kl.date && !kl.program && !kl.subject
-    );
-    
-    if (hasOldStructure) {
-      // Fetch assessments for this student from Assessment model
-      const studentAssessments = assessments.filter(
-        (assessment) => {
-          const assessmentStudentId = typeof assessment.student === 'string' 
-            ? assessment.student 
-            : (assessment.student as any)?._id || assessment.student;
-          return assessmentStudentId === student._id;
-        }
-      );
-      
-      // Group assessments by subject and get latest level per subject
-      studentAssessments.forEach((assessment) => {
-        const subject = assessment.subject || 'Unknown';
-        const level = assessment.level;
-        const date = assessment.date;
-        
-        // Capitalize first letter of subject
-        const capitalizedSubject = subject.charAt(0).toUpperCase() + subject.slice(1);
-        
-        // Validate date
-        const assessmentDate = new Date(date);
-        if (isNaN(assessmentDate.getTime())) {
-          return; // Skip invalid dates
-        }
-        
-        // Validate level
-        if (isNaN(level) || level <= 0) {
-          return; // Skip invalid levels
-        }
-        
-        // Keep the latest assessment for each subject
-        if (!subjectLevels[capitalizedSubject] || assessmentDate > new Date(subjectLevels[capitalizedSubject].date)) {
-          // Try to find matching program for this subject
-          const matchingProgram = programs.find(
-            (p) => p.subject.toLowerCase() === subject.toLowerCase()
-          );
-          
-          subjectLevels[capitalizedSubject] = {
-            subject: capitalizedSubject,
-            programName: matchingProgram?.name || capitalizedSubject,
-            level: level,
-            date: date,
-            programId: matchingProgram?._id || '',
-          };
-        }
-      });
-    }
+    });
+    return Array.from(blocks).sort();
+  }, [schools]);
 
-    return Object.values(subjectLevels).sort((a, b) => 
-      a.subject.localeCompare(b.subject)
+  // Filter schools by selected block
+  const filteredSchools = useMemo(() => {
+    if (selectedBlock === "all") {
+      return schools;
+    }
+    return schools.filter((school) => school.block === selectedBlock);
+  }, [schools, selectedBlock]);
+
+  // Get effective selected schools (if none selected, use all filtered schools)
+  const effectiveSelectedSchoolIds = useMemo(() => {
+    if (selectedSchoolIds.size === 0) {
+      // No schools specifically selected = all filtered schools selected
+      return new Set(
+        filteredSchools.map((s) => s._id).filter(Boolean) as string[]
+      );
+    }
+    // Filter selected schools to only those in the current block filter
+    const filteredIds = new Set(filteredSchools.map((s) => s._id));
+    return new Set(
+      Array.from(selectedSchoolIds).filter((id) => filteredIds.has(id))
     );
+  }, [selectedSchoolIds, filteredSchools]);
+
+  // Select all schools in current block filter
+  const selectAllSchools = () => {
+    setSelectedSchoolIds(
+      new Set(filteredSchools.map((s) => s._id).filter(Boolean) as string[])
+    );
+  };
+
+  // Deselect all schools
+  const deselectAllSchools = () => {
+    setSelectedSchoolIds(new Set());
   };
 
   // Group students by school and class, calculate level distribution
@@ -279,7 +211,7 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
 
       schoolStudents.forEach((student) => {
         const className = student.class || "Unassigned";
-        
+
         if (!classes[className]) {
           classes[className] = {
             students: [],
@@ -299,18 +231,23 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
           const hasNewStructure = student.knowledgeLevel.some(
             (kl: any) => kl && kl.program && kl.subject
           );
-          
+
           if (hasNewStructure) {
             // Use new structure
-            const subjectLevels: { [subject: string]: { level: number; date: Date } } = {};
-            
+            const subjectLevels: {
+              [subject: string]: { level: number; date: Date };
+            } = {};
+
             student.knowledgeLevel.forEach((kl: any) => {
               if (kl && kl.subject && kl.level && kl.date && kl.program) {
                 const subject = kl.subject;
                 const klDate = new Date(kl.date);
-                
+
                 // Keep the latest assessment for each subject
-                if (!subjectLevels[subject] || klDate > subjectLevels[subject].date) {
+                if (
+                  !subjectLevels[subject] ||
+                  klDate > subjectLevels[subject].date
+                ) {
                   subjectLevels[subject] = {
                     level: kl.level,
                     date: klDate,
@@ -329,25 +266,30 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
             });
           } else {
             // Use old structure - get from Assessment model
-            const studentAssessments = assessments.filter(
-              (assessment) => {
-                const assessmentStudentId = typeof assessment.student === 'string' 
-                  ? assessment.student 
+            const studentAssessments = assessments.filter((assessment) => {
+              const assessmentStudentId =
+                typeof assessment.student === "string"
+                  ? assessment.student
                   : (assessment.student as any)?._id || assessment.student;
-                return assessmentStudentId === student._id;
-              }
-            );
-            
-            const subjectLevels: { [subject: string]: { level: number; date: Date } } = {};
-            
+              return assessmentStudentId === student._id;
+            });
+
+            const subjectLevels: {
+              [subject: string]: { level: number; date: Date };
+            } = {};
+
             studentAssessments.forEach((assessment) => {
-              const subject = assessment.subject 
-                ? (assessment.subject.charAt(0).toUpperCase() + assessment.subject.slice(1))
-                : 'Unknown';
+              const subject = assessment.subject
+                ? assessment.subject.charAt(0).toUpperCase() +
+                  assessment.subject.slice(1)
+                : "Unknown";
               const assessmentDate = new Date(assessment.date);
-              
+
               // Keep the latest assessment for each subject
-              if (!subjectLevels[subject] || assessmentDate > subjectLevels[subject].date) {
+              if (
+                !subjectLevels[subject] ||
+                assessmentDate > subjectLevels[subject].date
+              ) {
                 subjectLevels[subject] = {
                   level: assessment.level,
                   date: assessmentDate,
@@ -378,131 +320,75 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
     return grouped;
   }, [students, schools, programs, assessments]);
 
-  // Get all unique subjects across all data
-  const allSubjects = useMemo(() => {
-    const subjectsSet = new Set<string>();
-    
-    Object.values(groupedData).forEach((schoolData) => {
-      Object.values(schoolData.classes).forEach((classData) => {
-        Object.keys(classData.levelDistribution).forEach((subject) => {
-          subjectsSet.add(subject);
-        });
-      });
-    });
-    
-    return Array.from(subjectsSet).sort();
-  }, [groupedData]);
-
-  // Get max level across all subjects
-  const maxLevel = useMemo(() => {
-    let max = 0;
-    
-    Object.values(groupedData).forEach((schoolData) => {
-      Object.values(schoolData.classes).forEach((classData) => {
-        Object.values(classData.levelDistribution).forEach((levelDist) => {
-          Object.keys(levelDist).forEach((level) => {
-            const levelNum = parseInt(level);
-            if (levelNum > max) {
-              max = levelNum;
-            }
-          });
-        });
-      });
-    });
-    
-    return max || 6; // Default to 6 if no data
-  }, [groupedData]);
-
-  // Get unique blocks from schools
-  const uniqueBlocks = useMemo(() => {
-    const blocks = new Set<string>();
-    schools.forEach((school) => {
-      if (school.block) {
-        blocks.add(school.block);
-      }
-    });
-    return Array.from(blocks).sort();
-  }, [schools]);
-
-  // Filter schools by block
-  const filteredSchoolsByBlock = useMemo(() => {
-    if (selectedBlock === "all") {
-      return schools;
-    }
-    return schools.filter((school) => school.block === selectedBlock);
-  }, [schools, selectedBlock]);
-
-  // Filter schools by search query
-  const filteredSchoolsForSelection = useMemo(() => {
-    if (!schoolSearchQuery.trim()) {
-      return filteredSchoolsByBlock;
-    }
-    const query = schoolSearchQuery.toLowerCase().trim();
-    return filteredSchoolsByBlock.filter((school) =>
-      school.name.toLowerCase().includes(query)
-    );
-  }, [filteredSchoolsByBlock, schoolSearchQuery]);
-
-  // Filter data based on school view mode and selected schools
-  const filteredGroupedData = useMemo(() => {
-    // If using multi-select, filter by selectedSchoolIds
-    if (selectedSchoolIds.size > 0) {
-      const filtered: typeof groupedData = {};
-      selectedSchoolIds.forEach((schoolId) => {
-        if (groupedData[schoolId]) {
-          filtered[schoolId] = groupedData[schoolId];
-        }
-      });
-      return filtered;
-    }
-    
-    // If no schools selected, show all schools
-    return groupedData;
-  }, [groupedData, selectedSchoolIds]);
-
-  // Create combined data for matrix view
-  const combinedData = useMemo(() => {
-    const combined: {
-      [className: string]: {
-        [subject: string]: { [level: number]: number };
-      } & {
-        totalStudents: number;
-        students: Student[];
+  // Aggregated data for matrix view - combines data from all selected schools
+  const aggregatedData = useMemo(() => {
+    const aggregated: {
+      classes: {
+        [className: string]: {
+          students: Student[];
+          levelDistribution: { [subject: string]: { [level: number]: number } };
+          totalStudents: number;
+        };
       };
-    } = {};
+      totalStudents: number;
+      totalSchools: number;
+      schoolNames: string[];
+    } = {
+      classes: {},
+      totalStudents: 0,
+      totalSchools: 0,
+      schoolNames: [],
+    };
 
-    Object.values(groupedData).forEach((schoolData) => {
+    // Get selected school IDs
+    const selectedIds = effectiveSelectedSchoolIds;
+
+    // Iterate through selected schools and aggregate data
+    selectedIds.forEach((schoolId) => {
+      const schoolData = groupedData[schoolId];
+      if (!schoolData) return;
+
+      aggregated.totalSchools++;
+      aggregated.schoolNames.push(schoolData.school.name);
+
       Object.entries(schoolData.classes).forEach(([className, classData]) => {
-        if (!combined[className]) {
-          (combined as any)[className] = {
-            totalStudents: 0,
+        if (!aggregated.classes[className]) {
+          aggregated.classes[className] = {
             students: [],
+            levelDistribution: {},
+            totalStudents: 0,
           };
         }
-        
-        combined[className].totalStudents += classData.totalStudents;
-        
-        // Add students from this class
-        if (classData.students) {
-          combined[className].students.push(...classData.students);
-        }
-        
-        Object.entries(classData.levelDistribution).forEach(([subject, levelDist]) => {
-          if (!combined[className][subject]) {
-            combined[className][subject] = {};
+
+        // Add students
+        aggregated.classes[className].students.push(...classData.students);
+        aggregated.classes[className].totalStudents += classData.totalStudents;
+        aggregated.totalStudents += classData.totalStudents;
+
+        // Aggregate level distribution per subject
+        Object.entries(classData.levelDistribution).forEach(
+          ([subject, levels]) => {
+            if (!aggregated.classes[className].levelDistribution[subject]) {
+              aggregated.classes[className].levelDistribution[subject] = {};
+            }
+            Object.entries(levels as { [level: number]: number }).forEach(
+              ([level, count]) => {
+                const levelNum = parseInt(level);
+                aggregated.classes[className].levelDistribution[subject][
+                  levelNum
+                ] =
+                  (aggregated.classes[className].levelDistribution[subject][
+                    levelNum
+                  ] || 0) + (count as number);
+              }
+            );
           }
-          
-          Object.entries(levelDist).forEach(([level, count]) => {
-            const levelNum = parseInt(level);
-            combined[className][subject][levelNum] = 
-              (combined[className][subject][levelNum] || 0) + count;
-          });
-        });
+        );
       });
     });
 
-    return combined;
-  }, [groupedData]);
+    return aggregated;
+  }, [groupedData, effectiveSelectedSchoolIds]);
 
   if (loading) {
     return (
@@ -532,520 +418,12 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
     );
   }
 
-  // Render Level Progression Matrix View
-  const renderMatrixView = (data: typeof groupedData | { combined: typeof groupedData }, isCombined: boolean) => {
-    const dataToRender = isCombined ? combinedData : 
-      (() => {
-        const flat: typeof combinedData = {};
-        Object.values(data).forEach((schoolData) => {
-          Object.entries(schoolData.classes).forEach(([className, classData]) => {
-            const typedClassData = classData as GroupedData['classes'][string];
-            flat[className] = {
-              totalStudents: typedClassData.totalStudents,
-              ...typedClassData.levelDistribution,
-            } as typeof combinedData[string];
-          });
-        });
-        return flat;
-      })();
-
-    if (Object.keys(dataToRender).length === 0 || allSubjects.length === 0) {
-      return (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No data available for matrix view</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        {allSubjects.map((subject) => (
-          <Card key={subject} className="overflow-hidden">
-            <CardHeader className="bg-primary/5">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                {subject} - Level Progression Matrix
-              </CardTitle>
-              <CardDescription>
-                {isCombined ? "All Schools Combined" : "School-wise View"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky left-0 z-10 bg-background min-w-[150px]">
-                        Class
-                      </TableHead>
-                      {Array.from({ length: maxLevel }, (_, i) => i + 1).map((level) => (
-                        <TableHead key={level} className="text-center min-w-[80px]">
-                          L{level}
-                        </TableHead>
-                      ))}
-                      <TableHead className="text-center min-w-[80px]">Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(dataToRender)
-                      .sort(([a], [b]) => {
-                        // Sort classes naturally (Class 1, Class 2, etc.)
-                        const aNum = parseInt(a.match(/\d+/)?.[0] || "999");
-                        const bNum = parseInt(b.match(/\d+/)?.[0] || "999");
-                        if (aNum !== bNum) return aNum - bNum;
-                        return a.localeCompare(b);
-                      })
-                      .map(([className, classData]) => {
-                        const subjectData = (classData as any)[subject] || {};
-                        const totalForSubject = Object.values(subjectData as { [key: number]: number }).reduce(
-                          (sum: number, count: any) => sum + count,
-                          0
-                        );
-
-                        return (
-                          <TableRow key={className}>
-                            <TableCell className="font-medium sticky left-0 z-10 bg-background">
-                              {className}
-                            </TableCell>
-                            {Array.from({ length: maxLevel }, (_, i) => i + 1).map((level) => {
-                              const count = subjectData[level] || 0;
-                              return (
-                                <TableCell key={level} className="text-center">
-                                  {count > 0 ? (
-                                    <span className="font-semibold">{count}</span>
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </TableCell>
-                              );
-                            })}
-                            <TableCell className="text-center font-semibold">
-                              {totalForSubject > 0 ? totalForSubject : "-"}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    {/* Summary Row - Sum of all students for each level */}
-                    {(() => {
-                      // Calculate totals for each level across all classes
-                      const levelTotals: { [level: number]: number } = {};
-                      let grandTotal = 0;
-
-                      Object.values(dataToRender).forEach((classData) => {
-                        const subjectData = (classData as any)[subject] || {};
-                        Array.from({ length: maxLevel }, (_, i) => i + 1).forEach((level) => {
-                          const count = subjectData[level] || 0;
-                          levelTotals[level] = (levelTotals[level] || 0) + count;
-                          grandTotal += count;
-                        });
-                      });
-
-                      return (
-                        <TableRow className="bg-muted/50 font-bold border-t-2 border-primary/20">
-                          <TableCell className="font-bold sticky left-0 z-10 bg-muted/50">
-                            Total
-                          </TableCell>
-                          {Array.from({ length: maxLevel }, (_, i) => i + 1).map((level) => {
-                            const total = levelTotals[level] || 0;
-                            return (
-                              <TableCell key={level} className="text-center font-bold">
-                                {total > 0 ? total : "-"}
-                              </TableCell>
-                            );
-                          })}
-                          <TableCell className="text-center font-bold">
-                            {grandTotal > 0 ? grandTotal : "-"}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })()}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
-  // Render Tabular View
-  const renderTabularView = (data: typeof groupedData | { combined: GroupedData }, isCombined: boolean) => {
-    if (Object.keys(data).length === 0) {
-      return (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No student data available</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    // For combined view, create aggregated class data
-    const dataToRender: typeof groupedData | { combined: GroupedData } = isCombined ? {
-      combined: {
-        school: { name: "All Schools Combined", _id: "combined" } as SchoolType,
-        classes: combinedData as any,
-      }
-    } : data;
-
-    return (
-      <div className="space-y-4">
-        {Object.values(dataToRender).map((schoolData) => {
-          const schoolKey = schoolData.school?._id || "combined";
-          const isSchoolExpanded = expandedSchools.has(schoolKey);
-
-          return (
-            <Card key={schoolKey} className="overflow-hidden">
-              <Collapsible
-                open={isSchoolExpanded}
-                onOpenChange={(open) => {
-                  const newSet = new Set(expandedSchools);
-                  if (open) {
-                    newSet.add(schoolKey);
-                  } else {
-                    newSet.delete(schoolKey);
-                  }
-                  setExpandedSchools(newSet);
-                }}
-              >
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        {isCombined ? (
-                          <Building2 className="w-5 h-5 text-primary" />
-                        ) : (
-                          <School className="w-5 h-5 text-primary" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                          {isSchoolExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                          {isCombined ? "All Schools Combined" : schoolData.school?.name}
-                        </CardTitle>
-                        {!isCombined && (
-                          <CardDescription className="mt-1">
-                            {schoolData.school?.type} • {schoolData.school?.city || "N/A"}
-                          </CardDescription>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="hidden sm:flex">
-                          {Object.keys(schoolData.classes).length} Classes
-                        </Badge>
-                        <Badge variant="secondary" className="hidden sm:flex">
-                          {Object.values(schoolData.classes).reduce(
-                            (sum, c) => sum + c.totalStudents,
-                            0
-                          )} Students
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <CardContent className="p-4 md:p-6">
-                    <div className="space-y-4">
-                      {Object.entries(schoolData.classes).map(([className, classData]) => {
-                        const classKey = `${schoolKey}-${className}`;
-                        const isClassExpanded = expandedClasses.has(classKey);
-
-                        return (
-                          <Card key={className} className="border-l-4 border-l-primary">
-                            <Collapsible
-                              open={isClassExpanded}
-                              onOpenChange={(open) => {
-                                const newSet = new Set(expandedClasses);
-                                if (classKey) {
-                                  if (open) {
-                                    newSet.add(classKey);
-                                  } else {
-                                    newSet.delete(classKey);
-                                  }
-                                }
-                                setExpandedClasses(newSet);
-                              }}
-                            >
-                              <CollapsibleTrigger asChild>
-                                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-                                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                      {isClassExpanded ? (
-                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                      ) : (
-                                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                      )}
-                                      <Users className="h-4 w-4 text-muted-foreground" />
-                                      <CardTitle className="text-base md:text-lg">
-                                        Class {className}
-                                      </CardTitle>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="secondary">
-                                        {classData.totalStudents} Students
-                                      </Badge>
-                                      {(() => {
-                                        const subjectCount = isCombined
-                                          ? Object.keys(classData as any).filter(k => k !== 'totalStudents').length
-                                          : Object.keys((classData as any).levelDistribution || {}).length;
-                                        return subjectCount > 0 && (
-                                          <Badge variant="outline">
-                                            {subjectCount} Subjects
-                                          </Badge>
-                                        );
-                                      })()}
-                                    </div>
-                                  </div>
-                                </CardHeader>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent>
-                                <CardContent className="space-y-4">
-                                  {/* Level Distribution Summary - Per Subject */}
-                                  {(() => {
-                                    // Handle both combined and individual structures
-                                    const levelDist = isCombined 
-                                      ? classData as any // In combined, subjects are direct keys
-                                      : (classData as any).levelDistribution || {};
-                                    const subjects = isCombined
-                                      ? Object.keys(classData as any).filter(k => k !== 'totalStudents' && k !== 'students')
-                                      : Object.keys(levelDist);
-                                    
-                                    if (subjects.length === 0) {
-                                      return <div className="text-sm text-muted-foreground">No level distribution data available</div>;
-                                    }
-                                    
-                                    return (
-                                      <div className="space-y-4">
-                                        {subjects
-                                          .sort((a, b) => a.localeCompare(b))
-                                          .map((subject) => {
-                                            const levelCounts = isCombined
-                                              ? (classData as any)[subject]
-                                              : levelDist[subject];
-                                            
-                                            if (!levelCounts || Object.keys(levelCounts).length === 0) {
-                                              return null;
-                                            }
-                                            
-                                            return (
-                                              <div key={subject} className="space-y-2">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                  <BookOpen className="h-4 w-4 text-primary" />
-                                                  <div className="text-sm font-semibold capitalize">
-                                                    {subject} - Level Distribution:
-                                                  </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
-                                                  {Object.entries(levelCounts)
-                                                    .sort(([a], [b]) => Number(a) - Number(b))
-                                                    .map(([level, count]) => {
-                                                      const countNum = count as number;
-                                                      const classDataTyped = classData as GroupedData['classes'][string];
-                                                      return (
-                                                        <div
-                                                          key={`${subject}-${level}`}
-                                                          className="flex flex-col items-center p-2 md:p-3 bg-muted/50 rounded-lg"
-                                                        >
-                                                          <div className="text-xs text-muted-foreground mb-1 md:mb-2">
-                                                            Level {level}
-                                                          </div>
-                                                          <span className="text-sm md:text-base font-semibold">
-                                                            {countNum}
-                                                          </span>
-                                                          <span className="text-xs text-muted-foreground">
-                                                            {((countNum / classDataTyped.totalStudents) * 100).toFixed(0)}%
-                                                          </span>
-                                                        </div>
-                                                      );
-                                                    })}
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                      </div>
-                                    );
-                                  })()}
-
-                                  {/* Students Table - Show in both individual and combined views */}
-                                  {(() => {
-                                    // Get students for this class
-                                    let classStudents: Student[] = [];
-                                    
-                                    if (!isCombined && classData.students) {
-                                      classStudents = classData.students;
-                                    } else if (isCombined) {
-                                      // For combined view, get students from combinedData
-                                      if (combinedData[className] && combinedData[className].students) {
-                                        classStudents = combinedData[className].students;
-                                      }
-                                    }
-                                    
-                                    if (classStudents.length === 0) {
-                                      return (
-                                        <div className="mt-4">
-                                          <div className="text-sm font-medium text-muted-foreground mb-3">
-                                            Students ({classData.totalStudents}):
-                                          </div>
-                                          <div className="text-center py-8 text-muted-foreground">
-                                            No students found in this class
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    
-                                    return (
-                                      <div className="mt-4">
-                                        <div className="text-sm font-medium text-muted-foreground mb-3">
-                                          Students ({classStudents.length}):
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                          <Table>
-                                            <TableHeader>
-                                              <TableRow>
-                                                <TableHead className="w-[50px]">#</TableHead>
-                                                <TableHead>Name</TableHead>
-                                                <TableHead className="hidden sm:table-cell">Roll No</TableHead>
-                                                <TableHead className="hidden md:table-cell">Age</TableHead>
-                                                {!isCombined && <TableHead className="hidden lg:table-cell">School</TableHead>}
-                                                <TableHead>Class</TableHead>
-                                                <TableHead>Levels (by Subject)</TableHead>
-                                                <TableHead className="hidden md:table-cell">Last Assessment</TableHead>
-                                                <TableHead className="hidden lg:table-cell">Total Assessments</TableHead>
-                                              </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                              {classStudents
-                                                .sort((a, b) => {
-                                                  // Sort by name
-                                                  return (a.name || "").localeCompare(b.name || "");
-                                                })
-                                                .map((student, index) => {
-                                                const levelInfos = getStudentLevelInfo(student);
-                                                const latestAssessment = levelInfos.length > 0
-                                                  ? levelInfos.sort((a, b) => 
-                                                      new Date(b.date).getTime() - new Date(a.date).getTime()
-                                                    )[0]
-                                                  : null;
-                                                
-                                                return (
-                                                  <TableRow key={student._id} className="hover:bg-muted/50">
-                                                    <TableCell className="font-medium text-muted-foreground">
-                                                      {index + 1}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                      <div className="flex items-center gap-2">
-                                                        <User className="h-4 w-4 text-muted-foreground" />
-                                                        <div>
-                                                          <div className="font-medium">{student.name}</div>
-                                                          <div className="text-xs text-muted-foreground sm:hidden">
-                                                            Roll: {student.roll_no || "N/A"}
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </TableCell>
-                                                    <TableCell className="hidden sm:table-cell">
-                                                      {student.roll_no || "N/A"}
-                                                    </TableCell>
-                                                    <TableCell className="hidden md:table-cell">
-                                                      {student.age || "N/A"}
-                                                    </TableCell>
-                                                    {!isCombined && (
-                                                      <TableCell className="hidden lg:table-cell">
-                                                        {schoolData.school?.name || "N/A"}
-                                                      </TableCell>
-                                                    )}
-                                                    <TableCell>
-                                                      <Badge variant="outline">{student.class || "N/A"}</Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                      {levelInfos.length > 0 ? (
-                                                        <div className="flex flex-wrap gap-2">
-                                                          {levelInfos.map((info) => (
-                                                            <div
-                                                              key={info.subject}
-                                                              className="text-sm"
-                                                            >
-                                                              <span className="font-medium">{info.subject}:</span>{" "}
-                                                              <span className="font-semibold">L{info.level}</span>
-                                                            </div>
-                                                          ))}
-                                                        </div>
-                                                      ) : (
-                                                        <span className="text-muted-foreground text-sm">Not Assessed</span>
-                                                      )}
-                                                    </TableCell>
-                                                    <TableCell className="hidden md:table-cell">
-                                                      {latestAssessment ? (
-                                                        <div className="flex flex-col gap-1">
-                                                          <div className="flex items-center gap-1 text-sm">
-                                                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                                                            {new Date(latestAssessment.date).toLocaleDateString("en-US", {
-                                                              month: "short",
-                                                              day: "numeric",
-                                                              year: "numeric",
-                                                            })}
-                                                          </div>
-                                                          <Badge variant="secondary" className="text-xs w-fit capitalize">
-                                                            {latestAssessment.subject}
-                                                          </Badge>
-                                                        </div>
-                                                      ) : (
-                                                        <span className="text-muted-foreground text-sm">-</span>
-                                                      )}
-                                                    </TableCell>
-                                                    <TableCell className="hidden lg:table-cell">
-                                                      {student.knowledgeLevel && student.knowledgeLevel.length > 0 ? (
-                                                        <Badge variant="outline">
-                                                          {student.knowledgeLevel.length}
-                                                        </Badge>
-                                                      ) : (
-                                                        <span className="text-muted-foreground text-sm">0</span>
-                                                      )}
-                                                    </TableCell>
-                                                  </TableRow>
-                                                );
-                                              })}
-                                            </TableBody>
-                                          </Table>
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
-                                </CardContent>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
-          );
-        })}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={onBack} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Reports
           </Button>
@@ -1059,223 +437,1012 @@ export default function StudentLevelsReport({ onBack }: StudentLevelsReportProps
           </div>
         </div>
 
-        {/* Controls */}
+        {/* Filter Controls - Compact Horizontal Layout */}
         <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                {/* View Mode Toggle */}
-                <div className="flex items-center gap-2">
-                  <Label className="whitespace-nowrap">View:</Label>
-                  <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-                    <TabsList>
-                      <TabsTrigger value="tabular">
-                        <TableIcon className="h-4 w-4 mr-2" />
-                        Tabular
-                      </TabsTrigger>
-                      <TabsTrigger value="matrix">
-                        <Grid className="h-4 w-4 mr-2" />
-                        Matrix
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-
-                {/* School View Mode Toggle */}
-                <div className="flex items-center gap-2">
-                  <Label className="whitespace-nowrap">School View:</Label>
-                  <Tabs value={schoolViewMode} onValueChange={(v) => setSchoolViewMode(v as SchoolViewMode)}>
-                    <TabsList>
-                      <TabsTrigger value="individual">
-                        <School className="h-4 w-4 mr-2" />
-                        Individual
-                      </TabsTrigger>
-                      <TabsTrigger value="combined">
-                        <Building2 className="h-4 w-4 mr-2" />
-                        Combined
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-center gap-4">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2">
+                <Label className="font-medium text-sm whitespace-nowrap">
+                  View:
+                </Label>
+                <div className="flex gap-1">
+                  <Button
+                    variant={viewMode === "expandable" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("expandable")}
+                  >
+                    <List className="mr-1 h-3 w-3" />
+                    Expandable
+                  </Button>
+                  <Button
+                    variant={viewMode === "matrix" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("matrix")}
+                  >
+                    <LayoutGrid className="mr-1 h-3 w-3" />
+                    Matrix
+                  </Button>
                 </div>
               </div>
 
-              {/* School Multi-Select and Block Filter (only in individual mode) */}
-              {schoolViewMode === "individual" && (
-                <div className="flex flex-col sm:flex-row gap-3 w-full">
-                  {/* Block Filter */}
-                  {uniqueBlocks.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="block-select" className="whitespace-nowrap">Block:</Label>
-                      <Select value={selectedBlock} onValueChange={setSelectedBlock}>
-                        <SelectTrigger id="block-select" className="w-full sm:w-[150px]">
-                          <SelectValue placeholder="All Blocks" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Blocks</SelectItem>
-                          {uniqueBlocks.map((block) => (
-                            <SelectItem key={block} value={block}>
-                              {block}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  
-                  {/* School Multi-Select */}
-                  <div className="flex items-center gap-2 flex-1">
-                    <Label className="whitespace-nowrap">Schools:</Label>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+              <div className="h-6 w-px bg-border hidden sm:block" />
+
+              {/* Block Filter */}
+              <div className="flex items-center gap-2">
+                <Label className="font-medium text-sm whitespace-nowrap">
+                  Block:
+                </Label>
+                <Select
+                  value={selectedBlock}
+                  onValueChange={(value) => {
+                    setSelectedBlock(value);
+                    setSelectedSchoolIds(new Set());
+                  }}
+                >
+                  <SelectTrigger className="w-[180px] h-8">
+                    <SelectValue placeholder="Select Block" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Blocks</SelectItem>
+                    {availableBlocks.map((block) => (
+                      <SelectItem key={block} value={block}>
+                        {block}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="h-6 w-px bg-border hidden sm:block" />
+
+              {/* School Selection - Multi-select with Dropdown */}
+              <div className="flex items-center gap-2">
+                <Label className="font-medium text-sm whitespace-nowrap">
+                  Schools:
+                </Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-[200px] justify-between"
+                    >
+                      <span className="truncate">
+                        {selectedSchoolIds.size === 0
+                          ? `All Schools (${filteredSchools.length})`
+                          : `${selectedSchoolIds.size} school${
+                              selectedSchoolIds.size > 1 ? "s" : ""
+                            } selected`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[280px] p-0" align="start">
+                    <div className="p-2 border-b flex justify-between items-center">
+                      <span className="text-sm font-medium">
+                        Select Schools
+                      </span>
+                      <div className="flex gap-1">
                         <Button
-                          variant="outline"
-                          className="w-full sm:w-[250px] justify-between"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={selectAllSchools}
                         >
-                          {selectedSchoolIds.size === 0
-                            ? "Select schools..."
-                            : selectedSchoolIds.size === 1
-                            ? schools.find((s) => s._id && selectedSchoolIds.has(s._id))?.name || "1 school selected"
-                            : `${selectedSchoolIds.size} schools selected`}
-                          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          All
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-[300px] p-0" align="start">
-                        <div className="p-3 border-b">
-                          <div className="relative">
-                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              placeholder="Search schools..."
-                              value={schoolSearchQuery}
-                              onChange={(e) => setSchoolSearchQuery(e.target.value)}
-                              className="pl-8"
-                            />
-                          </div>
-                        </div>
-                        <ScrollArea className="h-[300px]">
-                          <div className="p-1">
-                            <DropdownMenuCheckboxItem
-                              checked={
-                                filteredSchoolsForSelection.length > 0 &&
-                                filteredSchoolsForSelection.every(
-                                  (s) => s._id && selectedSchoolIds.has(s._id)
-                                )
-                              }
-                              onCheckedChange={(checked) => {
-                                const newSet = new Set(selectedSchoolIds);
-                                if (checked) {
-                                  filteredSchoolsForSelection.forEach((school) => {
-                                    if (school._id) newSet.add(school._id);
-                                  });
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={deselectAllSchools}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto p-2 space-y-1">
+                      {filteredSchools.length === 0 ? (
+                        <p className="text-sm text-muted-foreground p-2">
+                          No schools found
+                        </p>
+                      ) : (
+                        filteredSchools.map((school) => (
+                          <div
+                            key={school._id}
+                            className="flex items-center space-x-2 p-1.5 rounded hover:bg-muted cursor-pointer"
+                            onClick={() => {
+                              setSelectedSchoolIds((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(school._id!)) {
+                                  newSet.delete(school._id!);
                                 } else {
-                                  filteredSchoolsForSelection.forEach((school) => {
-                                    if (school._id) newSet.delete(school._id);
-                                  });
+                                  newSet.add(school._id!);
                                 }
-                                setSelectedSchoolIds(newSet);
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <Checkbox
+                              id={`school-filter-${school._id}`}
+                              checked={selectedSchoolIds.has(school._id!)}
+                              onCheckedChange={() => {
+                                setSelectedSchoolIds((prev) => {
+                                  const newSet = new Set(prev);
+                                  if (newSet.has(school._id!)) {
+                                    newSet.delete(school._id!);
+                                  } else {
+                                    newSet.add(school._id!);
+                                  }
+                                  return newSet;
+                                });
                               }}
-                              onSelect={(e) => e.preventDefault()}
+                            />
+                            <Label
+                              htmlFor={`school-filter-${school._id}`}
+                              className="text-sm cursor-pointer flex-1 truncate"
                             >
-                              Select All ({filteredSchoolsForSelection.length})
-                            </DropdownMenuCheckboxItem>
-                            <DropdownMenuSeparator />
-                            {filteredSchoolsForSelection.map((school) => (
-                              <DropdownMenuCheckboxItem
-                                key={school._id}
-                                checked={school._id ? selectedSchoolIds.has(school._id) : false}
-                                onCheckedChange={(checked) => {
-                                  const newSet = new Set(selectedSchoolIds);
-                                  if (school._id) {
-                                    if (checked) {
-                                      newSet.add(school._id);
-                                    } else {
-                                      newSet.delete(school._id);
-                                    }
-                                    setSelectedSchoolIds(newSet);
-                                  }}
-                                }
-                                onSelect={(e) => e.preventDefault()}
-                              >
-                                {school.name}
-                                {school.block && (
-                                  <span className="text-xs text-muted-foreground ml-2">
-                                    ({school.block})
-                                  </span>
-                                )}
-                              </DropdownMenuCheckboxItem>
-                            ))}
-                            {filteredSchoolsForSelection.length === 0 && (
-                              <div className="p-4 text-center text-sm text-muted-foreground">
-                                No schools found
-                              </div>
-                            )}
+                              {school.name}
+                            </Label>
                           </div>
-                        </ScrollArea>
-                        {selectedSchoolIds.size > 0 && (
-                          <div className="p-3 border-t flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">
-                              {selectedSchoolIds.size} selected
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedSchoolIds(new Set())}
-                            >
-                              Clear
-                            </Button>
-                          </div>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              )}
+                        ))
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {selectedSchoolIds.size > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={deselectAllSchools}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Student Count Badge */}
+              <Badge variant="secondary" className="ml-auto">
+                {viewMode === "matrix"
+                  ? aggregatedData.totalStudents
+                  : Object.values(groupedData)
+                      .filter(
+                        (s) =>
+                          selectedBlock === "all" ||
+                          s.school.block === selectedBlock
+                      )
+                      .reduce(
+                        (sum, school) =>
+                          sum +
+                          Object.values(school.classes).reduce(
+                            (classSum, c) => classSum + c.totalStudents,
+                            0
+                          ),
+                        0
+                      )}{" "}
+                students
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
         {/* Report Content */}
-        {viewMode === "tabular" ? (
-          renderTabularView(
-            schoolViewMode === "combined" 
-              ? { combined: { school: { name: "All Schools Combined", _id: "combined" } as SchoolType, classes: combinedData as any } }
-              : filteredGroupedData,
-            schoolViewMode === "combined"
-          )
+        {Object.keys(groupedData).length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No student data available</p>
+            </CardContent>
+          </Card>
+        ) : viewMode === "matrix" ? (
+          /* Matrix View - Excel-like table format */
+          <div className="space-y-6">
+            {/* Summary Header */}
+            <Card className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <LayoutGrid className="h-5 w-5" />
+                  Matrix View - Level Distribution
+                </CardTitle>
+                <CardDescription>
+                  Combined data from {aggregatedData.totalSchools} school(s) •{" "}
+                  {aggregatedData.totalStudents} students •{" "}
+                  {Object.keys(aggregatedData.classes).length} classes
+                  {aggregatedData.schoolNames.length > 0 &&
+                    aggregatedData.schoolNames.length <= 5 && (
+                      <span className="block mt-1 text-xs">
+                        Schools: {aggregatedData.schoolNames.join(", ")}
+                      </span>
+                    )}
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* Excel-like tables per subject */}
+            {Object.keys(aggregatedData.classes).length === 0 ? (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">
+                    No student data available for selected schools
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              (() => {
+                // Get all unique subjects and levels
+                const allSubjects = new Set<string>();
+                const allLevelsBySubject: { [subject: string]: Set<number> } =
+                  {};
+
+                Object.values(aggregatedData.classes).forEach((classData) => {
+                  Object.entries(classData.levelDistribution).forEach(
+                    ([subject, levels]) => {
+                      allSubjects.add(subject);
+                      if (!allLevelsBySubject[subject]) {
+                        allLevelsBySubject[subject] = new Set();
+                      }
+                      Object.keys(levels).forEach((level) => {
+                        allLevelsBySubject[subject].add(parseInt(level));
+                      });
+                    }
+                  );
+                });
+
+                const sortedClasses = Object.keys(aggregatedData.classes).sort(
+                  (a, b) => a.localeCompare(b)
+                );
+
+                return Array.from(allSubjects)
+                  .sort()
+                  .map((subject) => {
+                    const levels = Array.from(
+                      allLevelsBySubject[subject] || []
+                    ).sort((a, b) => a - b);
+
+                    // Calculate column totals
+                    const columnTotals: { [level: number]: number } = {};
+                    levels.forEach((level) => {
+                      columnTotals[level] = 0;
+                    });
+
+                    sortedClasses.forEach((className) => {
+                      const classData = aggregatedData.classes[className];
+                      const subjectLevels =
+                        classData?.levelDistribution[subject] || {};
+                      levels.forEach((level) => {
+                        columnTotals[level] +=
+                          (subjectLevels[level] as number) || 0;
+                      });
+                    });
+
+                    const grandTotal = Object.values(columnTotals).reduce(
+                      (sum, count) => sum + count,
+                      0
+                    );
+
+                    return (
+                      <Card key={subject}>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg capitalize">
+                            <BookOpen className="h-5 w-5 text-primary" />
+                            {subject}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="bg-muted/50">
+                                  <TableHead className="font-bold border-r">
+                                    Class
+                                  </TableHead>
+                                  {levels.map((level) => (
+                                    <TableHead
+                                      key={level}
+                                      className="text-center font-bold min-w-[80px]"
+                                    >
+                                      Level {level}
+                                    </TableHead>
+                                  ))}
+                                  <TableHead className="text-center font-bold border-l bg-muted">
+                                    Total
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {sortedClasses.map((className) => {
+                                  const classData =
+                                    aggregatedData.classes[className];
+                                  const subjectLevels =
+                                    classData?.levelDistribution[subject] || {};
+                                  const rowTotal = levels.reduce(
+                                    (sum, level) =>
+                                      sum +
+                                      ((subjectLevels[level] as number) || 0),
+                                    0
+                                  );
+
+                                  // Skip classes with no data for this subject
+                                  if (rowTotal === 0) return null;
+
+                                  return (
+                                    <TableRow key={className}>
+                                      <TableCell className="font-medium border-r">
+                                        Class {className}
+                                      </TableCell>
+                                      {levels.map((level) => {
+                                        const count =
+                                          (subjectLevels[level] as number) || 0;
+                                        return (
+                                          <TableCell
+                                            key={level}
+                                            className="text-center"
+                                          >
+                                            {count > 0 ? (
+                                              <span className="font-medium">
+                                                {count}
+                                              </span>
+                                            ) : (
+                                              <span className="text-muted-foreground">
+                                                -
+                                              </span>
+                                            )}
+                                          </TableCell>
+                                        );
+                                      })}
+                                      <TableCell className="text-center font-bold border-l bg-muted/30">
+                                        {rowTotal}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                                {/* Total Row */}
+                                <TableRow className="bg-muted/50 font-bold">
+                                  <TableCell className="font-bold border-r">
+                                    Total
+                                  </TableCell>
+                                  {levels.map((level) => (
+                                    <TableCell
+                                      key={level}
+                                      className="text-center font-bold"
+                                    >
+                                      {columnTotals[level]}
+                                    </TableCell>
+                                  ))}
+                                  <TableCell className="text-center font-bold border-l bg-primary/10">
+                                    {grandTotal}
+                                  </TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  });
+              })()
+            )}
+          </div>
         ) : (
-          renderMatrixView(
-            schoolViewMode === "combined" 
-              ? { combined: { school: { name: "All Schools Combined", _id: "combined" } as SchoolType, classes: combinedData as any } }
-              : filteredGroupedData,
-            schoolViewMode === "combined"
-          )
+          /* Expandable View - Individual schools */
+          <div className="space-y-4">
+            {Object.values(groupedData)
+              .filter((schoolData) => {
+                // Filter by selected block
+                if (selectedBlock === "all") return true;
+                return schoolData.school.block === selectedBlock;
+              })
+              .map((schoolData) => {
+                const schoolKey = schoolData.school._id;
+                if (!schoolKey) return null;
+
+                const isSchoolExpanded = expandedSchools.has(schoolKey);
+
+                // Get student's latest level info per subject helper
+                const getStudentLevelInfo = (
+                  student: Student
+                ): StudentLevelInfo[] => {
+                  const subjectLevels: { [subject: string]: StudentLevelInfo } =
+                    {};
+
+                  // Priority 1: Check for new data structure (with program, subject, etc.)
+                  if (
+                    student.knowledgeLevel &&
+                    student.knowledgeLevel.length > 0
+                  ) {
+                    let hasNewStructure = false;
+
+                    student.knowledgeLevel.forEach((kl: any) => {
+                      if (!kl) return;
+
+                      // Check if this is the new structure (has program and subject)
+                      const hasNewStructureFields = kl.program && kl.subject;
+
+                      if (hasNewStructureFields) {
+                        hasNewStructure = true;
+
+                        const subject =
+                          kl.subject || kl.programName || "Unknown";
+                        const level = Number(kl.level);
+                        const date = kl.date;
+                        const programId = kl.program
+                          ? typeof kl.program === "string"
+                            ? kl.program
+                            : String(kl.program)
+                          : "";
+                        const programName =
+                          kl.programName || kl.subject || subject;
+
+                        // Validate date
+                        const klDate = new Date(date);
+                        if (isNaN(klDate.getTime())) {
+                          return; // Skip invalid dates
+                        }
+
+                        // Validate level
+                        if (isNaN(level) || level <= 0) {
+                          return; // Skip invalid levels
+                        }
+
+                        // Keep the latest assessment for each subject
+                        if (
+                          !subjectLevels[subject] ||
+                          klDate > new Date(subjectLevels[subject].date)
+                        ) {
+                          subjectLevels[subject] = {
+                            subject: subject,
+                            programName: programName,
+                            level: level,
+                            date: date,
+                            programId: programId,
+                          };
+                        }
+                      }
+                    });
+
+                    // If we found new structure data, return it
+                    if (hasNewStructure) {
+                      return Object.values(subjectLevels).sort((a, b) =>
+                        a.subject.localeCompare(b.subject)
+                      );
+                    }
+                  }
+
+                  // Priority 2: Fallback to old structure - use Assessment model
+                  // Check if student has old knowledgeLevel structure (just level and date)
+                  const hasOldStructure =
+                    student.knowledgeLevel &&
+                    student.knowledgeLevel.some(
+                      (kl: any) =>
+                        kl && kl.level && kl.date && !kl.program && !kl.subject
+                    );
+
+                  if (hasOldStructure) {
+                    // Fetch assessments for this student from Assessment model
+                    const studentAssessments = assessments.filter(
+                      (assessment) => {
+                        const assessmentStudentId =
+                          typeof assessment.student === "string"
+                            ? assessment.student
+                            : (assessment.student as any)?._id ||
+                              assessment.student;
+                        return assessmentStudentId === student._id;
+                      }
+                    );
+
+                    // Group assessments by subject and get latest level per subject
+                    studentAssessments.forEach((assessment) => {
+                      const subject = assessment.subject || "Unknown";
+                      const level = assessment.level;
+                      const date = assessment.date;
+
+                      // Capitalize first letter of subject
+                      const capitalizedSubject =
+                        subject.charAt(0).toUpperCase() + subject.slice(1);
+
+                      // Validate date
+                      const assessmentDate = new Date(date);
+                      if (isNaN(assessmentDate.getTime())) {
+                        return; // Skip invalid dates
+                      }
+
+                      // Validate level
+                      if (isNaN(level) || level <= 0) {
+                        return; // Skip invalid levels
+                      }
+
+                      // Keep the latest assessment for each subject
+                      if (
+                        !subjectLevels[capitalizedSubject] ||
+                        assessmentDate >
+                          new Date(subjectLevels[capitalizedSubject].date)
+                      ) {
+                        // Try to find matching program for this subject
+                        const matchingProgram = programs.find(
+                          (p) =>
+                            p.subject.toLowerCase() === subject.toLowerCase()
+                        );
+
+                        subjectLevels[capitalizedSubject] = {
+                          subject: capitalizedSubject,
+                          programName:
+                            matchingProgram?.name || capitalizedSubject,
+                          level: level,
+                          date: date,
+                          programId: matchingProgram?._id || "",
+                        };
+                      }
+                    });
+                  }
+
+                  return Object.values(subjectLevels).sort((a, b) =>
+                    a.subject.localeCompare(b.subject)
+                  );
+                };
+
+                return (
+                  <Card key={schoolKey} className="overflow-hidden">
+                    <Collapsible
+                      open={isSchoolExpanded}
+                      onOpenChange={(open) => {
+                        if (!schoolKey) return;
+                        const newSet = new Set(expandedSchools);
+                        if (open) {
+                          newSet.add(schoolKey);
+                        } else {
+                          newSet.delete(schoolKey);
+                        }
+                        setExpandedSchools(newSet);
+                      }}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <CardHeader className="bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                              <School className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+                                {isSchoolExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                                {schoolData.school.name}
+                              </CardTitle>
+                              <CardDescription className="mt-1">
+                                {schoolData.school.type} •{" "}
+                                {schoolData.school.city || "N/A"}
+                              </CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className="hidden sm:flex"
+                              >
+                                {Object.keys(schoolData.classes).length} Classes
+                              </Badge>
+                              <Badge
+                                variant="secondary"
+                                className="hidden sm:flex"
+                              >
+                                {Object.values(schoolData.classes).reduce(
+                                  (sum, c) => sum + c.totalStudents,
+                                  0
+                                )}{" "}
+                                Students
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <CardContent className="p-4 md:p-6">
+                          <div className="space-y-4">
+                            {Object.entries(schoolData.classes).map(
+                              ([className, classData]) => {
+                                const classKey = `${schoolKey}-${className}`;
+                                const isClassExpanded =
+                                  expandedClasses.has(classKey);
+
+                                return (
+                                  <Card
+                                    key={className}
+                                    className="border-l-4 border-l-primary"
+                                  >
+                                    <Collapsible
+                                      open={isClassExpanded}
+                                      onOpenChange={(open) => {
+                                        const newSet = new Set(expandedClasses);
+                                        if (classKey) {
+                                          if (open) {
+                                            newSet.add(classKey);
+                                          } else {
+                                            newSet.delete(classKey);
+                                          }
+                                        }
+                                        setExpandedClasses(newSet);
+                                      }}
+                                    >
+                                      <CollapsibleTrigger asChild>
+                                        <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                              {isClassExpanded ? (
+                                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                              ) : (
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                              )}
+                                              <Users className="h-4 w-4 text-muted-foreground" />
+                                              <CardTitle className="text-base md:text-lg">
+                                                Class {className}
+                                              </CardTitle>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                              <Badge variant="secondary">
+                                                {classData.totalStudents}{" "}
+                                                Students
+                                              </Badge>
+                                              {Object.keys(
+                                                classData.levelDistribution
+                                              ).length > 0 && (
+                                                <Badge variant="outline">
+                                                  {
+                                                    Object.keys(
+                                                      classData.levelDistribution
+                                                    ).length
+                                                  }{" "}
+                                                  Subjects
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </CardHeader>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent>
+                                        <CardContent className="space-y-4">
+                                          {/* Level Distribution Summary - Per Subject */}
+                                          {Object.keys(
+                                            classData.levelDistribution
+                                          ).length > 0 && (
+                                            <div className="space-y-4">
+                                              {Object.entries(
+                                                classData.levelDistribution
+                                              )
+                                                .sort(([a], [b]) =>
+                                                  a.localeCompare(b)
+                                                )
+                                                .map(
+                                                  ([subject, levelCounts]) => (
+                                                    <div
+                                                      key={subject}
+                                                      className="space-y-2"
+                                                    >
+                                                      <div className="flex items-center gap-2 mb-2">
+                                                        <BookOpen className="h-4 w-4 text-primary" />
+                                                        <div className="text-sm font-semibold capitalize">
+                                                          {subject} - Level
+                                                          Distribution:
+                                                        </div>
+                                                      </div>
+                                                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+                                                        {Object.entries(
+                                                          levelCounts
+                                                        )
+                                                          .sort(
+                                                            ([a], [b]) =>
+                                                              Number(a) -
+                                                              Number(b)
+                                                          )
+                                                          .map(
+                                                            ([
+                                                              level,
+                                                              count,
+                                                            ]) => (
+                                                              <div
+                                                                key={`${subject}-${level}`}
+                                                                className="flex flex-col items-center p-2 md:p-3 bg-muted/50 rounded-lg"
+                                                              >
+                                                                <Badge
+                                                                  variant="default"
+                                                                  className="mb-1 md:mb-2"
+                                                                >
+                                                                  Level {level}
+                                                                </Badge>
+                                                                <span className="text-sm md:text-base font-semibold">
+                                                                  {count}
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground">
+                                                                  {(
+                                                                    (count /
+                                                                      classData.totalStudents) *
+                                                                    100
+                                                                  ).toFixed(0)}
+                                                                  %
+                                                                </span>
+                                                              </div>
+                                                            )
+                                                          )}
+                                                      </div>
+                                                    </div>
+                                                  )
+                                                )}
+                                            </div>
+                                          )}
+
+                                          {/* Students Table */}
+                                          <div className="mt-4">
+                                            <div className="text-sm font-medium text-muted-foreground mb-3">
+                                              Students (
+                                              {classData.totalStudents}):
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                              <Table>
+                                                <TableHeader>
+                                                  <TableRow>
+                                                    <TableHead className="w-[50px]">
+                                                      #
+                                                    </TableHead>
+                                                    <TableHead>Name</TableHead>
+                                                    <TableHead className="hidden sm:table-cell">
+                                                      Roll No
+                                                    </TableHead>
+                                                    <TableHead className="hidden md:table-cell">
+                                                      Age
+                                                    </TableHead>
+                                                    <TableHead>
+                                                      Levels (by Subject)
+                                                    </TableHead>
+                                                    <TableHead className="hidden md:table-cell">
+                                                      Last Assessment
+                                                    </TableHead>
+                                                    <TableHead className="hidden lg:table-cell">
+                                                      Total Assessments
+                                                    </TableHead>
+                                                  </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                  {classData.students
+                                                    .sort((a, b) => {
+                                                      // Sort by name
+                                                      return (
+                                                        a.name || ""
+                                                      ).localeCompare(
+                                                        b.name || ""
+                                                      );
+                                                    })
+                                                    .map((student, index) => {
+                                                      const levelInfos =
+                                                        getStudentLevelInfo(
+                                                          student
+                                                        );
+                                                      const latestAssessment =
+                                                        levelInfos.length > 0
+                                                          ? levelInfos.sort(
+                                                              (a, b) =>
+                                                                new Date(
+                                                                  b.date
+                                                                ).getTime() -
+                                                                new Date(
+                                                                  a.date
+                                                                ).getTime()
+                                                            )[0]
+                                                          : null;
+
+                                                      return (
+                                                        <TableRow
+                                                          key={student._id}
+                                                          className="hover:bg-muted/50"
+                                                        >
+                                                          <TableCell className="font-medium text-muted-foreground">
+                                                            {index + 1}
+                                                          </TableCell>
+                                                          <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                              <User className="h-4 w-4 text-muted-foreground" />
+                                                              <div>
+                                                                <div className="font-medium">
+                                                                  {student.name}
+                                                                </div>
+                                                                <div className="text-xs text-muted-foreground sm:hidden">
+                                                                  Roll:{" "}
+                                                                  {student.roll_no ||
+                                                                    "N/A"}
+                                                                </div>
+                                                              </div>
+                                                            </div>
+                                                          </TableCell>
+                                                          <TableCell className="hidden sm:table-cell">
+                                                            {student.roll_no ||
+                                                              "N/A"}
+                                                          </TableCell>
+                                                          <TableCell className="hidden md:table-cell">
+                                                            {student.age ||
+                                                              "N/A"}
+                                                          </TableCell>
+                                                          <TableCell>
+                                                            {levelInfos.length >
+                                                            0 ? (
+                                                              <div className="flex flex-wrap gap-1">
+                                                                {levelInfos.map(
+                                                                  (info) => (
+                                                                    <div
+                                                                      key={
+                                                                        info.subject
+                                                                      }
+                                                                      className="flex flex-col gap-0.5"
+                                                                    >
+                                                                      <Badge
+                                                                        variant="default"
+                                                                        className="text-xs"
+                                                                      >
+                                                                        {
+                                                                          info.subject
+                                                                        }
+                                                                        : L
+                                                                        {
+                                                                          info.level
+                                                                        }
+                                                                      </Badge>
+                                                                    </div>
+                                                                  )
+                                                                )}
+                                                              </div>
+                                                            ) : (
+                                                              <Badge variant="outline">
+                                                                Not Assessed
+                                                              </Badge>
+                                                            )}
+                                                          </TableCell>
+                                                          <TableCell className="hidden md:table-cell">
+                                                            {latestAssessment ? (
+                                                              <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-1 text-sm">
+                                                                  <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                                  {new Date(
+                                                                    latestAssessment.date
+                                                                  ).toLocaleDateString(
+                                                                    "en-US",
+                                                                    {
+                                                                      month:
+                                                                        "short",
+                                                                      day: "numeric",
+                                                                      year: "numeric",
+                                                                    }
+                                                                  )}
+                                                                </div>
+                                                                <Badge
+                                                                  variant="secondary"
+                                                                  className="text-xs w-fit capitalize"
+                                                                >
+                                                                  {
+                                                                    latestAssessment.subject
+                                                                  }
+                                                                </Badge>
+                                                              </div>
+                                                            ) : (
+                                                              <span className="text-muted-foreground text-sm">
+                                                                -
+                                                              </span>
+                                                            )}
+                                                          </TableCell>
+                                                          <TableCell className="hidden lg:table-cell">
+                                                            {student.knowledgeLevel &&
+                                                            student
+                                                              .knowledgeLevel
+                                                              .length > 0 ? (
+                                                              <Badge variant="outline">
+                                                                {
+                                                                  student
+                                                                    .knowledgeLevel
+                                                                    .length
+                                                                }
+                                                              </Badge>
+                                                            ) : (
+                                                              <span className="text-muted-foreground text-sm">
+                                                                0
+                                                              </span>
+                                                            )}
+                                                          </TableCell>
+                                                        </TableRow>
+                                                      );
+                                                    })}
+                                                </TableBody>
+                                              </Table>
+                                            </div>
+                                          </div>
+                                        </CardContent>
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  </Card>
+                                );
+                              }
+                            )}
+                          </div>
+                        </CardContent>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                );
+              })}
+          </div>
         )}
 
         {/* Summary Stats */}
         {Object.keys(groupedData).length > 0 && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Summary</CardTitle>
+              <CardTitle>
+                Summary{" "}
+                {viewMode === "matrix"
+                  ? "(Selected Schools)"
+                  : selectedBlock !== "all"
+                  ? `(${selectedBlock})`
+                  : "(All Schools)"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <div className="text-2xl md:text-3xl font-bold">
-                    {Object.keys(groupedData).length}
+                    {viewMode === "matrix"
+                      ? aggregatedData.totalSchools
+                      : Object.values(groupedData).filter(
+                          (s) =>
+                            selectedBlock === "all" ||
+                            s.school.block === selectedBlock
+                        ).length}
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">Schools</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Schools
+                  </div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <div className="text-2xl md:text-3xl font-bold">
-                    {Object.values(groupedData).reduce(
-                      (sum, school) => sum + Object.keys(school.classes).length,
-                      0
-                    )}
+                    {viewMode === "matrix"
+                      ? Object.keys(aggregatedData.classes).length
+                      : Object.values(groupedData)
+                          .filter(
+                            (s) =>
+                              selectedBlock === "all" ||
+                              s.school.block === selectedBlock
+                          )
+                          .reduce(
+                            (sum, school) =>
+                              sum + Object.keys(school.classes).length,
+                            0
+                          )}
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">Classes</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Classes
+                  </div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <div className="text-2xl md:text-3xl font-bold">{students.length}</div>
-                  <div className="text-sm text-muted-foreground mt-1">Total Students</div>
+                  <div className="text-2xl md:text-3xl font-bold">
+                    {viewMode === "matrix"
+                      ? aggregatedData.totalStudents
+                      : Object.values(groupedData)
+                          .filter(
+                            (s) =>
+                              selectedBlock === "all" ||
+                              s.school.block === selectedBlock
+                          )
+                          .reduce(
+                            (sum, school) =>
+                              sum +
+                              Object.values(school.classes).reduce(
+                                (classSum, c) => classSum + c.totalStudents,
+                                0
+                              ),
+                            0
+                          )}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Total Students
+                  </div>
                 </div>
               </div>
             </CardContent>
