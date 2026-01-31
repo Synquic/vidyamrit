@@ -39,12 +39,16 @@ app.use("/api", router);
 // Serve static files from the frontend build (in production)
 if (process.env.NODE_ENV === "production") {
   const publicPath = path.join(__dirname, "..", "public");
+  logger.info(`Serving frontend from: ${publicPath}`);
   app.use(express.static(publicPath));
 
   // Serve index.html for all non-API routes (for client-side routing)
-  app.get("*", (_req, res) => {
+  // Using regex to match all routes except /api/*
+  app.get(/^\/(?!api).*/, (_req, res) => {
     res.sendFile(path.join(publicPath, "index.html"));
   });
+} else {
+  logger.warn(`NODE_ENV is '${process.env.NODE_ENV}' - not serving frontend static files`);
 }
 
 // Error handler should be AFTER routes
