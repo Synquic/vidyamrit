@@ -66,9 +66,84 @@ export default function LandingPage() {
         </div>
         {/* Scroll indicator at bottom center */}
         <div className="absolute bottom-8 left-0 right-0 flex justify-center">
-          <a href="#about">
+          <a href="#think-tank">
             <Scroll direction="down" msg="learn more" />
           </a>
+        </div>
+      </section>
+
+      {/* Think Tank Section */}
+      <section
+        className="py-16 bg-gradient-to-b from-white to-amber-50"
+        id="think-tank"
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              Vidyamrit — A Think Tank for School Education in India
+            </h2>
+            <div className="w-24 h-1 bg-amber-500 mx-auto mb-8"></div>
+            <p className="font-sans text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
+              Beyond direct learning support, Vidyamrit serves as a national
+              think tank for school education — driving research, insights, and
+              strategies to improve education systems across India.
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto mb-12">
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-amber-50">
+              <CardContent className="p-8">
+                <h3 className="font-serif text-2xl font-bold text-gray-900 mb-6 text-center">
+                  As a thought leader, we:
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    {
+                      icon: TrendingUp,
+                      title: "Analyze educational challenges and learning trends",
+                      color: "amber",
+                    },
+                    {
+                      icon: FileText,
+                      title: "Develop evidence-based policy recommendations",
+                      color: "red",
+                    },
+                    {
+                      icon: Handshake,
+                      title:
+                        "Advise schools, nonprofits, and policymakers on best practices",
+                      color: "amber",
+                    },
+                    {
+                      icon: Lightbulb,
+                      title:
+                        "Foster innovation in pedagogy, assessment, and teaching models",
+                      color: "red",
+                    },
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-start gap-4">
+                      <div
+                        className={`bg-${item.color}-100 w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 mt-1`}
+                      >
+                        <item.icon className={`h-6 w-6 text-${item.color}-600`} />
+                      </div>
+                      <p className="font-sans text-lg text-gray-700 leading-relaxed">
+                        {item.title}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <p className="font-sans text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed">
+              Our research initiatives help shape impactful solutions that
+              strengthen the quality and equity of school education in
+              communities across the country.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -101,34 +176,43 @@ export default function LandingPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600 mb-2">
-                    280M+
+                    30K+
                   </div>
-                  <div className="text-sm text-gray-600">
-                    Children in government schools
+                  <div className="text-sm text-gray-600 mb-1">
+                    Children across 40+ government schools in Indore
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600 mb-2">
                     50%
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 mb-1">
                     Drop out before high school
+                  </div>
+                  <div className="text-xs text-gray-500 italic">
+                    ~15K children
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600 mb-2">
                     70%
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 mb-1">
                     Cannot read at grade level
+                  </div>
+                  <div className="text-xs text-gray-500 italic">
+                    ~21K children
                   </div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-red-600 mb-2">
                     90%
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 mb-1">
                     Lack digital literacy
+                  </div>
+                  <div className="text-xs text-gray-500 italic">
+                    ~27K children
                   </div>
                 </div>
               </div>
@@ -256,81 +340,6 @@ export default function LandingPage() {
                 Schools by 2027 (our ambition)
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Think Tank Section */}
-      <section
-        className="py-16 bg-gradient-to-b from-white to-amber-50"
-        id="think-tank"
-      >
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              Vidyamrit — A Think Tank for School Education in India
-            </h2>
-            <div className="w-24 h-1 bg-amber-500 mx-auto mb-8"></div>
-            <p className="font-sans text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
-              Beyond direct learning support, Vidyamrit serves as a national
-              think tank for school education — driving research, insights, and
-              strategies to improve education systems across India.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto mb-12">
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-amber-50">
-              <CardContent className="p-8">
-                <h3 className="font-serif text-2xl font-bold text-gray-900 mb-6 text-center">
-                  As a thought leader, we:
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[
-                    {
-                      icon: TrendingUp,
-                      title: "Analyze educational challenges and learning trends",
-                      color: "amber",
-                    },
-                    {
-                      icon: FileText,
-                      title: "Develop evidence-based policy recommendations",
-                      color: "red",
-                    },
-                    {
-                      icon: Handshake,
-                      title:
-                        "Advise schools, nonprofits, and policymakers on best practices",
-                      color: "amber",
-                    },
-                    {
-                      icon: Lightbulb,
-                      title:
-                        "Foster innovation in pedagogy, assessment, and teaching models",
-                      color: "red",
-                    },
-                  ].map((item, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div
-                        className={`bg-${item.color}-100 w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 mt-1`}
-                      >
-                        <item.icon className={`h-6 w-6 text-${item.color}-600`} />
-                      </div>
-                      <p className="font-sans text-lg text-gray-700 leading-relaxed">
-                        {item.title}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center">
-            <p className="font-sans text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed">
-              Our research initiatives help shape impactful solutions that
-              strengthen the quality and equity of school education in
-              communities across the country.
-            </p>
           </div>
         </div>
       </section>
