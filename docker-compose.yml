@@ -13,7 +13,10 @@ services:
     env_file:
       - ./backend/.env.production
     volumes:
+      # Logs directory for persistent logging
       - ./backend/logs:/app/logs
+      # Firebase service account key (must exist in backend/ directory)
+      # For production deployments (Easypanel), mount this as a file secret instead
       - ./backend/firebaseServiceAccountKey.json:/app/firebaseServiceAccountKey.json:ro
     networks:
       - vidyamrit-network

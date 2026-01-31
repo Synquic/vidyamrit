@@ -50,14 +50,14 @@ RUN npm ci
 # Copy built backend from build stage
 COPY --from=backend-build /app/backend/dist ./dist
 
-# Copy backend configuration files
-COPY --from=backend-build /app/backend/firebaseServiceAccountKey.json ./firebaseServiceAccountKey.json
-
 # Copy built frontend from build stage
 COPY --from=frontend-build /app/frontend/dist ./public
 
 # Create logs directory
 RUN mkdir -p ./logs
+
+# Note: firebaseServiceAccountKey.json should be mounted as a volume at runtime
+# Do not include it in the Docker image for security reasons
 
 # Expose port
 EXPOSE 5001

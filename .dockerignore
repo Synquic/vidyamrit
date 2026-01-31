@@ -21,6 +21,9 @@ yarn-error.log
 **/.env.development
 !**/.env.production
 
+# Firebase service account key (security - must be mounted at runtime)
+**/firebaseServiceAccountKey.json
+
 # Logs
 **/logs
 *.log

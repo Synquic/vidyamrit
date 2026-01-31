@@ -103,41 +103,80 @@ docker-compose down
 
 ### 5. Deploy to Easypanel
 
-#### Option A: Using Docker Image
+#### Recommended: Using GitHub Repository
 
-1. **Build and push your image to a registry:**
+1. **Prepare Firebase Service Account Key:**
 
-```bash
-# Tag your image
-docker tag vidyamrit-app:latest your-registry/vidyamrit-app:latest
+   Since the Firebase key should not be committed to your repository, you'll need to add it in Easypanel:
 
-# Push to registry
-docker push your-registry/vidyamrit-app:latest
-```
+   - Copy the contents of your `firebaseServiceAccountKey.json` file
+   - You'll add this as a file mount in Easypanel
 
 2. **In Easypanel:**
+
+   a. **Create a new service:**
+      - Select "App" service type
+      - Select "GitHub Repository"
+      - Connect your Vidyamrit repository
+      - Select the branch (e.g., `main`)
+
+   b. **Build configuration:**
+      - Build method: `Dockerfile`
+      - Dockerfile path: `./Dockerfile`
+      - Build context: `.` (root directory)
+
+   c. **Port configuration:**
+      - Port: `5001`
+
+   d. **Environment variables:**
+      Add these from your `backend/.env.production`:
+      ```
+      NODE_ENV=production
+      PORT=5001
+      MONGO_URI=mongodb://your-mongodb-uri/vidyamrit
+      FIREBASE_SERVICE_ACCOUNT_KEY_PATH=./firebaseServiceAccountKey.json
+      LOGGER_PATH=./logs
+      MAIL_USER=your-email@example.com
+      MAIL_PASS=your-email-password
+      CORS_ORIGIN=https://your-production-domain.com
+      ```
+
+   e. **Mounts (Volumes):**
+      - **Logs directory:**
+        - Mount path: `/app/logs`
+        - Type: Volume
+        - Name: `vidyamrit-logs`
+
+      - **Firebase Service Account Key:**
+        - Mount path: `/app/firebaseServiceAccountKey.json`
+        - Type: File
+        - Content: Paste the entire contents of your `firebaseServiceAccountKey.json`
+
+   f. **Deploy**
+
+#### Alternative: Using Docker Image
+
+If you prefer to build locally and push to a registry:
+
+1. **Build locally (for testing):**
+   ```bash
+   docker build -t vidyamrit-app:latest .
+   ```
+
+2. **Tag and push to registry:**
+   ```bash
+   # Tag your image
+   docker tag vidyamrit-app:latest your-registry/vidyamrit-app:latest
+
+   # Push to registry (Docker Hub, GitHub Container Registry, etc.)
+   docker push your-registry/vidyamrit-app:latest
+   ```
+
+3. **In Easypanel:**
    - Create a new service
    - Select "Docker Image"
    - Enter your image: `your-registry/vidyamrit-app:latest`
-   - Set port to `5001`
-   - Add environment variables from `backend/.env.production`
-   - Add volume mounts:
-     - `./logs` → `/app/logs`
-     - `./firebaseServiceAccountKey.json` → `/app/firebaseServiceAccountKey.json` (read-only)
-   - Deploy
-
-#### Option B: Using GitHub Repository
-
-1. **In Easypanel:**
-   - Create a new service
-   - Select "GitHub Repository"
-   - Connect your Vidyamrit repository
-   - Set Dockerfile path: `./Dockerfile`
-   - Set build context: `.` (root)
-   - Set port to `5001`
-   - Add environment variables from `backend/.env.production`
-   - Add volume mounts for logs and Firebase key
-   - Deploy
+   - Follow steps c-f above for configuration
 
 ### 6. Health Check
 
