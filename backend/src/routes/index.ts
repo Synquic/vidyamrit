@@ -23,6 +23,11 @@ router.get("/", (req, res) => {
   res.json({ message: "Welcome to the API" });
 });
 
+// Health check endpoint (no auth required)
+router.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Public routes (no auth required)
 router.use("/volunteer-requests", volunteerRequestRouter);
 
