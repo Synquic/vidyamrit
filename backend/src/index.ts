@@ -3,6 +3,7 @@ import logger from "./utils/logger";
 import httpLoggers from "./utils/logger/httpLogger";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
 import { connectDB } from "./configs/db";
 import { errorHandler } from "./middlewares/errorHandler";
 import "./configs/firebaseAdmin";
@@ -34,6 +35,17 @@ app.use(
 httpLoggers.forEach((middleware) => app.use(middleware));
 
 app.use("/api", router);
+
+// Serve static files from the frontend build (in production)
+if (process.env.NODE_ENV === "production") {
+  const publicPath = path.join(__dirname, "..", "public");
+  app.use(express.static(publicPath));
+
+  // Serve index.html for all non-API routes (for client-side routing)
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(publicPath, "index.html"));
+  });
+}
 
 // Error handler should be AFTER routes
 app.use(errorHandler);
