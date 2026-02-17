@@ -25,6 +25,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:4173",
       "https://vidyamrit.in",
+      "https://www.vidyamrit.in",
       "https://vidyamrit.synquic.in",
     ],
     credentials: true,
