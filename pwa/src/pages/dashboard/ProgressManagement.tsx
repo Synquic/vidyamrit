@@ -35,6 +35,7 @@ import { LevelDurationTracker } from "@/components/progress/LevelDurationTracker
 import { toast } from "sonner";
 import { Link } from "react-router";
 import { useSchoolContext } from "@/contexts/SchoolContext";
+import { getApiErrorMessage } from "@/services";
 import { checkAssessmentReadiness, getCohorts } from "@/services/cohorts";
 import { CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -55,7 +56,7 @@ function ProgressOverview() {
         return data;
       } catch (error) {
         console.error("Error fetching progress summary:", error);
-        toast.error("Failed to load progress summary");
+        toast.error(getApiErrorMessage(error, "Failed to load progress summary"));
         return [];
       }
     },
@@ -519,7 +520,7 @@ function CohortProgressDetail() {
         return data;
       } catch (error) {
         console.error("Error fetching cohort progress:", error);
-        toast.error("Failed to load cohort progress");
+        toast.error(getApiErrorMessage(error, "Failed to load cohort progress"));
         return null;
       }
     },

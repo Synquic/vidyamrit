@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getApiErrorMessage } from "@/services";
 import {
   createCohort,
   deleteCohort,
@@ -184,8 +185,8 @@ function ManageCohorts() {
       handleCloseDialog();
       toast.success("Cohort created successfully");
     },
-    onError: () => {
-      toast.error("Failed to create cohort");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to create cohort"));
     },
   });
 
@@ -200,8 +201,8 @@ function ManageCohorts() {
       handleCloseDialog();
       toast.success("Cohort updated successfully");
     },
-    onError: () => {
-      toast.error("Failed to update cohort");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to update cohort"));
     },
   });
 
@@ -215,8 +216,8 @@ function ManageCohorts() {
       setIsDeleteDialogOpen(false);
       toast.success("Cohort deleted successfully");
     },
-    onError: () => {
-      toast.error("Failed to delete cohort");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete cohort"));
     },
   });
 
@@ -235,14 +236,8 @@ function ManageCohorts() {
       setCustomStartDate("");
       toast.success("Cohort started successfully");
     },
-    onError: (error: any) => {
-      let errorMessage = "Failed to start cohort";
-      if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to start cohort"));
     },
   });
 
@@ -296,17 +291,8 @@ function ManageCohorts() {
       setIsGenerating(false);
     },
     onError: (error: unknown) => {
-      let errorMessage = "Failed to preview cohorts";
-      if (error && typeof error === "object" && "response" in error) {
-        const err = error as { response?: { data?: { error?: string } } };
-        if (err.response?.data?.error) {
-          errorMessage = err.response.data.error;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
       setIsGenerating(false);
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to preview cohorts"));
     },
   });
 
@@ -333,17 +319,8 @@ function ManageCohorts() {
       );
     },
     onError: (error: unknown) => {
-      let errorMessage = "Failed to create cohorts";
-      if (error && typeof error === "object" && "response" in error) {
-        const err = error as { response?: { data?: { error?: string } } };
-        if (err.response?.data?.error) {
-          errorMessage = err.response.data.error;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
       setIsGenerating(false);
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to create cohorts"));
     },
   });
 
@@ -373,19 +350,8 @@ function ManageCohorts() {
       );
     },
     onError: (error: unknown) => {
-      let errorMessage = "Failed to generate cohorts";
-
-      if (error && typeof error === "object" && "response" in error) {
-        const err = error as { response?: { data?: { error?: string } } };
-        if (err.response?.data?.error) {
-          errorMessage = err.response.data.error;
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
       setIsGenerating(false);
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to generate cohorts"));
     },
   });
 

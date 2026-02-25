@@ -57,7 +57,7 @@ export const createVolunteer = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error("Error creating volunteer:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to create volunteer account. Please try again." });
   }
 };
 
@@ -85,7 +85,7 @@ export const getVolunteersBySchool = async (req: AuthRequest, res: Response) => 
     });
   } catch (error) {
     console.error("Error fetching volunteers:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to load volunteers. Please try again." });
   }
 };
 
@@ -110,7 +110,7 @@ export const getAllVolunteers = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error("Error fetching all volunteers:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to load volunteers. Please try again." });
   }
 };
 
@@ -144,7 +144,7 @@ export const updateVolunteerStatus = async (req: AuthRequest, res: Response) => 
     });
   } catch (error) {
     console.error("Error updating volunteer status:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to update volunteer status. Please try again." });
   }
 };
 
@@ -184,7 +184,7 @@ export const extendVolunteerAccess = async (req: AuthRequest, res: Response) => 
     });
   } catch (error) {
     console.error("Error extending volunteer access:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to extend volunteer access. Please try again." });
   }
 };
 
@@ -216,7 +216,7 @@ export const deleteVolunteer = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error("Error deleting volunteer:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to delete volunteer account. Please try again." });
   }
 };
 
@@ -251,6 +251,6 @@ export const checkVolunteerAccess = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error("Error checking volunteer access:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to verify volunteer access. Please try again." });
   }
 };

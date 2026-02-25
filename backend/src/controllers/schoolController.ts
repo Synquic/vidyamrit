@@ -22,7 +22,7 @@ export const getSchools = async (req: AuthRequest, res: Response) => {
 
     res.json(schools);
   } catch (error) {
-    res.status(500).json({ error: "Error fetching schools" });
+    res.status(500).json({ error: "Failed to load schools. Please try again." });
   }
 };
 
@@ -34,7 +34,7 @@ export const getSchoolById = async (req: AuthRequest, res: Response) => {
     }
     res.json(school);
   } catch (error) {
-    res.status(500).json({ error: "Error fetching school" });
+    res.status(500).json({ error: "Failed to load school details. Please try again." });
   }
 };
 
@@ -49,10 +49,14 @@ export const createSchool = async (req: AuthRequest, res: Response) => {
     await school.save();
     res.status(201).json(school);
   } catch (error: any) {
-    if (error.code === 11000) {
-      return res.status(400).json({ error: error.message });
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      return res.status(400).json({ error: errors[0] || "Invalid school data. Please check all fields." });
     }
-    res.status(500).json({ error: "Error creating school" });
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "A school with this email or name already exists." });
+    }
+    res.status(500).json({ error: "Failed to create school. Please try again." });
   }
 };
 
@@ -75,12 +79,14 @@ export const updateSchool = async (req: AuthRequest, res: Response) => {
 
     res.json(school);
   } catch (error: any) {
-    if (error.code === 11000) {
-      return res
-        .status(400)
-        .json({ error: "School with this email already exists" });
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      return res.status(400).json({ error: errors[0] || "Invalid school data. Please check all fields." });
     }
-    res.status(500).json({ error: "Error updating school" });
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "A school with this email already exists." });
+    }
+    res.status(500).json({ error: "Failed to update school. Please try again." });
   }
 };
 
@@ -99,6 +105,6 @@ export const deleteSchool = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "School deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Error deleting school" });
+    res.status(500).json({ error: "Failed to delete school. Please try again." });
   }
 };

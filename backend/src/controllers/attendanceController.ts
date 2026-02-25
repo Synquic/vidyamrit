@@ -52,7 +52,7 @@ export const getAttendanceRecords = async (req: AuthRequest, res: Response) => {
     res.json(attendance);
   } catch (error: any) {
     logger.error("Error fetching attendance records:", error);
-    res.status(500).json({ error: "Error fetching attendance records" });
+    res.status(500).json({ error: "Failed to load attendance records. Please try again." });
   }
 };
 
@@ -125,7 +125,7 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
     }
   } catch (error: any) {
     logger.error("Error marking attendance:", error);
-    res.status(500).json({ error: "Error marking attendance" });
+    res.status(500).json({ error: "Failed to mark attendance. Please try again." });
   }
 };
 
@@ -195,7 +195,7 @@ export const bulkMarkAttendance = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Error in bulk marking attendance:", error);
-    res.status(500).json({ error: "Error in bulk marking attendance" });
+    res.status(500).json({ error: "Failed to save bulk attendance. Please try again." });
   }
 };
 
@@ -291,7 +291,7 @@ export const getAttendanceStats = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Error fetching attendance statistics:", error);
-    res.status(500).json({ error: "Error fetching attendance statistics" });
+    res.status(500).json({ error: "Failed to load attendance statistics. Please try again." });
   }
 };
 
@@ -349,7 +349,7 @@ export const getDailyAttendance = async (req: AuthRequest, res: Response) => {
     res.json(dailyAttendance);
   } catch (error: any) {
     logger.error("Error fetching daily attendance:", error);
-    res.status(500).json({ error: "Error fetching daily attendance" });
+    res.status(500).json({ error: "Failed to load daily attendance. Please try again." });
   }
 };
 
@@ -584,7 +584,7 @@ export const recordCohortAttendance = async (req: AuthRequest, res: Response) =>
     });
   } catch (error: any) {
     logger.error("Error recording cohort attendance:", error);
-    res.status(500).json({ error: "Error recording cohort attendance" });
+    res.status(500).json({ error: "Failed to save cohort attendance. Please try again." });
   }
 };
 
@@ -672,7 +672,7 @@ export const getCohortAttendance = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Error fetching cohort attendance:", error);
-    res.status(500).json({ error: "Error fetching cohort attendance" });
+    res.status(500).json({ error: "Failed to load cohort attendance. Please try again." });
   }
 };
 
@@ -748,6 +748,6 @@ export const getTutorAttendanceSummary = async (req: AuthRequest, res: Response)
     res.json(summaryData);
   } catch (error: any) {
     logger.error("Error fetching tutor attendance summary:", error);
-    res.status(500).json({ error: "Error fetching tutor attendance summary" });
+    res.status(500).json({ error: "Failed to load attendance summary. Please try again." });
   }
 };

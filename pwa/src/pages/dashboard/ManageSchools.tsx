@@ -48,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/services";
 import {
   School,
   getSchools,
@@ -99,8 +100,8 @@ function ManageSchools() {
       toast.success("School created successfully");
       handleCloseDialog();
     },
-    onError: () => {
-      toast.error("Failed to create school");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to create school"));
     },
   });
 
@@ -112,8 +113,8 @@ function ManageSchools() {
       toast.success("School updated successfully");
       handleCloseDialog();
     },
-    onError: () => {
-      toast.error("Failed to update school");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to update school"));
     },
   });
 
@@ -125,8 +126,8 @@ function ManageSchools() {
       setIsDeleteDialogOpen(false);
       setDeletingSchool(null);
     },
-    onError: () => {
-      toast.error("Failed to delete school");
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete school"));
     },
   });
 

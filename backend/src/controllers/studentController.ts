@@ -92,9 +92,16 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     delete response.school;
 
     res.status(201).json(response);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in student creation:", error);
-    res.status(500).json({ error: "Failed to create student" });
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      return res.status(400).json({ error: errors[0] || "Invalid student data. Please check all fields." });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "A student with this Aadhar or APAAR ID already exists." });
+    }
+    res.status(500).json({ error: "Failed to create student. Please try again." });
   }
 };
 
@@ -233,9 +240,16 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     delete response.school;
 
     res.json(response);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating student:", error);
-    res.status(500).json({ error: "Failed to update student" });
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err: any) => err.message);
+      return res.status(400).json({ error: errors[0] || "Invalid student data. Please check all fields." });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "A student with this Aadhar or APAAR ID already exists." });
+    }
+    res.status(500).json({ error: "Failed to update student. Please try again." });
   }
 };
 

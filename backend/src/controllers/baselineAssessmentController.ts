@@ -87,7 +87,7 @@ export const scheduleBaselineAssessment = async (req: AuthRequest, res: Response
     });
   } catch (error: any) {
     logger.error("Error scheduling baseline assessment:", error);
-    res.status(500).json({ error: "Error scheduling baseline assessment" });
+    res.status(500).json({ error: "Failed to schedule baseline assessment. Please try again." });
   }
 };
 
@@ -185,7 +185,7 @@ export const conductBaselineAssessment = async (req: AuthRequest, res: Response)
     });
   } catch (error: any) {
     logger.error("Error conducting baseline assessment:", error);
-    res.status(500).json({ error: "Error conducting baseline assessment" });
+    res.status(500).json({ error: "Failed to conduct baseline assessment. Please try again." });
   }
 };
 
@@ -226,7 +226,7 @@ export const getAssessmentQuestions = async (req: AuthRequest, res: Response) =>
     });
   } catch (error: any) {
     logger.error("Error fetching assessment questions:", error);
-    res.status(500).json({ error: "Error fetching assessment questions" });
+    res.status(500).json({ error: "Failed to load assessment questions. Please try again." });
   }
 };
 
@@ -270,6 +270,6 @@ export const getStudentAssessmentHistory = async (req: AuthRequest, res: Respons
     });
   } catch (error: any) {
     logger.error("Error fetching student assessment history:", error);
-    res.status(500).json({ error: "Error fetching student assessment history" });
+    res.status(500).json({ error: "Failed to load assessment history. Please try again." });
   }
 };

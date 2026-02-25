@@ -26,7 +26,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
 
     res.json(userResponse);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to fetch user information. Please try again." });
   }
 };
 
@@ -104,6 +104,15 @@ export const registerUser = async (req: Request, res: Response) => {
     }
   } catch (error: any) {
     logWithUserInfo("Error in user registration:", firebaseUser);
+    if (error.code === "auth/email-already-exists") {
+      return res.status(400).json({ error: "An account with this email already exists." });
+    }
+    if (error.code === "auth/invalid-email") {
+      return res.status(400).json({ error: "The email address is invalid." });
+    }
+    if (error.code === "auth/weak-password") {
+      return res.status(400).json({ error: "Password is too weak. Please use a stronger password." });
+    }
     res.status(500).json({ error: "Registration failed. Please try again." });
   }
 };

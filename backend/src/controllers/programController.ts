@@ -58,7 +58,7 @@ export const getPrograms = async (
     });
   } catch (error) {
     console.error("Error fetching programs:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Failed to load programs. Please refresh and try again." });
   }
 };
 
@@ -100,17 +100,30 @@ export const createProgram = async (
     const { name, subject, description, totalLevels, levels } = req.body;
 
     // Validate required fields
-    if (!name || !subject || !totalLevels || !levels) {
-      res.status(400).json({
-        message: "Missing required fields: name, subject, totalLevels, levels",
-      });
+    if (!name || !name.trim()) {
+      res.status(400).json({ message: "Program name is required" });
+      return;
+    }
+
+    if (!subject || !subject.trim()) {
+      res.status(400).json({ message: "Subject is required" });
+      return;
+    }
+
+    if (!totalLevels || totalLevels < 1) {
+      res.status(400).json({ message: "Total levels must be at least 1" });
+      return;
+    }
+
+    if (!levels) {
+      res.status(400).json({ message: "Levels data is required" });
       return;
     }
 
     // Validate levels array
     if (!Array.isArray(levels) || levels.length !== totalLevels) {
       res.status(400).json({
-        message: `Levels array must contain exactly ${totalLevels} levels`,
+        message: `You specified ${totalLevels} levels but provided ${Array.isArray(levels) ? levels.length : 0}. Please check the levels configuration.`,
       });
       return;
     }
@@ -118,9 +131,9 @@ export const createProgram = async (
     // Check if program with same name already exists
     const existingProgram = await Program.findOne({ name: name.trim() });
     if (existingProgram) {
-      res
-        .status(400)
-        .json({ message: "Program with this name already exists" });
+      res.status(400).json({
+        message: `A program named "${name.trim()}" already exists. Please choose a different name.`,
+      });
       return;
     }
 
@@ -147,11 +160,16 @@ export const createProgram = async (
 
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err: any) => err.message);
-      res.status(400).json({ message: "Validation error", errors });
+      res.status(400).json({ message: errors[0] || "Invalid program data. Please check all fields." });
       return;
     }
 
-    res.status(500).json({ message: "Internal server error" });
+    if (error.code === 11000) {
+      res.status(400).json({ message: "A program with this name already exists. Please choose a different name." });
+      return;
+    }
+
+    res.status(500).json({ message: "Failed to create program. Please try again." });
   }
 };
 
@@ -221,11 +239,16 @@ export const updateProgram = async (
 
     if (error.name === "ValidationError") {
       const errors = Object.values(error.errors).map((err: any) => err.message);
-      res.status(400).json({ message: "Validation error", errors });
+      res.status(400).json({ message: errors[0] || "Invalid program data. Please check all fields." });
       return;
     }
 
-    res.status(500).json({ message: "Internal server error" });
+    if (error.code === 11000) {
+      res.status(400).json({ message: "A program with this name already exists. Please choose a different name." });
+      return;
+    }
+
+    res.status(500).json({ message: "Failed to update program. Please try again." });
   }
 };
 
@@ -264,7 +287,7 @@ export const deleteProgram = async (
     res.json({ message: "Program deleted successfully" });
   } catch (error) {
     console.error("Error deleting program:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Failed to delete program. Please try again." });
   }
 };
 
@@ -310,7 +333,7 @@ export const toggleProgramStatus = async (
     });
   } catch (error) {
     console.error("Error toggling program status:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Failed to update program status. Please try again." });
   }
 };
 

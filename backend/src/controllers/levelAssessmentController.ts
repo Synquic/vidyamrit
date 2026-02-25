@@ -80,7 +80,7 @@ export const getLevelAssessmentQuestions = async (req: AuthRequest, res: Respons
     });
   } catch (error: any) {
     logger.error("Error fetching level assessment questions:", error);
-    res.status(500).json({ error: "Error fetching level assessment questions" });
+    res.status(500).json({ error: "Failed to load level assessment questions. Please try again." });
   }
 };
 
@@ -249,7 +249,7 @@ export const conductLevelAssessment = async (req: AuthRequest, res: Response) =>
     });
   } catch (error: any) {
     logger.error("Error conducting level assessment:", error);
-    res.status(500).json({ error: "Error conducting level assessment" });
+    res.status(500).json({ error: "Failed to conduct level assessment. Please try again." });
   }
 };
 

@@ -88,7 +88,7 @@ export const updateStudentProgress = async (req: AuthRequest, res: Response) => 
     });
   } catch (error: any) {
     logger.error("Error updating student progress:", error);
-    res.status(500).json({ error: "Error updating student progress" });
+    res.status(500).json({ error: "Failed to update student progress. Please try again." });
   }
 };
 
@@ -227,7 +227,7 @@ export const getCohortProgress = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Error fetching cohort progress:", error);
-    res.status(500).json({ error: "Error fetching cohort progress" });
+    res.status(500).json({ error: "Failed to load cohort progress. Please try again." });
   }
 };
 
@@ -388,7 +388,7 @@ export const getTutorProgressSummary = async (req: AuthRequest, res: Response) =
     res.json(summaryData);
   } catch (error: any) {
     logger.error("Error fetching tutor progress summary:", error);
-    res.status(500).json({ error: "Error fetching tutor progress summary" });
+    res.status(500).json({ error: "Failed to load progress summary. Please try again." });
   }
 };
 
@@ -469,7 +469,7 @@ export const getStudentsReadyForAssessment = async (req: AuthRequest, res: Respo
     });
   } catch (error: any) {
     logger.error("Error fetching students ready for assessment:", error);
-    res.status(500).json({ error: "Error fetching students ready for assessment" });
+    res.status(500).json({ error: "Failed to load assessment readiness data. Please try again." });
   }
 };
 
@@ -517,7 +517,7 @@ export const getStudentProgressHistory = async (req: AuthRequest, res: Response)
     });
   } catch (error: any) {
     logger.error("Error fetching student progress history:", error);
-    res.status(500).json({ error: "Error fetching student progress history" });
+    res.status(500).json({ error: "Failed to load student progress history. Please try again." });
   }
 };
 
@@ -627,7 +627,7 @@ export const recordAttendanceProgress = async (req: AuthRequest, res: Response) 
     });
   } catch (error: any) {
     logger.error("Error recording attendance progress:", error);
-    res.status(500).json({ error: "Error recording attendance progress" });
+    res.status(500).json({ error: "Failed to record attendance progress. Please try again." });
   }
 };
 
@@ -749,6 +749,6 @@ export const getCohortTimeline = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     logger.error("Error fetching cohort timeline:", error);
-    res.status(500).json({ error: "Error fetching cohort timeline" });
+    res.status(500).json({ error: "Failed to load cohort timeline. Please try again." });
   }
 };

@@ -65,6 +65,7 @@ import {
   QuestionType,
   TimeframeUnit,
 } from "@/services/programs";
+import { getApiErrorMessage } from "@/services";
 
 interface ProgramFormData {
   name: string;
@@ -262,9 +263,7 @@ function ManagePrograms() {
       resetForm();
       fetchPrograms();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create program";
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to create program"));
     }
   };
 
@@ -297,9 +296,7 @@ function ManagePrograms() {
       setIsImportDialogOpen(false);
       fetchPrograms();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to import program";
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to import program"));
     }
   };
 
@@ -321,9 +318,7 @@ function ManagePrograms() {
       setSelectedProgram(null);
       fetchPrograms();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update program";
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to update program"));
     }
   };
 
@@ -336,9 +331,7 @@ function ManagePrograms() {
       toast.success("Program deleted successfully");
       fetchPrograms();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete program";
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to delete program"));
     }
   };
 
@@ -349,11 +342,7 @@ function ManagePrograms() {
       toast.success(result.message);
       fetchPrograms();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to toggle program status";
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to toggle program status"));
     }
   };
 

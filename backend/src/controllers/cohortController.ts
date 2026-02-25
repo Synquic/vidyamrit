@@ -100,17 +100,21 @@ export const getCohort = async (req: AuthRequest, res: Response) => {
 // Create cohort (Super Admin and Tutors)
 export const createCohort = async (req: AuthRequest, res: Response) => {
   try {
-    const { schoolId } = req.body;
+    const { schoolId, name } = req.body;
 
     if (!schoolId) {
       return res.status(400).json({ error: "School ID is required" });
+    }
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: "Cohort name is required" });
     }
 
     // Check if tutor has permission to create cohorts for this school
     if (req.user?.role === UserRole.TUTOR) {
       const userSchoolId = req.user.schoolId?.toString();
       const requestedSchoolId = schoolId?.toString();
-      
+
       if (userSchoolId !== requestedSchoolId) {
         return res.status(403).json({
           error: "You can only create cohorts for your assigned school",
@@ -118,11 +122,31 @@ export const createCohort = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const cohort = new Cohort(req.body);
+    // Check for duplicate cohort name within the same school
+    const existingCohort = await Cohort.findOne({
+      name: name.trim(),
+      schoolId,
+    });
+    if (existingCohort) {
+      return res.status(400).json({
+        error: `A cohort named "${name.trim()}" already exists in this school. Please use a different name.`,
+      });
+    }
+
+    const cohort = new Cohort({ ...req.body, name: name.trim() });
     await cohort.save();
     res.status(201).json(cohort);
   } catch (error: any) {
-    res.status(500).json({ error: "Error creating cohort" });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((e: any) => e.message);
+      return res.status(400).json({ error: messages[0] || "Invalid cohort data" });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({
+        error: "A cohort with this name already exists in this school. Please use a different name.",
+      });
+    }
+    res.status(500).json({ error: "Failed to create cohort. Please try again." });
   }
 };
 
@@ -152,10 +176,19 @@ export const updateCohort = async (req: AuthRequest, res: Response) => {
       { ...req.body, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
-    
+
     res.json(updatedCohort);
   } catch (error: any) {
-    res.status(500).json({ error: "Error updating cohort" });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map((e: any) => e.message);
+      return res.status(400).json({ error: messages[0] || "Invalid cohort data" });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({
+        error: "A cohort with this name already exists in this school. Please use a different name.",
+      });
+    }
+    res.status(500).json({ error: "Failed to update cohort. Please try again." });
   }
 };
 

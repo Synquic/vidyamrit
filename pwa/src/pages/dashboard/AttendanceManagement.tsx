@@ -53,6 +53,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router";
 import { useSchoolContext } from "@/contexts/SchoolContext";
+import { getApiErrorMessage } from "@/services";
 
 // Overview Component (TutorAttendance functionality)
 function AttendanceOverview() {
@@ -145,14 +146,8 @@ function AttendanceOverview() {
       setCustomStartDate("");
       toast.success("Cohort started successfully");
     },
-    onError: (error: any) => {
-      let errorMessage = "Failed to start cohort";
-      if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to start cohort"));
     },
   });
 
@@ -811,7 +806,7 @@ function CohortAttendanceDetail() {
         return data;
       } catch (error) {
         console.error("Error fetching cohort attendance:", error);
-        toast.error("Failed to load cohort attendance");
+        toast.error(getApiErrorMessage(error, "Failed to load cohort attendance"));
         return null;
       }
     },
@@ -895,7 +890,7 @@ function CohortAttendanceDetail() {
       queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
     } catch (error: any) {
       console.error("Error toggling holiday:", error);
-      toast.error(error.response?.data?.error || "Failed to mark holiday");
+      toast.error(getApiErrorMessage(error, "Failed to mark holiday"));
     } finally {
       setMarkingHoliday(false);
     }
@@ -944,7 +939,7 @@ function CohortAttendanceDetail() {
       queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
     } catch (error) {
       console.error("Error saving attendance:", error);
-      toast.error("Failed to save attendance");
+      toast.error(getApiErrorMessage(error, "Failed to save attendance"));
     } finally {
       setSaving(false);
     }
