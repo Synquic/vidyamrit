@@ -222,6 +222,64 @@ export const getStudentProgressHistory = async (
   return response.data;
 };
 
+// Level Assessment APIs
+const levelAssessmentUrl = `${apiUrl}/level-assessments`;
+
+export interface LevelAssessmentQuestion {
+  _id: string;
+  questionText: string;
+  questionType: string;
+  options?: string[];
+  points: number;
+  isRequired: boolean;
+}
+
+export interface LevelAssessmentData {
+  cohortId: string;
+  cohortName: string;
+  levelNumber: number;
+  levelTitle: string;
+  levelDescription: string;
+  questions: LevelAssessmentQuestion[];
+  totalQuestions: number;
+  totalPoints: number;
+  assessmentType: string;
+}
+
+export interface ConductLevelAssessmentDTO {
+  cohortId: string;
+  studentId: string;
+  responses: Array<{ questionId: string; correct: boolean }>;
+  totalQuestions: number;
+  correctAnswers: number;
+}
+
+export interface LevelAssessmentResult {
+  message: string;
+  studentId: string;
+  cohortId: string;
+  currentLevel: number;
+  status: ProgressStatus;
+  score: string;
+  passed: boolean;
+  failureCount: number;
+  nextLevel: { levelNumber: number; title: string } | null;
+}
+
+export const getLevelAssessmentQuestions = async (
+  cohortId: string
+): Promise<LevelAssessmentData> => {
+  const response = await authAxios.get(`${levelAssessmentUrl}/cohort/${cohortId}/questions`);
+  return response.data;
+};
+
+export const conductLevelAssessment = async (
+  data: ConductLevelAssessmentDTO
+): Promise<LevelAssessmentResult> => {
+  const response = await authAxios.post(`${levelAssessmentUrl}/conduct`, data);
+  return response.data;
+};
+
 // Helper function to get status color
 export const getProgressStatusColor = (status: ProgressStatus): string => {
   const colors = {
@@ -237,9 +295,9 @@ export const getProgressStatusColor = (status: ProgressStatus): string => {
 export const getProgressStatusDescription = (status: ProgressStatus): string => {
   const descriptions = {
     green: "On track - progressing well",
-    yellow: "First assessment failure - needs support",
-    orange: "Second assessment failure - requires attention",
-    red: "Third assessment failure - urgent intervention needed",
+    yellow: "First test failure - needs support",
+    orange: "Second test failure - requires attention",
+    red: "Third test failure - urgent intervention needed",
   };
   return descriptions[status] || "Unknown status";
 };

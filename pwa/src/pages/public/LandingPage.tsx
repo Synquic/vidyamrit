@@ -117,7 +117,7 @@ export default function LandingPage() {
                     {
                       icon: Lightbulb,
                       title:
-                        "Foster innovation in pedagogy, assessment, and teaching models",
+                        "Foster innovation in pedagogy, testing, and teaching models",
                       color: "red",
                     },
                   ].map((item, index) => (

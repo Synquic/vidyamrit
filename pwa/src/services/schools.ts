@@ -16,6 +16,7 @@ export interface School {
   pointOfContact: string;
   phone: string;
   block?: string;
+  testPromotionType?: "automatic" | "manual";
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Eye,
   BarChart3,
+  LayoutDashboard,
   // Settings   // Temporarily hidden - School Admin Management
 } from "lucide-react";
 
@@ -25,6 +26,13 @@ export interface NavigationItem {
 
 // Flat navigation structure with role-based access control
 export const navigationItems: NavigationItem[] = [
+  {
+    title: "Dashboard",
+    url: DASHBOARD_ROUTE_PATHS.tutorDashboard,
+    icon: LayoutDashboard,
+    allowedRoles: [UserRole.TUTOR],
+    description: "Overview of your groups, attendance and progress",
+  },
   {
     title: "Reports",
     url: DASHBOARD_ROUTE_PATHS.reports,
@@ -61,18 +69,18 @@ export const navigationItems: NavigationItem[] = [
     description: "Create and manage learning programs",
   },
   {
-    title: "Cohort Management",
+    title: "Group Management",
     url: DASHBOARD_ROUTE_PATHS.cohorts,
     icon: Users,
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
     description: "Organize students into learning groups",
   },
   {
-    title: "Baseline Assessments",
+    title: "Baseline Tests",
     url: DASHBOARD_ROUTE_PATHS.baselineAssessments,
     icon: ClipboardList,
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER],
-    description: "Conduct student assessments",
+    description: "Conduct student tests",
   },
   {
     title: "Daily Attendance",

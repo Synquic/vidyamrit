@@ -15,6 +15,7 @@ import {
 import { getAssessments, type Assessment } from "@/services/assessments";
 import { programsService } from "@/services/programs";
 import { useSchoolContext } from "@/contexts/SchoolContext";
+import { getSchool } from "@/services/schools";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -105,6 +106,13 @@ function ManageStudents() {
     queryKey: ["archivedStudents", selectedSchool?._id],
     queryFn: () => getArchivedStudents(selectedSchool?._id),
     enabled: !!selectedSchool?._id && viewMode === "archived",
+  });
+
+  // Fetch full school data for testPromotionType
+  const { data: schoolData } = useQuery({
+    queryKey: ["school", selectedSchool?._id],
+    queryFn: () => getSchool(selectedSchool!._id!),
+    enabled: !!selectedSchool?._id,
   });
 
   // Fetch programs
@@ -535,56 +543,62 @@ function ManageStudents() {
   return (
     <div className="container mx-auto py-6">
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Manage Students</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold">Manage Students</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Create and manage students for your schools
             </p>
           </div>
           {viewMode === "active" && (
             <Button
               onClick={() => setIsOpen(true)}
-              className="w-full md:w-auto"
+              className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-5 w-5 sm:h-4 sm:w-4" />
               Add Student
             </Button>
           )}
         </div>
         <div className="mt-4 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex border rounded-md">
-              <Button
-                variant={viewMode === "active" ? "default" : "ghost"}
+            <div className="flex w-full sm:w-auto bg-muted p-1 rounded-xl gap-1">
+              <button
                 onClick={() => setViewMode("active")}
-                className="rounded-r-none"
+                className={`flex-1 sm:flex-none px-4 sm:px-5 h-10 sm:h-9 rounded-lg text-sm font-semibold transition-all ${
+                  viewMode === "active"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
               >
                 Active Students
-              </Button>
-              <Button
-                variant={viewMode === "archived" ? "default" : "ghost"}
+              </button>
+              <button
                 onClick={() => setViewMode("archived")}
-                className="rounded-l-none"
+                className={`flex-1 sm:flex-none px-4 sm:px-5 h-10 sm:h-9 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                  viewMode === "archived"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
               >
-                <Archive className="mr-2 h-4 w-4" />
+                <Archive className="h-4 w-4" />
                 Archived
-              </Button>
+              </button>
             </div>
             <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none sm:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, roll, class..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-10 sm:pl-9 h-11 sm:h-10 text-base sm:text-sm"
                 />
               </div>
-              <Button 
-                variant={hasActiveFilters ? "default" : "outline"} 
+              <Button
+                variant={hasActiveFilters ? "default" : "outline"}
                 onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-                className="relative"
+                className="relative h-11 sm:h-10"
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
@@ -709,11 +723,11 @@ function ManageStudents() {
             <TableRow>
               <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Age</TableHead>
-              <TableHead>Gender</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead className="hidden sm:table-cell">Age</TableHead>
+              <TableHead className="hidden sm:table-cell">Gender</TableHead>
+              <TableHead className="hidden sm:table-cell">Category</TableHead>
               <TableHead>Class</TableHead>
-              <TableHead>Level & Assessments</TableHead>
+              <TableHead>Level & Tests</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -733,9 +747,9 @@ function ManageStudents() {
                         {student.name}
                       </button>
                     </TableCell>
-                    <TableCell>{student.age}</TableCell>
-                    <TableCell>{student.gender}</TableCell>
-                    <TableCell>{student.caste || "N/A"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.age}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.gender}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
                       <div className="space-y-2">
@@ -744,7 +758,7 @@ function ManageStudents() {
                           if (levelInfo.length === 0) {
                             return (
                               <div className="space-y-1">
-                                <Badge variant="secondary">Not Assessed</Badge>
+                                <Badge variant="secondary">Not Tested</Badge>
                               </div>
                             );
                           }
@@ -758,7 +772,7 @@ function ManageStudents() {
                                 </div>
                               ))}
                               <div className="text-xs text-muted-foreground">
-                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} assessed
+                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} tested
                               </div>
                             </div>
                           );
@@ -803,9 +817,9 @@ function ManageStudents() {
                         {student.name}
                       </button>
                     </TableCell>
-                    <TableCell>{student.age}</TableCell>
-                    <TableCell>{student.gender}</TableCell>
-                    <TableCell>{student.caste || "N/A"}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.age}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.gender}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
                       <div className="space-y-2">
@@ -814,7 +828,7 @@ function ManageStudents() {
                           if (levelInfo.length === 0) {
                             return (
                               <div className="space-y-1">
-                                <Badge variant="secondary">Not Assessed</Badge>
+                                <Badge variant="secondary">Not Tested</Badge>
                               </div>
                             );
                           }
@@ -828,7 +842,7 @@ function ManageStudents() {
                                 </div>
                               ))}
                               <div className="text-xs text-muted-foreground">
-                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} assessed
+                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} tested
                               </div>
                             </div>
                           );
@@ -870,7 +884,7 @@ function ManageStudents() {
       </div>
 
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingStudent ? "Edit Student" : "Create Student"}
@@ -881,160 +895,186 @@ function ManageStudents() {
                 : "Fill in the details to create a new student"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="aadharNumber">Aadhar Number (Optional)</Label>
-              <Input
-                id="aadharNumber"
-                value={formData.aadharNumber || ""}
-                placeholder="Enter student aadhar number"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    aadharNumber: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="apaarId">APAAR ID (Optional)</Label>
-              <Input
-                id="apaarId"
-                value={formData.apaarId || ""}
-                placeholder="Enter student APAAR ID"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    apaarId: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mobileNumber">Mobile Number (Optional)</Label>
-              <Input
-                id="mobileNumber"
-                value={formData.mobileNumber || ""}
-                placeholder="Enter student mobile number"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    mobileNumber: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-2 md:gap-4">
-              <div className="space-y-2 min-w-0">
-                <Label htmlFor="age" className="text-xs">
-                  Age
-                </Label>
-                <Input
-                  id="age"
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      age: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2 min-w-0">
-                <Label htmlFor="gender" className="text-xs">
-                  Gender
-                </Label>
-                <Select
-                  value={formData.gender}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, gender: value }))
-                  }
-                >
-                  <SelectTrigger className="w-full min-w-0">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Male">Male</SelectItem>
-                    <SelectItem value="Female">Female</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 min-w-0">
-                <Label htmlFor="caste" className="text-xs">
-                  Category (Optional)
-                </Label>
-                <Select
-                  value={formData.caste || ""}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, caste: value }))
-                  }
-                >
-                  <SelectTrigger className="w-full min-w-0">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="st">ST</SelectItem>
-                    <SelectItem value="gen">GEN</SelectItem>
-                    <SelectItem value="sc">SC</SelectItem>
-                    <SelectItem value="obc">OBC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="class">Class</Label>
-              <Select
-                value={formData.class}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, class: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                    <SelectItem key={num} value={num.toString()}>
-                      Class {num}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>School</Label>
-              <div className="p-3 border rounded-md bg-muted/50">
-                <div className="font-medium">
-                  {selectedSchool?.name || "No school selected"}
+          <div className="space-y-5">
+            {/* Personal Information Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                Personal Information
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-base sm:text-sm">Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {selectedSchool
-                    ? "Students will be created for this school"
-                    : "Please select a school from the sidebar"}
+                <div className="space-y-2">
+                  <Label htmlFor="mobileNumber" className="text-base sm:text-sm">Mobile Number (Optional)</Label>
+                  <Input
+                    id="mobileNumber"
+                    value={formData.mobileNumber || ""}
+                    placeholder="Enter student mobile number"
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        mobileNumber: e.target.value,
+                      }))
+                    }
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="space-y-2 min-w-0">
+                  <Label htmlFor="age" className="text-base sm:text-sm">
+                    Age
+                  </Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        age: Number(e.target.value),
+                      }))
+                    }
+                    className="w-full h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-2 min-w-0">
+                  <Label htmlFor="gender" className="text-base sm:text-sm">
+                    Gender
+                  </Label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, gender: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full min-w-0 h-12 sm:h-10 text-base sm:text-sm">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 min-w-0">
+                  <Label htmlFor="caste" className="text-base sm:text-sm">
+                    Category (Optional)
+                  </Label>
+                  <Select
+                    value={formData.caste || ""}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, caste: value }))
+                    }
+                  >
+                    <SelectTrigger className="w-full min-w-0 h-12 sm:h-10 text-base sm:text-sm">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="st">ST</SelectItem>
+                      <SelectItem value="gen">GEN</SelectItem>
+                      <SelectItem value="sc">SC</SelectItem>
+                      <SelectItem value="obc">OBC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Identification Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                Identification
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="aadharNumber" className="text-base sm:text-sm">Aadhar Number (Optional)</Label>
+                  <Input
+                    id="aadharNumber"
+                    value={formData.aadharNumber || ""}
+                    placeholder="Enter student aadhar number"
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        aadharNumber: e.target.value,
+                      }))
+                    }
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="apaarId" className="text-base sm:text-sm">APAAR ID (Optional)</Label>
+                  <Input
+                    id="apaarId"
+                    value={formData.apaarId || ""}
+                    placeholder="Enter student APAAR ID"
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        apaarId: e.target.value,
+                      }))
+                    }
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Details Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                Academic Details
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="class" className="text-base sm:text-sm">Class</Label>
+                  <Select
+                    value={formData.class}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, class: value }))
+                    }
+                  >
+                    <SelectTrigger className="h-12 sm:h-10 text-base sm:text-sm">
+                      <SelectValue placeholder="Select class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                        <SelectItem key={num} value={num.toString()}>
+                          Class {num}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base sm:text-sm">School</Label>
+                  <div className="p-3 border rounded-md bg-muted/50 h-12 sm:h-10 flex items-center">
+                    <span className="font-medium text-sm truncate">
+                      {selectedSchool?.name || "No school selected"}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>
+            <Button variant="outline" onClick={handleCloseDialog} className="h-12 sm:h-10 text-base sm:text-sm">
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={createMutation.isPending || updateMutation.isPending}
+              className="h-12 sm:h-10 text-base sm:text-sm"
             >
               {(createMutation.isPending || updateMutation.isPending) && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1106,12 +1146,13 @@ function ManageStudents() {
           setSelectedStudent(null);
         }}
         student={selectedStudent}
+        testPromotionType={schoolData?.testPromotionType || selectedSchool?.testPromotionType || "automatic"}
         onAssessmentComplete={() => {
           // Refresh students data to show updated levels
           queryClient.invalidateQueries({ queryKey: ["students"] });
           setIsAssessmentOpen(false);
           setSelectedStudent(null);
-          toast.success("Assessment completed and student level updated!");
+          toast.success("Test completed and student level updated!");
         }}
       />
     </div>

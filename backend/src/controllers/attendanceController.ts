@@ -141,6 +141,24 @@ export const bulkMarkAttendance = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Parse and normalize date to midnight UTC to avoid timezone issues
+    let attendanceDate: Date;
+    if (date) {
+      const dateStr = date.toString();
+      const [year, month, day] = dateStr.split('-').map(Number);
+      attendanceDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    } else {
+      const today = new Date();
+      attendanceDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 0, 0, 0, 0));
+    }
+
+    // Prevent recording attendance on Sundays
+    if (isSunday(attendanceDate)) {
+      return res.status(400).json({
+        error: "Cannot record attendance on Sunday. Sunday is a holiday. Please select a teaching day (Monday-Saturday).",
+      });
+    }
+
     const results = [];
     const errors = [];
 
@@ -151,7 +169,7 @@ export const bulkMarkAttendance = async (req: AuthRequest, res: Response) => {
         // Check if attendance exists
         const existingAttendance = await Attendance.findOne({
           student: studentId,
-          date: new Date(date),
+          date: attendanceDate,
           subject: subject || null,
         });
 
@@ -167,7 +185,7 @@ export const bulkMarkAttendance = async (req: AuthRequest, res: Response) => {
             student: studentId,
             school: schoolId,
             mentor: mentorId,
-            date: new Date(date),
+            date: attendanceDate,
             status,
             subject: subject || null,
             sessionType: sessionType || "regular",
@@ -375,7 +393,7 @@ export const recordCohortAttendance = async (req: AuthRequest, res: Response) =>
     // Import Cohort model if not already imported
     const Cohort = require("../models/CohortModel").default;
     
-    const cohort = await Cohort.findById(cohortId).populate('students schoolId');
+    const cohort = await Cohort.findById(cohortId).populate('students schoolId programId');
     if (!cohort) {
       return res.status(404).json({ error: "Cohort not found" });
     }
@@ -443,6 +461,22 @@ export const recordCohortAttendance = async (req: AuthRequest, res: Response) =>
           studentId,
           status
         });
+
+        // Sync to Attendance collection for reports/analytics
+        const subject = cohort.programId?.subject?.toLowerCase() || null;
+        await Attendance.findOneAndUpdate(
+          { student: studentId, date: attendanceDate, subject },
+          {
+            student: studentId,
+            school: cohort.schoolId?._id || cohort.schoolId,
+            mentor: tutorId,
+            date: attendanceDate,
+            status,
+            subject,
+            sessionType: "regular",
+          },
+          { upsert: true, new: true }
+        );
 
         results.push({ studentId, status, date: attendanceDate });
       } catch (recordError: any) {

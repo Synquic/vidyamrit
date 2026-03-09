@@ -573,9 +573,8 @@ export const getStudentComprehensiveReport = async (
       currentLevels[key] = value.level;
     });
 
-    // Process cohort memberships
+    // Process cohort memberships - fetch ALL cohorts (active + inactive)
     const cohortIds = student.cohort
-      .filter((c) => !c.dateLeaved)
       .map((c) => c.cohortId);
 
     const cohorts = await Cohort.find({ _id: { $in: cohortIds } })
