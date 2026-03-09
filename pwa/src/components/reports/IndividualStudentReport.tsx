@@ -249,25 +249,37 @@ export default function IndividualStudentReport({
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Individual Student Report</h1>
-            <p className="text-muted-foreground mt-1 md:mt-2">
-              Comprehensive report for {report?.student?.name || "Student"}
-            </p>
-          </div>
-          <div className="flex gap-2">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={onBack} size="lg" className="h-11 px-4">
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              <span className="text-base">Back</span>
+            </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={() => setIsDeleteDialogOpen(true)}
+              className="hidden sm:flex"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete Student
             </Button>
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="sm:hidden h-11 w-11"
+            >
+              <Trash2 className="h-5 w-5" />
             </Button>
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+              {report?.student?.name || "Student"}
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              Comprehensive report
+            </p>
           </div>
         </div>
 
@@ -281,48 +293,48 @@ export default function IndividualStudentReport({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">Basic Information</h3>
-                <div className="space-y-1">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-base text-muted-foreground">Basic Information</h3>
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Name:</span>
-                    <span>{report?.student?.name || "Unknown"}</span>
+                    <span className="text-base font-medium">Name:</span>
+                    <span className="text-base">{report?.student?.name || "Unknown"}</span>
                   </div>
                   {report?.student?.roll_no && (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Roll No:</span>
-                      <Badge variant="outline">{report.student.roll_no}</Badge>
+                      <span className="text-base font-medium">Roll No:</span>
+                      <Badge variant="outline" className="text-sm">{report.student.roll_no}</Badge>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Age:</span>
-                    <span>{report?.student?.age || 0} years</span>
+                    <span className="text-base font-medium">Age:</span>
+                    <span className="text-base">{report?.student?.age || 0} years</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Gender:</span>
-                    <span className="capitalize">{report?.student?.gender || "Unknown"}</span>
+                    <span className="text-base font-medium">Gender:</span>
+                    <span className="text-base capitalize">{report?.student?.gender || "Unknown"}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Class:</span>
-                    <span>Class {report?.student?.class || "Unknown"}</span>
+                    <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-base font-medium">Class:</span>
+                    <span className="text-base">Class {report?.student?.class || "Unknown"}</span>
                   </div>
                   {report?.student?.caste && (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Category:</span>
-                      <span className="uppercase">{report.student.caste}</span>
+                      <span className="text-base font-medium">Category:</span>
+                      <span className="text-base uppercase">{report.student.caste}</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">School & Contact</h3>
-                <div className="space-y-1">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-base text-muted-foreground">School & Contact</h3>
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <School className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">School:</span>
-                    <span>
+                    <School className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    <span className="text-base font-medium">School:</span>
+                    <span className="text-base">
                       {report?.student?.school &&
                       typeof report.student.school === "object" &&
                       report.student.school !== null
@@ -332,28 +344,28 @@ export default function IndividualStudentReport({
                   </div>
                   {report?.student?.mobileNumber && (
                     <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{report.student.mobileNumber}</span>
+                      <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <span className="text-base">{report.student.mobileNumber}</span>
                     </div>
                   )}
                   {report?.student?.aadharNumber && (
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Aadhar: {report.student.aadharNumber}</span>
+                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <span className="text-base">Aadhar: {report.student.aadharNumber}</span>
                     </div>
                   )}
                   {report?.student?.apaarId && (
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">APAAR ID: {report.student.apaarId}</span>
+                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <span className="text-base">APAAR ID: {report.student.apaarId}</span>
                     </div>
                   )}
                   {report?.student?.contactInfo && report.student.contactInfo.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-sm font-medium">Guardian:</span>
-                      <div className="mt-1 space-y-1">
+                    <div className="mt-3">
+                      <span className="text-base font-medium">Guardian:</span>
+                      <div className="mt-1.5 space-y-1.5">
                         {report.student.contactInfo.map((contact, idx) => (
-                          <div key={idx} className="text-sm">
+                          <div key={idx} className="text-base">
                             {contact?.name || "Unknown"} ({contact?.relation || "Unknown"})
                             {contact?.phone_no && ` - ${contact.phone_no}`}
                           </div>
@@ -364,24 +376,25 @@ export default function IndividualStudentReport({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-semibold text-sm text-muted-foreground">Key Metrics</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">Total Assessments</span>
-                    <Badge variant="default">{report?.summary?.totalAssessments || 0}</Badge>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-base text-muted-foreground">Key Metrics</h3>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-base">Total Tests</span>
+                    <Badge variant="default" className="text-sm px-3 py-1">{report?.summary?.totalAssessments || 0}</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">Average Level</span>
-                    <Badge variant="secondary">{report?.summary?.averageLevel || 0}</Badge>
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-base">Average Level</span>
+                    <Badge variant="secondary" className="text-sm px-3 py-1">{report?.summary?.averageLevel || 0}</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">Highest Level</span>
-                    <Badge variant="default">{report?.summary?.highestLevel || 0}</Badge>
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-base">Highest Level</span>
+                    <Badge variant="default" className="text-sm px-3 py-1">{report?.summary?.highestLevel || 0}</Badge>
                   </div>
-                  <div className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">Attendance</span>
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-base">Attendance</span>
                     <Badge
+                      className="text-sm px-3 py-1"
                       variant={
                         (report?.summary?.attendancePercentage || 0) >= 75
                           ? "default"
@@ -401,13 +414,13 @@ export default function IndividualStudentReport({
 
         {/* Tabs for different sections */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="levels">Levels</TabsTrigger>
-            <TabsTrigger value="assessments">Assessments</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="cohorts">Cohorts</TabsTrigger>
-            <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto no-scrollbar sm:grid sm:grid-cols-6 h-auto p-1">
+            <TabsTrigger value="overview" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Overview</TabsTrigger>
+            <TabsTrigger value="levels" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Levels</TabsTrigger>
+            <TabsTrigger value="assessments" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Tests</TabsTrigger>
+            <TabsTrigger value="attendance" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Attendance</TabsTrigger>
+            <TabsTrigger value="cohorts" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Groups</TabsTrigger>
+            <TabsTrigger value="progress" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Progress</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -429,13 +442,13 @@ export default function IndividualStudentReport({
                         </div>
                       ))}
                       {Object.keys(report?.currentLevels || {}).length === 0 && (
-                        <p className="text-sm text-muted-foreground">No assessments yet</p>
+                        <p className="text-sm text-muted-foreground">No tests yet</p>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="font-semibold mb-2">Active Cohorts</h3>
+                    <h3 className="font-semibold mb-2">Active Groups</h3>
                     <div className="space-y-2">
                       {(report?.cohorts || [])
                         .filter((c) => c.isActive)
@@ -448,17 +461,17 @@ export default function IndividualStudentReport({
                           </div>
                         ))}
                       {(report?.cohorts || []).filter((c) => c.isActive).length === 0 && (
-                        <p className="text-sm text-muted-foreground">Not in any cohort</p>
+                        <p className="text-sm text-muted-foreground">Not in any group</p>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="font-semibold mb-2">Last Assessment</h3>
+                    <h3 className="font-semibold mb-2">Last Test</h3>
                     <p className="text-sm">
                       {report?.student?.lastAssessmentDate
                         ? new Date(report.student.lastAssessmentDate).toLocaleDateString()
-                        : "No assessments"}
+                        : "No tests"}
                     </p>
                   </div>
                 </div>
@@ -472,15 +485,17 @@ export default function IndividualStudentReport({
                   <CardTitle>Current Levels by Subject</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={subjectLevelData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="subject" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="level" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="h-[200px] sm:h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={subjectLevelData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="subject" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="level" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -498,7 +513,8 @@ export default function IndividualStudentReport({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
+                  <div className="h-[250px] sm:h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={levelProgressionData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis
@@ -522,6 +538,7 @@ export default function IndividualStudentReport({
                       ))}
                     </LineChart>
                   </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -548,11 +565,11 @@ export default function IndividualStudentReport({
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">Total Assessments:</span>
+                            <span className="text-muted-foreground">Total Tests:</span>
                             <p className="font-medium">{subjectHistory.length}</p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">First Assessment:</span>
+                            <span className="text-muted-foreground">First Test:</span>
                             <p className="font-medium">
                               {firstAssessment
                                 ? new Date(firstAssessment.date).toLocaleDateString()
@@ -560,7 +577,7 @@ export default function IndividualStudentReport({
                             </p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Last Assessment:</span>
+                            <span className="text-muted-foreground">Last Test:</span>
                             <p className="font-medium">
                               {lastAssessment
                                 ? new Date(lastAssessment.date).toLocaleDateString()
@@ -589,79 +606,115 @@ export default function IndividualStudentReport({
             </Card>
           </TabsContent>
 
-          {/* Assessments Tab */}
+          {/* Tests Tab */}
           <TabsContent value="assessments" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Assessment History</CardTitle>
+                <CardTitle>Test History</CardTitle>
                 <CardDescription>
-                  Complete history of all assessments (baseline and regular)
+                  Complete history of all tests (baseline and regular)
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[600px]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Subject</TableHead>
-                        <TableHead>Level</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Mentor</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        ...(report?.knowledgeLevelHistory || []).map((kl) => ({
-                          ...kl,
-                          type: "Baseline",
-                          mentor: null,
-                        })),
-                        ...(report?.assessments || []).map((a) => ({
-                          ...a,
-                          type: "Regular",
-                        })),
-                      ]
-                        .sort(
-                          (a, b) =>
-                            new Date(b.date).getTime() - new Date(a.date).getTime()
-                        )
-                        .map((assessment, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell>
-                              {new Date(assessment.date).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell className="capitalize">{assessment.subject}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">Level {assessment.level}</Badge>
-                            </TableCell>
-                            <TableCell>
+                {(() => {
+                  const allTests = [
+                    ...(report?.knowledgeLevelHistory || []).map((kl) => ({
+                      ...kl,
+                      type: "Baseline" as const,
+                      mentor: null,
+                    })),
+                    ...(report?.assessments || []).map((a) => ({
+                      ...a,
+                      type: "Regular" as const,
+                    })),
+                  ].sort(
+                    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+                  );
+
+                  if (allTests.length === 0) {
+                    return (
+                      <p className="text-center text-muted-foreground py-8 text-base">
+                        No tests found
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {/* Mobile: Card layout */}
+                      <div className="sm:hidden space-y-3 max-h-[500px] overflow-y-auto">
+                        {allTests.map((assessment, idx) => (
+                          <div key={idx} className="border rounded-lg p-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-base font-medium capitalize">{assessment.subject}</span>
+                              <Badge variant="outline" className="text-sm">Level {assessment.level}</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(assessment.date).toLocaleDateString()}
+                              </span>
                               <Badge
                                 variant={assessment.type === "Baseline" ? "default" : "secondary"}
+                                className="text-xs"
                               >
                                 {assessment.type}
                               </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {assessment.mentor &&
+                            </div>
+                            {assessment.mentor &&
                               typeof assessment.mentor === "object" &&
-                              assessment.mentor !== null
-                                ? assessment.mentor.name || "Unknown"
-                                : "-"}
-                            </TableCell>
-                          </TableRow>
+                              assessment.mentor !== null && (
+                                <p className="text-sm text-muted-foreground">
+                                  Mentor: {assessment.mentor.name || "Unknown"}
+                                </p>
+                              )}
+                          </div>
                         ))}
-                      {(report?.knowledgeLevelHistory || []).length === 0 &&
-                        (report?.assessments || []).length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground">
-                              No assessments found
-                            </TableCell>
-                          </TableRow>
-                        )}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
+                      </div>
+
+                      {/* Desktop: Table layout */}
+                      <ScrollArea className="h-[600px] hidden sm:block">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Subject</TableHead>
+                              <TableHead>Level</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Mentor</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {allTests.map((assessment, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell>
+                                  {new Date(assessment.date).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell className="capitalize">{assessment.subject}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">Level {assessment.level}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={assessment.type === "Baseline" ? "default" : "secondary"}
+                                  >
+                                    {assessment.type}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {assessment.mentor &&
+                                  typeof assessment.mentor === "object" &&
+                                  assessment.mentor !== null
+                                    ? assessment.mentor.name || "Unknown"
+                                    : "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
@@ -676,7 +729,8 @@ export default function IndividualStudentReport({
                 </CardHeader>
                 <CardContent>
                   {attendancePieData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <div className="h-[220px] sm:h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={attendancePieData}
@@ -697,6 +751,7 @@ export default function IndividualStudentReport({
                         <Tooltip />
                       </PieChart>
                     </ResponsiveContainer>
+                    </div>
                   ) : (
                     <p className="text-center text-muted-foreground py-8">
                       No attendance data available
@@ -757,7 +812,8 @@ export default function IndividualStudentReport({
                   <CardTitle>Attendance Trends by Month</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <div className="h-[220px] sm:h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={attendanceByMonthData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
@@ -769,6 +825,7 @@ export default function IndividualStudentReport({
                       <Bar dataKey="Exam" fill="#3b82f6" />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -810,76 +867,102 @@ export default function IndividualStudentReport({
             )}
           </TabsContent>
 
-          {/* Cohorts Tab */}
+          {/* Groups Tab */}
           <TabsContent value="cohorts" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Cohort Memberships</CardTitle>
+                <CardTitle>Group Memberships</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cohort Name</TableHead>
-                      <TableHead>School</TableHead>
-                      <TableHead>Tutor</TableHead>
-                      <TableHead>Date Joined</TableHead>
-                      <TableHead>Date Left</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(report?.cohorts || []).map((cohort) => (
-                      <TableRow key={cohort.cohortId}>
-                        <TableCell className="font-medium">{cohort.cohortName || "Unknown"}</TableCell>
-                        <TableCell>
-                          {cohort.school &&
-                          typeof cohort.school === "object" &&
-                          cohort.school !== null
-                            ? (cohort.school as any)?.name || "Unknown"
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {cohort.tutor &&
-                          typeof cohort.tutor === "object" &&
-                          cohort.tutor !== null
-                            ? (cohort.tutor as any)?.name || "Unknown"
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(cohort.dateJoined).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          {cohort.dateLeaved
-                            ? new Date(cohort.dateLeaved).toLocaleDateString()
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={cohort.isActive ? "default" : "secondary"}>
-                            {cohort.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {(report?.cohorts || []).length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          No cohort memberships found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                {(report?.cohorts || []).length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8 text-base">
+                    No group memberships found
+                  </p>
+                ) : (
+                  <>
+                    {/* Mobile: Card layout */}
+                    <div className="sm:hidden space-y-3">
+                      {(report?.cohorts || []).map((cohort) => (
+                        <div key={cohort.cohortId} className="border rounded-lg p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-base font-medium">{cohort.cohortName || "Unknown"}</span>
+                            <Badge variant={cohort.isActive ? "default" : "secondary"}>
+                              {cohort.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p>School: {cohort.school && typeof cohort.school === "object" && cohort.school !== null
+                              ? (cohort.school as any)?.name || "Unknown" : "-"}</p>
+                            <p>Tutor: {cohort.tutor && typeof cohort.tutor === "object" && cohort.tutor !== null
+                              ? (cohort.tutor as any)?.name || "Unknown" : "-"}</p>
+                            <p>Joined: {new Date(cohort.dateJoined).toLocaleDateString()}</p>
+                            {cohort.dateLeaved && (
+                              <p>Left: {new Date(cohort.dateLeaved).toLocaleDateString()}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop: Table layout */}
+                    <Table className="hidden sm:table">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Group Name</TableHead>
+                          <TableHead>School</TableHead>
+                          <TableHead>Tutor</TableHead>
+                          <TableHead>Date Joined</TableHead>
+                          <TableHead>Date Left</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(report?.cohorts || []).map((cohort) => (
+                          <TableRow key={cohort.cohortId}>
+                            <TableCell className="font-medium">{cohort.cohortName || "Unknown"}</TableCell>
+                            <TableCell>
+                              {cohort.school &&
+                              typeof cohort.school === "object" &&
+                              cohort.school !== null
+                                ? (cohort.school as any)?.name || "Unknown"
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {cohort.tutor &&
+                              typeof cohort.tutor === "object" &&
+                              cohort.tutor !== null
+                                ? (cohort.tutor as any)?.name || "Unknown"
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(cohort.dateJoined).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {cohort.dateLeaved
+                                ? new Date(cohort.dateLeaved).toLocaleDateString()
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={cohort.isActive ? "default" : "secondary"}>
+                                {cohort.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Cohort Progress */}
+            {/* Group Progress */}
             {report?.cohortProgress && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Cohort Progress</CardTitle>
+                  <CardTitle>Group Progress</CardTitle>
                   <CardDescription>
-                    Current progress in {report.cohortProgress.cohortName || "Unknown Cohort"}
+                    Current progress in {report.cohortProgress.cohortName || "Unknown Group"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -914,7 +997,7 @@ export default function IndividualStudentReport({
                         <p className="text-2xl font-bold">{report.cohortProgress.failureCount || 0}</p>
                       </div>
                       <div className="p-3 bg-muted rounded">
-                        <span className="text-sm text-muted-foreground">Last Assessment</span>
+                        <span className="text-sm text-muted-foreground">Last Test</span>
                         <p className="text-sm font-medium">
                           {report.cohortProgress.lastAssessmentDate
                             ? new Date(
@@ -927,8 +1010,41 @@ export default function IndividualStudentReport({
 
                     {(report.cohortProgress.assessmentHistory || []).length > 0 && (
                       <div>
-                        <h3 className="font-semibold mb-3">Assessment History in Cohort</h3>
-                        <ScrollArea className="h-[300px]">
+                        <h3 className="font-semibold mb-3 text-base">Test History in Group</h3>
+
+                        {/* Mobile: Card layout */}
+                        <div className="sm:hidden space-y-3 max-h-[400px] overflow-y-auto">
+                          {(report.cohortProgress.assessmentHistory || []).map((ah, idx) => (
+                            <div key={idx} className="border rounded-lg p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Badge variant="outline" className="text-sm">Level {ah.level}</Badge>
+                                <div className="flex items-center gap-2">
+                                  {ah.passed ? (
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                  ) : (
+                                    <XCircle className="h-5 w-5 text-red-600" />
+                                  )}
+                                  <Badge
+                                    variant="outline"
+                                    style={{
+                                      color: STATUS_COLORS[ah.status as keyof typeof STATUS_COLORS],
+                                      borderColor: STATUS_COLORS[ah.status as keyof typeof STATUS_COLORS],
+                                    }}
+                                  >
+                                    {ah.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <span>{new Date(ah.date).toLocaleDateString()}</span>
+                                <span>{ah.score !== null ? `Score: ${ah.score}%` : ""}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Desktop: Table layout */}
+                        <ScrollArea className="h-[300px] hidden sm:block">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -1081,7 +1197,7 @@ export default function IndividualStudentReport({
               <AlertDialogDescription>
                 This action <strong>cannot be undone</strong>. This will permanently delete the student
                 <strong> "{report?.student?.name || student?.name}"</strong> and all their associated data
-                including assessments, attendance records, and cohort memberships.
+                including tests, attendance records, and group memberships.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="py-4">

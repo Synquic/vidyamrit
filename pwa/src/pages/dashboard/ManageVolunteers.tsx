@@ -488,7 +488,7 @@ function ManageVolunteers() {
         <CardHeader>
           <CardTitle>Volunteer Accounts ({volunteers?.length || 0})</CardTitle>
           <CardDescription>
-            Manage volunteer accounts with time-limited access for baseline assessments
+            Manage volunteer accounts with time-limited access for baseline tests
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -783,7 +783,7 @@ function ManageVolunteers() {
               <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
                 <p className="text-sm text-blue-700">
                   <strong>Important:</strong> Multiple volunteers can use the same login credentials 
-                  simultaneously. They will only have access to student management and baseline assessments.
+                  simultaneously. They will only have access to student management and baseline tests.
                 </p>
               </div>
             </div>
@@ -808,7 +808,7 @@ Account Details:
 
 Important Notes:
 - Multiple volunteers can use the same login credentials simultaneously
-- You will only have access to student management and baseline assessments
+- You will only have access to student management and baseline tests
 - This account will expire on ${new Date(createdVolunteer.expiresAt).toLocaleString()}
 - Please keep these credentials secure and do not share them publicly
 

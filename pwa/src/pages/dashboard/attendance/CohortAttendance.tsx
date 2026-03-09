@@ -46,7 +46,7 @@ export default function CohortAttendance() {
       setAttendanceRecords(records);
     } catch (error) {
       console.error('Error fetching cohort attendance:', error);
-      toast.error('Failed to load cohort attendance');
+      toast.error('Failed to load group attendance');
     } finally {
       setLoading(false);
     }
@@ -148,7 +148,7 @@ export default function CohortAttendance() {
   if (!cohortData) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Cohort not found</p>
+        <p className="text-gray-500">Group not found</p>
         <Button onClick={() => navigate('/attendance')} className="mt-4">
           Go Back
         </Button>

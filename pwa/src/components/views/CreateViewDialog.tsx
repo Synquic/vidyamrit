@@ -517,7 +517,7 @@ export function CreateViewDialog({
                         }
                       />
                       <Label htmlFor="schools-showWithAssessments">
-                        Show With Assessments
+                        Show With Tests
                       </Label>
                     </div>
                   </div>
@@ -630,7 +630,7 @@ export function CreateViewDialog({
 
               <Separator />
 
-              {/* Cohorts Section */}
+              {/* Groups Section */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -641,7 +641,7 @@ export function CreateViewDialog({
                     }
                   />
                   <Label htmlFor="section-cohorts" className="font-semibold">
-                    Cohorts
+                    Groups
                   </Label>
                 </div>
                 {formData.config.sections.cohorts?.enabled && (
@@ -666,7 +666,7 @@ export function CreateViewDialog({
 
               <Separator />
 
-              {/* Assessments Section */}
+              {/* Tests Section */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -682,7 +682,7 @@ export function CreateViewDialog({
                     htmlFor="section-assessments"
                     className="font-semibold"
                   >
-                    Assessments
+                    Tests
                   </Label>
                 </div>
                 {formData.config.sections.assessments?.enabled && (

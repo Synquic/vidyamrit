@@ -45,6 +45,9 @@ import ViewDashboard from "@/pages/dashboard/ViewDashboard";
 import ReportsPage from "@/pages/dashboard/ReportsPage";
 import StudentReportPage from "@/pages/dashboard/StudentReportPage";
 
+// Tutor Dashboard
+import TutorDashboard from "@/pages/dashboard/TutorDashboard";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -88,6 +91,16 @@ export const router = createBrowserRouter([
       {
         path: DASHBOARD_ROUTE_PATHS.dashboard,
         element: <DashboardPage />,
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.tutorDashboard,
+        element: (
+          <ProtectedRoute
+            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorDashboard]}
+          >
+            <TutorDashboard />
+          </ProtectedRoute>
+        ),
       },
       {
         path: DASHBOARD_ROUTE_PATHS.viewDashboard,

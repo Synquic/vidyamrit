@@ -1059,7 +1059,7 @@ export default function StudentDistributionReport({
                       <TableHead>Age</TableHead>
                       <TableHead>Gender</TableHead>
                       <TableHead>Category</TableHead>
-                      <TableHead>Assessments</TableHead>
+                      <TableHead>Tests</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1095,7 +1095,7 @@ export default function StudentDistributionReport({
                                   ))
                                 ) : (
                                   <span className="text-xs text-muted-foreground">
-                                    Not Assessed
+                                    Not Tested
                                   </span>
                                 )}
                               </div>
@@ -1224,7 +1224,7 @@ export default function StudentDistributionReport({
                       <TableHead>Age</TableHead>
                       <TableHead>Gender</TableHead>
                       <TableHead>Category</TableHead>
-                      <TableHead>Assessments</TableHead>
+                      <TableHead>Tests</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1260,7 +1260,7 @@ export default function StudentDistributionReport({
                                   ))
                                 ) : (
                                   <span className="text-xs text-muted-foreground">
-                                    Not Assessed
+                                    Not Tested
                                   </span>
                                 )}
                               </div>

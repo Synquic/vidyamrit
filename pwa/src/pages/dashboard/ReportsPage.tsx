@@ -21,7 +21,7 @@ const availableReports: Report[] = [
   {
     id: "student-levels",
     title: "Student Levels - Class & School Wise",
-    description: "View student assessment levels grouped by school and class",
+    description: "View student test levels grouped by school and class",
     icon: BarChart3,
   },
   {

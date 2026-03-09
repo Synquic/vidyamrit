@@ -12,6 +12,7 @@ import {
 } from "@/services/students";
 import { getAssessments, Assessment } from "@/services/assessments";
 import { programsService, IProgram } from "@/services/programs";
+import { getSchool } from "@/services/schools";
 import { useAuth } from "@/hooks/useAuth";
 import { isSuperAdmin } from "@/types/user";
 import { useSchoolContext } from "@/contexts/SchoolContext";
@@ -54,10 +55,17 @@ import {
   Users,
   BookOpen,
   Loader2,
-  CheckCircle2,
   XCircle,
   Search,
+  Play,
+  CheckCheck,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 export default function BaselineAssessmentsPage() {
@@ -73,6 +81,7 @@ export default function BaselineAssessmentsPage() {
     string | undefined
   >(undefined);
   const [error, setError] = useState<string | null>(null);
+  const [testPromotionType, setTestPromotionType] = useState<"automatic" | "manual">("automatic");
   const [modalOpen, setModalOpen] = useState(false);
   const [createStudentOpen, setCreateStudentOpen] = useState(false);
   const [newStudent, setNewStudent] = useState<Partial<CreateStudentDTO>>({
@@ -106,6 +115,16 @@ export default function BaselineAssessmentsPage() {
       fetchTodaysAssessments();
       if (selectedSchool._id) {
         fetchAllAssessments(selectedSchool._id);
+      }
+      // Fetch full school data for testPromotionType
+      if (selectedSchool.testPromotionType) {
+        setTestPromotionType(selectedSchool.testPromotionType);
+      } else {
+        getSchool(selectedSchool._id).then((school) => {
+          setTestPromotionType(school.testPromotionType || "automatic");
+        }).catch(() => {
+          setTestPromotionType("automatic");
+        });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -487,170 +506,195 @@ export default function BaselineAssessmentsPage() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Baseline Assessments</h1>
-            <p className="text-muted-foreground mt-1">
-              Create students and conduct baseline assessments
+            <h1 className="text-2xl sm:text-3xl font-bold">Baseline Tests</h1>
+            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+              Create students and conduct baseline tests
             </p>
           </div>
           <Dialog open={createStudentOpen} onOpenChange={setCreateStudentOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm">
                 <Plus className="mr-2 h-4 w-4" />
                 Create Student
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Student</DialogTitle>
                 <DialogDescription>
-                  Add a new student to conduct baseline assessment
+                  Add a new student to conduct baseline test
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={newStudent.name || ""}
-                    onChange={(e) =>
-                      setNewStudent({ ...newStudent, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aadharNumber">Aadhar Number (Optional)</Label>
-                  <Input
-                    id="aadharNumber"
-                    value={newStudent.aadharNumber || ""}
-                    placeholder="Enter student aadhar number"
-                    onChange={(e) =>
-                      setNewStudent({
-                        ...newStudent,
-                        aadharNumber: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="apaarId">APAAR ID (Optional)</Label>
-                  <Input
-                    id="apaarId"
-                    value={newStudent.apaarId || ""}
-                    placeholder="Enter student APAAR ID"
-                    onChange={(e) =>
-                      setNewStudent({
-                        ...newStudent,
-                        apaarId: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mobileNumber">Mobile Number (Optional)</Label>
-                  <Input
-                    id="mobileNumber"
-                    value={newStudent.mobileNumber || ""}
-                    placeholder="Enter student mobile number"
-                    onChange={(e) =>
-                      setNewStudent({
-                        ...newStudent,
-                        mobileNumber: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2 md:gap-4">
-                  <div className="space-y-2 min-w-0">
-                    <Label htmlFor="age" className="text-xs">
-                      Age
-                    </Label>
-                    <Input
-                      id="age"
-                      type="number"
-                      value={newStudent.age || ""}
-                      onChange={(e) =>
-                        setNewStudent({
-                          ...newStudent,
-                          age: Number(e.target.value),
-                        })
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                  <div className="space-y-2 min-w-0">
-                    <Label htmlFor="gender" className="text-xs">
-                      Gender
-                    </Label>
-                    <Select
-                      value={newStudent.gender || ""}
-                      onValueChange={(value) =>
-                        setNewStudent({ ...newStudent, gender: value })
-                      }
-                    >
-                      <SelectTrigger className="w-full min-w-0">
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2 min-w-0">
-                    <Label htmlFor="caste" className="text-xs">
-                      Category (Optional)
-                    </Label>
-                    <Select
-                      value={newStudent.caste || ""}
-                      onValueChange={(value) =>
-                        setNewStudent({ ...newStudent, caste: value })
-                      }
-                    >
-                      <SelectTrigger className="w-full min-w-0">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="st">ST</SelectItem>
-                        <SelectItem value="gen">GEN</SelectItem>
-                        <SelectItem value="sc">SC</SelectItem>
-                        <SelectItem value="obc">OBC</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="class">Class</Label>
-                  <Select
-                    value={newStudent.class || ""}
-                    onValueChange={(value) =>
-                      setNewStudent({ ...newStudent, class: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                        <SelectItem key={num} value={num.toString()}>
-                          Class {num}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>School</Label>
-                  <div className="p-3 border rounded-md bg-muted/50">
-                    <div className="font-medium">
-                      {selectedSchool?.name || "No school selected"}
+              <div className="space-y-5">
+                {/* Personal Information Section */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                    Personal Information
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-base sm:text-sm">Name</Label>
+                      <Input
+                        id="name"
+                        value={newStudent.name || ""}
+                        onChange={(e) =>
+                          setNewStudent({ ...newStudent, name: e.target.value })
+                        }
+                        className="h-12 sm:h-10 text-base sm:text-sm"
+                      />
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedSchool
-                        ? "Students will be created for this school"
-                        : "Please select a school from the sidebar"}
+                    <div className="space-y-2">
+                      <Label htmlFor="mobileNumber" className="text-base sm:text-sm">Mobile Number (Optional)</Label>
+                      <Input
+                        id="mobileNumber"
+                        value={newStudent.mobileNumber || ""}
+                        placeholder="Enter student mobile number"
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            mobileNumber: e.target.value,
+                          })
+                        }
+                        className="h-12 sm:h-10 text-base sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="space-y-2 min-w-0">
+                      <Label htmlFor="age" className="text-base sm:text-sm">
+                        Age
+                      </Label>
+                      <Input
+                        id="age"
+                        type="number"
+                        value={newStudent.age || ""}
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            age: Number(e.target.value),
+                          })
+                        }
+                        className="w-full h-12 sm:h-10 text-base sm:text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label htmlFor="gender" className="text-base sm:text-sm">
+                        Gender
+                      </Label>
+                      <Select
+                        value={newStudent.gender || ""}
+                        onValueChange={(value) =>
+                          setNewStudent({ ...newStudent, gender: value })
+                        }
+                      >
+                        <SelectTrigger className="w-full min-w-0 h-12 sm:h-10 text-base sm:text-sm">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 min-w-0">
+                      <Label htmlFor="caste" className="text-base sm:text-sm">
+                        Category (Optional)
+                      </Label>
+                      <Select
+                        value={newStudent.caste || ""}
+                        onValueChange={(value) =>
+                          setNewStudent({ ...newStudent, caste: value })
+                        }
+                      >
+                        <SelectTrigger className="w-full min-w-0 h-12 sm:h-10 text-base sm:text-sm">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="st">ST</SelectItem>
+                          <SelectItem value="gen">GEN</SelectItem>
+                          <SelectItem value="sc">SC</SelectItem>
+                          <SelectItem value="obc">OBC</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Identification Section */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                    Identification
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="aadharNumber" className="text-base sm:text-sm">Aadhar Number (Optional)</Label>
+                      <Input
+                        id="aadharNumber"
+                        value={newStudent.aadharNumber || ""}
+                        placeholder="Enter student aadhar number"
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            aadharNumber: e.target.value,
+                          })
+                        }
+                        className="h-12 sm:h-10 text-base sm:text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="apaarId" className="text-base sm:text-sm">APAAR ID (Optional)</Label>
+                      <Input
+                        id="apaarId"
+                        value={newStudent.apaarId || ""}
+                        placeholder="Enter student APAAR ID"
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            apaarId: e.target.value,
+                          })
+                        }
+                        className="h-12 sm:h-10 text-base sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic Details Section */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide border-b pb-2">
+                    Academic Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="class" className="text-base sm:text-sm">Class</Label>
+                      <Select
+                        value={newStudent.class || ""}
+                        onValueChange={(value) =>
+                          setNewStudent({ ...newStudent, class: value })
+                        }
+                      >
+                        <SelectTrigger className="h-12 sm:h-10 text-base sm:text-sm">
+                          <SelectValue placeholder="Select class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              Class {num}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-base sm:text-sm">School</Label>
+                      <div className="p-3 border rounded-md bg-muted/50 h-12 sm:h-10 flex items-center">
+                        <span className="font-medium text-sm truncate">
+                          {selectedSchool?.name || "No school selected"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -659,10 +703,11 @@ export default function BaselineAssessmentsPage() {
                 <Button
                   variant="outline"
                   onClick={() => setCreateStudentOpen(false)}
+                  className="h-12 sm:h-10 text-base sm:text-sm"
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleCreateStudent} disabled={isCreating}>
+                <Button onClick={handleCreateStudent} disabled={isCreating} className="h-12 sm:h-10 text-base sm:text-sm">
                   {isCreating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
@@ -692,7 +737,7 @@ export default function BaselineAssessmentsPage() {
                     Select School
                   </CardTitle>
                   <CardDescription>
-                    Choose the school to manage assessments for
+                    Choose the school to manage tests for
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -736,10 +781,10 @@ export default function BaselineAssessmentsPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Users className="mr-2 h-5 w-5" />
-                    Select Student for Assessment
+                    Select Student for Test
                   </CardTitle>
                   <CardDescription>
-                    Choose a student who hasn't been assessed today
+                    Choose a student who hasn't been tested today
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -750,14 +795,14 @@ export default function BaselineAssessmentsPage() {
                         No students available
                       </h3>
                       <p className="text-muted-foreground mt-2">
-                        Create your first student to start assessments
+                        Create your first student to start tests
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <Label>
                         All Students ({students.length}) - Green: Already
-                        assessed today
+                        tested today
                       </Label>
                       <Select
                         value={selectedStudent?._id || ""}
@@ -776,7 +821,7 @@ export default function BaselineAssessmentsPage() {
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="-- Select a student to assess --" />
+                          <SelectValue placeholder="-- Select a student to test --" />
                         </SelectTrigger>
                         <SelectContent>
                           <div className="p-2 border-b sticky top-0 bg-background z-10">
@@ -859,11 +904,11 @@ export default function BaselineAssessmentsPage() {
                           selectedStudent.knowledgeLevel.length > 0 ? (
                             <div className="mt-4">
                               <Label className="text-sm font-medium">
-                                Assessment History
+                                Test History
                               </Label>
                               <div className="mt-2 space-y-1">
                                 <div className="flex items-center justify-between text-sm">
-                                  <span>Total Assessments:</span>
+                                  <span>Total Tests:</span>
                                   <Badge>
                                     {selectedStudent.knowledgeLevel.length}
                                   </Badge>
@@ -881,7 +926,7 @@ export default function BaselineAssessmentsPage() {
                                   </Badge>
                                 </div>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span>Last Assessment:</span>
+                                  <span>Last Test:</span>
                                   <span className="text-xs text-muted-foreground">
                                     {new Date(
                                       selectedStudent.knowledgeLevel[
@@ -896,7 +941,7 @@ export default function BaselineAssessmentsPage() {
                           ) : (
                             <div className="mt-4">
                               <Badge variant="outline">
-                                No assessments completed yet
+                                No tests completed yet
                               </Badge>
                             </div>
                           )}
@@ -920,11 +965,11 @@ export default function BaselineAssessmentsPage() {
                       <div>
                         <CardTitle className="flex items-center">
                           <BookOpen className="mr-2 h-5 w-5" />
-                          Baseline Assessment Status
+                          Baseline Test Status
                         </CardTitle>
                         <CardDescription>
                           Complete overview of all students and their baseline
-                          assessment completion by program
+                          test completion by program
                         </CardDescription>
                       </div>
                       <div className="relative w-full sm:w-64">
@@ -938,38 +983,31 @@ export default function BaselineAssessmentsPage() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="px-0 sm:px-6">
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-12">#</TableHead>
-                            <TableHead className="w-[200px]">
-                              Student Name
-                            </TableHead>
-                            <TableHead className="w-[150px]">
-                              Roll Number
+                          <TableRow className="bg-muted/40 hover:bg-muted/40">
+                            <TableHead className="font-semibold text-foreground text-sm sm:text-base py-3 sm:py-4 pl-4 sm:pl-6">
+                              Student
                             </TableHead>
                             {programs.map((program) => (
                               <TableHead
                                 key={program._id}
-                                className="text-center min-w-[180px] px-3"
+                                className="text-center font-semibold text-foreground text-sm sm:text-base py-3 sm:py-4 min-w-[100px]"
                               >
-                                <div className="flex flex-col items-center gap-2">
-                                  <span className="font-semibold capitalize break-words text-center">
-                                    {program.subject}
-                                  </span>
-                                  <span className="text-xs font-normal text-muted-foreground break-words text-center">
-                                    {program.name}
-                                  </span>
-                                </div>
+                                <span className="capitalize">
+                                  {program.subject}
+                                </span>
                               </TableHead>
                             ))}
+                            <TableHead className="text-center font-semibold text-foreground text-sm sm:text-base py-3 sm:py-4 pr-4 sm:pr-6 w-[80px]">
+                              Action
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {(() => {
-                            // Filter students based on search query
                             const filteredStudents = students.filter((student) => {
                               if (!searchQuery.trim()) return true;
                               const query = searchQuery.toLowerCase().trim();
@@ -987,7 +1025,7 @@ export default function BaselineAssessmentsPage() {
                               return (
                                 <TableRow>
                                   <TableCell
-                                    colSpan={3 + programs.length}
+                                    colSpan={2 + programs.length}
                                     className="text-center py-8 text-muted-foreground"
                                   >
                                     {searchQuery.trim()
@@ -998,137 +1036,90 @@ export default function BaselineAssessmentsPage() {
                               );
                             }
 
-                            return filteredStudents.map((student, index) => {
-                            const ProgramStatusCell = ({
-                              status,
-                              program,
-                              student,
-                            }: {
-                              status: {
-                                completed: boolean;
-                                level: number | null;
-                                date: string | null;
-                                assessedToday: boolean;
-                              };
-                              program: IProgram;
-                              student: Student;
-                            }) => {
-                              // If assessment is completed, show with appropriate styling
-                              if (status.completed && status.level) {
-                                return (
-                                  <div
-                                    className={`flex flex-col items-center gap-3 p-3 rounded ${
-                                      status.assessedToday
-                                        ? "bg-green-50 border border-green-200"
-                                        : ""
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      {status.assessedToday ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                                      ) : (
-                                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                                      )}
-                                      <div className="flex flex-col items-center gap-1.5">
-                                        <Badge
-                                          variant={
-                                            status.assessedToday
-                                              ? "default"
-                                              : "secondary"
-                                          }
-                                          className={`text-sm font-semibold px-3 py-1 whitespace-nowrap ${
-                                            status.assessedToday
-                                              ? "bg-green-100 text-green-800 border-green-300"
-                                              : "bg-blue-100 text-blue-800 border-blue-300"
-                                          }`}
-                                        >
-                                          Level {status.level}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground capitalize text-center break-words">
-                                          {program.subject}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    {status.date && (
-                                      <span className="text-xs text-muted-foreground text-center break-words">
-                                        {new Date(
-                                          status.date
-                                        ).toLocaleDateString("en-US", {
-                                          month: "short",
-                                          day: "numeric",
-                                          year: "numeric",
-                                        })}
-                                      </span>
-                                    )}
-                                    {status.assessedToday && (
-                                      <span className="text-xs font-medium text-green-700 text-center break-words">
-                                        Assessed Today
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              }
+                            return filteredStudents.map((student) => {
+                              // Get all statuses for this student
+                              const programStatuses = programs.map((program) => ({
+                                program,
+                                status: getStudentBaselineStatus(student._id, program._id),
+                              }));
+                              const pendingPrograms = programStatuses.filter((ps) => !ps.status.completed);
+                              const allDone = pendingPrograms.length === 0;
 
-                              // No assessment found - show Assess Now button
                               return (
-                                <div className="flex flex-col items-center justify-center gap-3 p-3">
-                                  <XCircle className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                                  <span className="text-sm text-muted-foreground text-center break-words">
-                                    Not Completed
-                                  </span>
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() =>
-                                      handleAssessNow(student, program._id)
-                                    }
-                                    className="mt-1 whitespace-nowrap"
-                                  >
-                                    Assess Now
-                                  </Button>
-                                </div>
-                              );
-                            };
-
-                            return (
-                              <TableRow key={student._id}>
-                                <TableCell className="text-center font-medium text-muted-foreground px-3">
-                                  {index + 1}
-                                </TableCell>
-                                <TableCell className="font-medium px-3 break-words">
-                                  <button
-                                    type="button"
-                                    onClick={() => navigate(`/reports/student/${student._id}`)}
-                                    className="text-primary hover:underline cursor-pointer text-left"
-                                  >
-                                    {student.name}
-                                  </button>
-                                </TableCell>
-                                <TableCell className="px-3 break-words">{student.roll_no}</TableCell>
-                                {programs.map((program) => {
-                                  const status = getStudentBaselineStatus(
-                                    student._id,
-                                    program._id
-                                  );
-                                  return (
+                                <TableRow key={student._id} className="hover:bg-muted/20 transition-colors">
+                                  <TableCell className="py-3 sm:py-4 pl-4 sm:pl-6">
+                                    <button
+                                      type="button"
+                                      onClick={() => navigate(`/reports/student/${student._id}`)}
+                                      className="text-primary hover:underline cursor-pointer text-left font-medium text-sm sm:text-base"
+                                    >
+                                      {student.name}
+                                    </button>
+                                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                                      Class {student.class}
+                                    </p>
+                                  </TableCell>
+                                  {programStatuses.map(({ program, status }) => (
                                     <TableCell
                                       key={program._id}
-                                      className={`text-center px-3 py-4 ${
-                                        status.assessedToday
-                                          ? "bg-green-50"
-                                          : ""
+                                      className={`text-center py-3 sm:py-4 ${
+                                        status.assessedToday ? "bg-green-50/60" : ""
                                       }`}
                                     >
-                                      <ProgramStatusCell
-                                        status={status}
-                                        program={program}
-                                        student={student}
-                                      />
+                                      {status.completed && status.level ? (
+                                        <div className="flex flex-col items-center gap-1">
+                                          <Badge
+                                            className={`text-xs sm:text-sm font-semibold px-2.5 py-0.5 ${
+                                              status.assessedToday
+                                                ? "bg-green-100 text-green-800 border-green-300 hover:bg-green-100"
+                                                : "bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-100"
+                                            }`}
+                                          >
+                                            L{status.level}
+                                          </Badge>
+                                          {status.assessedToday && (
+                                            <span className="text-[10px] sm:text-xs font-medium text-green-600">
+                                              Today
+                                            </span>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 mx-auto" />
+                                      )}
                                     </TableCell>
-                                  );
-                                })}
-                              </TableRow>
-                            );
+                                  ))}
+                                  <TableCell className="text-center py-3 sm:py-4 pr-4 sm:pr-6">
+                                    {allDone ? (
+                                      <CheckCheck className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 mx-auto" />
+                                    ) : (
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                                          >
+                                            <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                                            Test
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48">
+                                          {pendingPrograms.map(({ program }) => (
+                                            <DropdownMenuItem
+                                              key={program._id}
+                                              onClick={() => handleAssessNow(student, program._id)}
+                                              className="cursor-pointer py-2.5 text-sm"
+                                            >
+                                              <Play className="h-4 w-4 mr-2 text-orange-600" />
+                                              <span className="capitalize font-medium">{program.subject}</span>
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
                             });
                           })()}
                         </TableBody>
@@ -1150,9 +1141,9 @@ export default function BaselineAssessmentsPage() {
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle>Assessment Overview</CardTitle>
+                  <CardTitle>Test Overview</CardTitle>
                   <CardDescription>
-                    Today's assessment statistics
+                    Today's test statistics
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1162,7 +1153,7 @@ export default function BaselineAssessmentsPage() {
                       <Badge variant="outline">{students.length}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Assessed Today:</span>
+                      <span className="text-sm">Tested Today:</span>
                       <Badge variant="default">
                         {
                           students.filter((student) =>
@@ -1196,6 +1187,7 @@ export default function BaselineAssessmentsPage() {
           student={selectedStudent}
           programs={programs}
           preSelectedProgramId={selectedProgramId}
+          testPromotionType={testPromotionType}
           onAssessmentComplete={handleAssessmentComplete}
         />
       )}

@@ -13,6 +13,7 @@ export interface ISchool extends Document {
   pointOfContact: string;
   phone: string;
   block?: string;
+  testPromotionType: "automatic" | "manual";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,11 @@ const SchoolSchema = new mongoose.Schema(
         "Depalpur",
       ],
       required: false,
+    },
+    testPromotionType: {
+      type: String,
+      enum: ["automatic", "manual"],
+      default: "automatic",
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

@@ -183,10 +183,10 @@ function ManageCohorts() {
       queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
       queryClient.invalidateQueries({ queryKey: ["tutor-progress-summary"] });
       handleCloseDialog();
-      toast.success("Cohort created successfully");
+      toast.success("Group created successfully");
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to create cohort"));
+      toast.error(getApiErrorMessage(error, "Failed to create group"));
     },
   });
 
@@ -199,10 +199,10 @@ function ManageCohorts() {
         queryKey: ["cohorts", selectedSchool?._id],
       });
       handleCloseDialog();
-      toast.success("Cohort updated successfully");
+      toast.success("Group updated successfully");
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to update cohort"));
+      toast.error(getApiErrorMessage(error, "Failed to update group"));
     },
   });
 
@@ -214,10 +214,10 @@ function ManageCohorts() {
         queryKey: ["cohorts", selectedSchool?._id],
       });
       setIsDeleteDialogOpen(false);
-      toast.success("Cohort deleted successfully");
+      toast.success("Group deleted successfully");
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to delete cohort"));
+      toast.error(getApiErrorMessage(error, "Failed to delete group"));
     },
   });
 
@@ -234,10 +234,10 @@ function ManageCohorts() {
       setIsStartDialogOpen(false);
       setStartingCohort(null);
       setCustomStartDate("");
-      toast.success("Cohort started successfully");
+      toast.success("Group started successfully");
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to start cohort"));
+      toast.error(getApiErrorMessage(error, "Failed to start group"));
     },
   });
 
@@ -292,7 +292,7 @@ function ManageCohorts() {
     },
     onError: (error: unknown) => {
       setIsGenerating(false);
-      toast.error(getApiErrorMessage(error, "Failed to preview cohorts"));
+      toast.error(getApiErrorMessage(error, "Failed to preview groups"));
     },
   });
 
@@ -312,7 +312,7 @@ function ManageCohorts() {
       setIsApprovalModalOpen(false);
       setIsGenerating(false);
       toast.success(
-        `Successfully created ${data.cohorts.length} cohorts for ${data.studentsAssigned} students!`,
+        `Successfully created ${data.cohorts.length} groups for ${data.studentsAssigned} students!`,
         {
           duration: 5000,
         }
@@ -320,7 +320,7 @@ function ManageCohorts() {
     },
     onError: (error: unknown) => {
       setIsGenerating(false);
-      toast.error(getApiErrorMessage(error, "Failed to create cohorts"));
+      toast.error(getApiErrorMessage(error, "Failed to create groups"));
     },
   });
 
@@ -346,12 +346,12 @@ function ManageCohorts() {
           : "";
 
       toast.success(
-        `Successfully generated ${data.cohorts.length} active cohorts across ${data.programsProcessed} programs for ${data.studentsAssigned} students!${pendingMsg}`
+        `Successfully generated ${data.cohorts.length} active groups across ${data.programsProcessed} programs for ${data.studentsAssigned} students!${pendingMsg}`
       );
     },
     onError: (error: unknown) => {
       setIsGenerating(false);
-      toast.error(getApiErrorMessage(error, "Failed to generate cohorts"));
+      toast.error(getApiErrorMessage(error, "Failed to generate groups"));
     },
   });
 
@@ -363,10 +363,10 @@ function ManageCohorts() {
     };
 
     if (editingCohort) {
-      const { name, tutorId, students } = dataToSubmit;
+      const { name, tutorId, students, programId } = dataToSubmit;
       updateMutation.mutate({
         id: editingCohort._id,
-        data: { name, tutorId, students },
+        data: { name, tutorId, students, programId },
       });
     } else {
       createMutation.mutate(dataToSubmit);
@@ -389,6 +389,7 @@ function ManageCohorts() {
       schoolId: schoolIdValue,
       tutorId: tutorIdValue,
       students: cohort.students,
+      programId: cohort.programId || undefined,
     });
     setIsOpen(true);
   };
@@ -401,6 +402,7 @@ function ManageCohorts() {
       schoolId: selectedSchool?._id || "",
       tutorId: undefined,
       students: [],
+      programId: undefined,
     });
   };
 
@@ -548,7 +550,7 @@ function ManageCohorts() {
       .filter((p) => p.maxCohorts > 0);
 
     if (programsToGenerate.length === 0) {
-      toast.error("Please set cohort counts for at least one program");
+      toast.error("Please set group counts for at least one program");
       return;
     }
 
@@ -570,7 +572,7 @@ function ManageCohorts() {
     }
 
     if (editableCohorts.length === 0) {
-      toast.error("No cohorts to create");
+      toast.error("No groups to create");
       return;
     }
 
@@ -587,14 +589,14 @@ function ManageCohorts() {
 
     if (cohortsToCreate.length === 0) {
       toast.error(
-        "No cohorts with students to create. Please ensure at least one cohort has students."
+        "No groups with students to create. Please ensure at least one group has students."
       );
       return;
     }
 
     const skippedCount = editableCohorts.length - cohortsToCreate.length;
     if (skippedCount > 0) {
-      toast.info(`${skippedCount} cohort(s) with 0 students will be skipped`);
+      toast.info(`${skippedCount} group(s) with 0 students will be skipped`);
     }
 
     setIsGenerating(true);
@@ -797,7 +799,7 @@ function ManageCohorts() {
           </div>
           <h3 className="text-xl font-semibold mb-2">No School Selected</h3>
           <p className="text-muted-foreground mb-4">
-            Please select a school from the sidebar to manage cohorts.
+            Please select a school from the sidebar to manage groups.
           </p>
         </div>
       </div>
@@ -808,9 +810,9 @@ function ManageCohorts() {
     <div className="container mx-auto py-6">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Manage Cohorts</h1>
+          <h1 className="text-3xl font-bold">Manage Groups</h1>
           <p className="text-muted-foreground">
-            Create and manage student cohorts
+            Create and manage student groups
             {selectedSchool && (
               <span className="ml-2 text-primary font-medium">
                 • {selectedSchool.name}
@@ -830,7 +832,7 @@ function ManageCohorts() {
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              {isGenerating ? "Generating..." : `Generate Cohorts`}
+              {isGenerating ? "Generating..." : `Generate Groups`}
             </Button>
           )}
           <Button
@@ -843,7 +845,7 @@ function ManageCohorts() {
             }}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Cohort
+            Add Group
           </Button>
         </div>
       </div>
@@ -858,21 +860,21 @@ function ManageCohorts() {
                   <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
                   <span className="font-medium text-yellow-700">
                     {cohortStatus.studentsAwaitingAssignment} students awaiting
-                    cohort assignment
+                    group assignment
                   </span>
                 </div>
               ) : cohortStatus.studentsWithAssessments > 0 ? (
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   <span className="font-medium text-green-700">
-                    All students are assigned to cohorts
+                    All students are assigned to groups
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-gray-500" />
                   <span className="font-medium text-gray-600">
-                    No students with assessments found
+                    No students with tests found
                   </span>
                 </div>
               )}
@@ -886,11 +888,11 @@ function ManageCohorts() {
           {cohortStatus.studentsAwaitingAssignment > 0 && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>💡 Recommendation:</strong> Use automated cohort
+                <strong>💡 Recommendation:</strong> Use automated group
                 generation for most efficient grouping. Our algorithm creates
-                optimal cohorts based on assessment levels and your capacity
+                optimal groups based on test levels and your capacity
                 limit. Choose a strategy (Low First or High First) and set the
-                maximum number of active cohorts you can teach simultaneously.
+                maximum number of active groups you can teach simultaneously.
               </p>
             </div>
           )}
@@ -908,10 +910,10 @@ function ManageCohorts() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-green-900 mb-2">
-                  Cohorts Created Successfully!
+                  Groups Created Successfully!
                 </h3>
                 <p className="text-sm text-green-800 mb-4">
-                  Your cohorts have been created and are now active. You can
+                  Your groups have been created and are now active. You can
                   view them below and start managing attendance and progress.
                 </p>
                 <div className="flex gap-2">
@@ -922,7 +924,7 @@ function ManageCohorts() {
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                   >
-                    View Cohorts
+                    View Groups
                   </Button>
                 </div>
               </div>
@@ -948,15 +950,15 @@ function ManageCohorts() {
                   variant="outline"
                   className="bg-orange-100 text-orange-700"
                 >
-                  Will be assigned after active cohorts complete
+                  Will be assigned after active groups complete
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-orange-800 mb-4">
-                These students have been assessed but are not yet assigned to
-                cohorts due to capacity constraints. They will be available for
-                cohort creation once the current active cohorts are completed.
+                These students have been tested but are not yet assigned to
+                groups due to capacity constraints. They will be available for
+                group creation once the current active groups are completed.
               </p>
               <div className="space-y-3">
                 {/* Group by program */}
@@ -1015,7 +1017,7 @@ function ManageCohorts() {
                               {result.programSubject.toUpperCase()}
                             </div>
                             <div className="text-xs text-orange-600 mt-1">
-                              {result.cohortsCreated} cohorts •{" "}
+                              {result.cohortsCreated} groups •{" "}
                               {result.studentsAssigned} students •{" "}
                               {result.pendingStudents} pending
                             </div>
@@ -1034,9 +1036,9 @@ function ManageCohorts() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Cohorts Found</h3>
+            <h3 className="text-lg font-semibold mb-2">No Groups Found</h3>
             <p className="text-muted-foreground mb-4">
-              Get started by creating your first cohort or generating cohorts
+              Get started by creating your first group or generating groups
               automatically.
             </p>
             <Button
@@ -1049,7 +1051,7 @@ function ManageCohorts() {
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create Cohort
+              Create Group
             </Button>
           </CardContent>
         </Card>
@@ -1208,7 +1210,7 @@ function ManageCohorts() {
                         onClick={() => handleStartCohort(cohort)}
                       >
                         <Play className="mr-2 h-4 w-4" />
-                        Start Cohort
+                        Start Group
                       </Button>
                     ) : (
                       <Button
@@ -1232,27 +1234,27 @@ function ManageCohorts() {
       )}
 
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingCohort ? "Edit Cohort" : "Create Cohort"}
+              {editingCohort ? "Edit Group" : "Create Group"}
             </DialogTitle>
             <DialogDescription>
               {editingCohort
-                ? "Update the cohort's information below"
-                : "Fill in the details to create a new cohort for the selected school"}
+                ? "Update the group's information below"
+                : "Fill in the details to create a new group for the selected school"}
             </DialogDescription>
           </DialogHeader>
           {selectedSchool && !editingCohort && (
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
               <p className="text-sm text-blue-700">
-                Creating cohort for: <strong>{selectedSchool.name}</strong>
+                Creating group for: <strong>{selectedSchool.name}</strong>
               </p>
             </div>
           )}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Cohort Name</Label>
+              <Label htmlFor="name">Group Name</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -1265,7 +1267,7 @@ function ManageCohorts() {
             <div className="space-y-2">
               <Label htmlFor="tutorId">Tutor (Optional)</Label>
               <div style={{ color: "red", fontSize: "12px" }}>
-                A cohort must have tutor assigned to mark attendance.
+                A group must have tutor assigned to mark attendance.
               </div>
               <Select
                 value={formData.tutorId || "none"}
@@ -1284,6 +1286,31 @@ function ManageCohorts() {
                   {filteredTutors.map((tutor) => (
                     <SelectItem key={tutor.id} value={tutor.id}>
                       {tutor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="programId">Program</Label>
+              <Select
+                value={formData.programId || "none"}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    programId: value === "none" ? undefined : value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a program" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (No program)</SelectItem>
+                  {programs.map((program) => (
+                    <SelectItem key={program._id} value={program._id}>
+                      {program.name} ({program.subject})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1331,7 +1358,7 @@ function ManageCohorts() {
                             </div>
                           ) : (
                             <p className="text-xs text-muted-foreground mt-1 italic">
-                              No assessments
+                              No tests
                             </p>
                           )}
                         </div>
@@ -1379,7 +1406,7 @@ function ManageCohorts() {
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground italic">
-                              No assessments
+                              No tests
                             </span>
                           )}
                         </div>
@@ -1426,13 +1453,13 @@ function ManageCohorts() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Start Cohort Dialog */}
+      {/* Start Group Dialog */}
       <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Start Cohort</DialogTitle>
+            <DialogTitle>Start Group</DialogTitle>
             <DialogDescription>
-              Set a start date for "{startingCohort?.name}". The cohort will
+              Set a start date for "{startingCohort?.name}". The group will
               begin tracking progress and attendance from this date.
             </DialogDescription>
           </DialogHeader>
@@ -1451,18 +1478,18 @@ function ManageCohorts() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Select a date to start the cohort. Leave as today's date to
+                Select a date to start the group. Leave as today's date to
                 start immediately.
               </p>
             </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Once started, the cohort will begin
+                <strong>Note:</strong> Once started, the group will begin
                 tracking:
                 <ul className="list-disc list-inside mt-1 space-y-1">
                   <li>Progress tracking from the start date</li>
                   <li>Attendance recording</li>
-                  <li>Assessment timelines</li>
+                  <li>Test timelines</li>
                 </ul>
               </p>
             </div>
@@ -1492,7 +1519,7 @@ function ManageCohorts() {
               ) : (
                 <>
                   <Play className="mr-2 h-4 w-4" />
-                  Start Cohort
+                  Start Group
                 </>
               )}
             </Button>
@@ -1500,13 +1527,13 @@ function ManageCohorts() {
         </DialogContent>
       </Dialog>
 
-      {/* Generate Cohorts Modal */}
+      {/* Generate Groups Modal */}
       <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Generate Cohorts</DialogTitle>
+            <DialogTitle>Generate Groups</DialogTitle>
             <DialogDescription>
-              Select programs and configure cohort generation settings
+              Select programs and configure group generation settings
             </DialogDescription>
           </DialogHeader>
 
@@ -1534,14 +1561,14 @@ function ManageCohorts() {
               </Select>
               <p className="text-xs text-muted-foreground">
                 {generationStrategy === "low-first"
-                  ? "Creates cohorts starting from the lowest assessment levels first"
-                  : "Creates cohorts starting from the highest assessment levels first"}
+                  ? "Creates groups starting from the lowest test levels first"
+                  : "Creates groups starting from the highest test levels first"}
               </p>
             </div>
 
             {/* Total Max Cohorts */}
             <div className="space-y-2">
-              <Label htmlFor="totalMaxCohorts">Total Maximum Cohorts</Label>
+              <Label htmlFor="totalMaxCohorts">Total Maximum Groups</Label>
               <Input
                 id="totalMaxCohorts"
                 type="number"
@@ -1554,18 +1581,18 @@ function ManageCohorts() {
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Total number of cohorts to generate across all selected
+                Total number of groups to generate across all selected
                 programs. This will be automatically distributed.
               </p>
             </div>
 
             {/* Program Selection and Configuration */}
             <div className="space-y-4">
-              <Label>Programs with Assessed Students</Label>
+              <Label>Programs with Tested Students</Label>
               {programsWithAssessments.length === 0 ? (
                 <div className="p-4 border border-dashed rounded-md text-center text-muted-foreground">
-                  No programs with assessed students found. Please conduct
-                  baseline assessments first.
+                  No programs with tested students found. Please conduct
+                  baseline tests first.
                 </div>
               ) : (
                 <div className="space-y-3 border rounded-md p-4">
@@ -1583,7 +1610,7 @@ function ManageCohorts() {
                           kl.program && kl.program.toString() === program._id
                       );
                       if (!hasProgramAssessment) return false;
-                      // Check if student is not in active cohort
+                      // Check if student is not in active group
                       const schoolId =
                         typeof student.schoolId === "string"
                           ? student.schoolId
@@ -1629,7 +1656,7 @@ function ManageCohorts() {
                                   htmlFor={`cohorts-${program._id}`}
                                   className="text-sm"
                                 >
-                                  Max Cohorts:
+                                  Max Groups:
                                 </Label>
                                 <Input
                                   id={`cohorts-${program._id}`}
@@ -1666,9 +1693,9 @@ function ManageCohorts() {
                 <div className="text-sm font-medium mb-2">Summary</div>
                 <div className="text-sm space-y-1">
                   <div>Selected Programs: {selectedPrograms.size}</div>
-                  <div>Total Cohorts: {totalMaxCohorts}</div>
+                  <div>Total Groups: {totalMaxCohorts}</div>
                   <div className="text-xs text-muted-foreground mt-2">
-                    Cohorts will be distributed across selected programs based
+                    Groups will be distributed across selected programs based
                     on student distribution.
                   </div>
                 </div>
@@ -1702,7 +1729,7 @@ function ManageCohorts() {
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generate Cohorts
+                  Generate Groups
                 </>
               )}
             </Button>
@@ -1714,9 +1741,9 @@ function ManageCohorts() {
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Review and Approve Cohorts</DialogTitle>
+            <DialogTitle>Review and Approve Groups</DialogTitle>
             <DialogDescription>
-              Review the generated cohorts. You can edit names, reassign
+              Review the generated groups. You can edit names, reassign
               students, and change tutors before approving.
             </DialogDescription>
           </DialogHeader>
@@ -1724,7 +1751,7 @@ function ManageCohorts() {
           <div className="space-y-4">
             {editableCohorts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No cohorts to review
+                No groups to review
               </div>
             ) : (
               // Group cohorts by program
@@ -1756,7 +1783,7 @@ function ManageCohorts() {
                             {programName}
                           </h3>
                           <Badge variant="outline">
-                            {cohorts.length} cohort
+                            {cohorts.length} group
                             {cohorts.length > 1 ? "s" : ""}
                           </Badge>
                         </div>
@@ -1805,7 +1832,7 @@ function ManageCohorts() {
                                       sourceCohortIndex,
                                     } = dragData;
 
-                                    // Don't allow dropping on the same cohort
+                                    // Don't allow dropping on the same group
                                     if (sourceCohortIndex === globalIndex) {
                                       return;
                                     }
@@ -1816,7 +1843,7 @@ function ManageCohorts() {
 
                                     // Handle unassigned students (sourceCohortIndex is "unassigned")
                                     if (sourceCohortIndex === "unassigned") {
-                                      // Just add to target cohort
+                                      // Just add to target group
                                       updated[globalIndex] = {
                                         ...updated[globalIndex],
                                         students: [
@@ -1835,7 +1862,7 @@ function ManageCohorts() {
                                       return;
                                     }
 
-                                    // Handle moving from one cohort to another
+                                    // Handle moving from one group to another
                                     const sourceCohortData =
                                       updated[sourceCohortIndex];
                                     const studentNameIdx =
@@ -1851,7 +1878,7 @@ function ManageCohorts() {
                                           ]
                                         : studentName;
 
-                                    // Remove from source cohort
+                                    // Remove from source group
                                     updated[sourceCohortIndex] = {
                                       ...sourceCohortData,
                                       students:
@@ -1864,7 +1891,7 @@ function ManageCohorts() {
                                         ),
                                     };
 
-                                    // Add to target cohort
+                                    // Add to target group
                                     updated[globalIndex] = {
                                       ...updated[globalIndex],
                                       students: [
@@ -1890,12 +1917,12 @@ function ManageCohorts() {
                                 }}
                               >
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {/* Cohort Name */}
+                                  {/* Group Name */}
                                   <div className="space-y-2">
                                     <Label
                                       htmlFor={`cohort-name-${globalIndex}`}
                                     >
-                                      Cohort Name
+                                      Group Name
                                     </Label>
                                     <Input
                                       id={`cohort-name-${globalIndex}`}
@@ -1964,7 +1991,7 @@ function ManageCohorts() {
                                 <div className="space-y-2">
                                   <Label>
                                     Students ({cohort.students.length}) - Drag
-                                    to move between cohorts
+                                    to move between groups
                                   </Label>
                                   <ScrollArea className="h-32 border rounded-md p-2">
                                     <div className="space-y-2">
@@ -1978,7 +2005,7 @@ function ManageCohorts() {
                                             cohort.studentNames[studentIdx] ||
                                             studentId;
 
-                                          // Find all other cohorts where this student could be moved
+                                          // Find all other groups where this student could be moved
                                           const otherCohorts = editableCohorts
                                             .map((cohort, idx) => ({
                                               cohort: cohort,
@@ -2045,7 +2072,7 @@ function ManageCohorts() {
                                                         (c) => ({ ...c })
                                                       );
 
-                                                    // Find student name index in current cohort
+                                                    // Find student name index in current group
                                                     const currentCohort =
                                                       updated[globalIndex];
                                                     const studentNameIdx =
@@ -2063,7 +2090,7 @@ function ManageCohorts() {
                                                           ]
                                                         : studentName;
 
-                                                    // Remove from current cohort
+                                                    // Remove from current group
                                                     updated[globalIndex] = {
                                                       ...currentCohort,
                                                       students:
@@ -2079,7 +2106,7 @@ function ManageCohorts() {
                                                         ),
                                                     };
 
-                                                    // Add to target cohort
+                                                    // Add to target group
                                                     updated[targetCohortIdx] = {
                                                       ...updated[
                                                         targetCohortIdx
@@ -2153,7 +2180,7 @@ function ManageCohorts() {
                       Unassigned Students
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Drag and drop students from below into cohorts above, or
+                      Drag and drop students from below into groups above, or
                       use the dropdown to move them.
                     </p>
                   </div>
@@ -2242,7 +2269,7 @@ function ManageCohorts() {
                                             ).style.opacity = "1";
                                           };
 
-                                          // Find all cohorts where this student could be moved
+                                          // Find all groups where this student could be moved
                                           const availableCohorts =
                                             editableCohorts
                                               .map((cohort, idx) => ({
@@ -2284,7 +2311,7 @@ function ManageCohorts() {
                                                         (c) => ({ ...c })
                                                       );
 
-                                                    // Add to target cohort
+                                                    // Add to target group
                                                     updated[targetCohortIdx] = {
                                                       ...updated[
                                                         targetCohortIdx
@@ -2371,7 +2398,7 @@ function ManageCohorts() {
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Approve & Create Cohorts
+                  Approve & Create Groups
                 </>
               )}
             </Button>

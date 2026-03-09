@@ -161,7 +161,7 @@ export default function TutorProgress() {
             <div className="flex items-center gap-2">
               <Timer className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="text-sm text-gray-600">Assessment Soon</p>
+                <p className="text-sm text-gray-600">Test Soon</p>
                 <p className="text-2xl font-bold text-orange-600">{timeMetrics.cohortsNearingAssessment}</p>
               </div>
             </div>
@@ -202,13 +202,13 @@ export default function TutorProgress() {
                 <p className="text-2xl font-bold text-orange-600">
                   {timeMetrics.cohortsNearingAssessment}
                 </p>
-                <p className="text-sm text-gray-600">Assessments Due (7 days)</p>
+                <p className="text-sm text-gray-600">Tests Due (7 days)</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-red-600">
                   {timeMetrics.cohortsOverdue}
                 </p>
-                <p className="text-sm text-gray-600">Overdue Assessments</p>
+                <p className="text-sm text-gray-600">Overdue Tests</p>
               </div>
             </div>
           </CardContent>

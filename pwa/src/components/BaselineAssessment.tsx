@@ -55,6 +55,7 @@ interface Props {
   programs?: IProgram[];
   preSelectedProgramId?: string; // Program ID to auto-start
   startingLevel?: number; // Level to start assessment from (default: 0)
+  testPromotionType?: "automatic" | "manual"; // School-level setting
   onAssessmentComplete?: () => void;
 }
 
@@ -65,6 +66,7 @@ export function BaselineAssessmentModal({
   programs = [],
   preSelectedProgramId,
   startingLevel = 0,
+  testPromotionType = "automatic",
   onAssessmentComplete,
 }: Props) {
   const { user } = useAuth();
@@ -90,6 +92,7 @@ export function BaselineAssessmentModal({
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [correctAnswersForProgram, setCorrectAnswersForProgram] = useState(0);
   const [showQuickComplete, setShowQuickComplete] = useState(false);
+  const [showManualDecision, setShowManualDecision] = useState(false); // Manual mode: show Assign/Jump buttons after 10 questions
 
   // algorithm refs - new 5-question batch system
   const levelQuestionsAnswered = useRef(0); // 0-10 questions per level
@@ -214,6 +217,7 @@ export function BaselineAssessmentModal({
     setOneWordInput("");
     setTotalQuestions(0);
     setCorrectAnswersForProgram(0);
+    setShowManualDecision(false);
 
     // Reset level counters
     levelQuestionsAnswered.current = 0;
@@ -230,6 +234,17 @@ export function BaselineAssessmentModal({
     const active = getActiveProgram();
     if (!active) return;
 
+    // MANUAL MODE: no auto-decisions, teacher controls everything
+    if (testPromotionType === "manual") {
+      // After 10 questions, force decision screen (no more questions available)
+      if (answered >= 10) {
+        setShowManualDecision(true);
+      }
+      // Otherwise, questions keep coming - teacher can use Assign/Jump buttons anytime
+      return;
+    }
+
+    // AUTOMATIC MODE (existing logic)
     // Termination condition: 3 wrong answers in current level → end test
     if (wrong >= 3) {
       await finalizeProgram();
@@ -336,6 +351,15 @@ export function BaselineAssessmentModal({
       const correct = levelCorrectAnswers.current;
       const wrong = levelWrongAnswers.current;
 
+      // MANUAL MODE: only stop at 10 questions (force decision), otherwise keep going
+      if (testPromotionType === "manual") {
+        if (answered >= 10) {
+          setShowManualDecision(true);
+        }
+        return;
+      }
+
+      // AUTOMATIC MODE (existing logic)
       // Check termination: 3 wrong in current level → end test immediately
       if (wrong >= 3) {
         await evaluateLevel();
@@ -360,6 +384,31 @@ export function BaselineAssessmentModal({
         return;
       }
     }, 600);
+  };
+
+  // Manual mode: Assign current level and end test
+  const handleManualAssign = async () => {
+    // Current level is what the student was tested on
+    // If they haven't passed any level yet, assign level 1
+    // lastCompletedLevel tracks what they've passed via "Jump"
+    await finalizeProgram();
+  };
+
+  // Manual mode: Jump to next level
+  const handleManualJump = () => {
+    const active = getActiveProgram();
+    if (!active) return;
+
+    // Mark current level as completed
+    setLastCompletedLevel(currentLevel);
+    // Move to next level
+    setCurrentLevel((l) => l + 1);
+    // Reset counters
+    levelQuestionsAnswered.current = 0;
+    levelCorrectAnswers.current = 0;
+    levelWrongAnswers.current = 0;
+    setShowQuickComplete(false);
+    setShowManualDecision(false);
   };
 
   const active = getActiveProgram();
@@ -389,7 +438,7 @@ export function BaselineAssessmentModal({
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold truncate">
-              Baseline Assessment
+              Baseline Test
             </h2>
             {student && (
               <p className="text-xs text-muted-foreground truncate">
@@ -522,125 +571,177 @@ export function BaselineAssessmentModal({
                     </div>
                   </div>
 
-                  {/* FEEDBACK */}
-                  {showFeedback ? (
-                    <div className="text-center py-6">
-                      <div
-                        className={`text-3xl md:text-4xl font-bold ${
-                          lastAnswerCorrect ? "text-green-600" : "text-red-600"
-                        } flex items-center justify-center gap-3`}
-                      >
-                        {lastAnswerCorrect ? (
-                          <>
-                            <CheckCircle className="w-8 h-8 md:w-10 md:h-10" />{" "}
-                            Correct
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-8 h-8 md:w-10 md:h-10" />{" "}
-                            Noted
-                          </>
+                  {/* MANUAL MODE: Decision screen when 10 questions done */}
+                  {showManualDecision ? (
+                    <div className="space-y-6 py-4">
+                      <div className="text-center">
+                        <p className="text-lg font-semibold mb-2">Level {currentLevel + 1} Complete</p>
+                        <p className="text-muted-foreground">
+                          ✓ {levelCorrectAnswers.current} Correct | ✗ {levelWrongAnswers.current} Wrong
+                        </p>
+                      </div>
+                      <div className="space-y-3 max-w-md mx-auto">
+                        <Button
+                          className="w-full h-16 text-lg bg-green-600 hover:bg-green-700"
+                          onClick={handleManualAssign}
+                        >
+                          Assign Level {currentLevel + 1}
+                        </Button>
+                        {currentLevel + 1 < (active?.levels?.length || 0) && (
+                          <Button
+                            className="w-full h-16 text-lg"
+                            variant="outline"
+                            onClick={handleManualJump}
+                          >
+                            Jump to Level {currentLevel + 2} →
+                          </Button>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {/* QUESTION TYPES */}
-                      {qt === "verbal" && (
-                        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                          <Button
-                            variant="destructive"
-                            className="h-20 md:h-24 text-xl"
-                            onClick={() => handleAnswer(false)}
+                    <>
+                      {/* FEEDBACK */}
+                      {showFeedback ? (
+                        <div className="text-center py-6">
+                          <div
+                            className={`text-3xl md:text-4xl font-bold ${
+                              lastAnswerCorrect ? "text-green-600" : "text-red-600"
+                            } flex items-center justify-center gap-3`}
                           >
-                            <X
-                              className="w-10 h-10 md:w-12 md:h-12"
-                              strokeWidth={3}
-                            />
-                          </Button>
-                          <Button
-                            className="h-20 md:h-24 bg-green-600 hover:bg-green-700 text-xl"
-                            onClick={() => handleAnswer(true)}
-                          >
-                            <CheckIcon
-                              className="w-10 h-10 md:w-12 md:h-12"
-                              strokeWidth={3}
-                            />
-                          </Button>
+                            {lastAnswerCorrect ? (
+                              <>
+                                <CheckCircle className="w-8 h-8 md:w-10 md:h-10" />{" "}
+                                Correct
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-8 h-8 md:w-10 md:h-10" />{" "}
+                                Noted
+                              </>
+                            )}
+                          </div>
                         </div>
-                      )}
+                      ) : (
+                        <div className="space-y-4">
+                          {/* QUESTION TYPES */}
+                          {qt === "verbal" && (
+                            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                              <Button
+                                variant="destructive"
+                                className="h-20 md:h-24 text-xl"
+                                onClick={() => handleAnswer(false)}
+                              >
+                                <X
+                                  className="w-10 h-10 md:w-12 md:h-12"
+                                  strokeWidth={3}
+                                />
+                              </Button>
+                              <Button
+                                className="h-20 md:h-24 bg-green-600 hover:bg-green-700 text-xl"
+                                onClick={() => handleAnswer(true)}
+                              >
+                                <CheckIcon
+                                  className="w-10 h-10 md:w-12 md:h-12"
+                                  strokeWidth={3}
+                                />
+                              </Button>
+                            </div>
+                          )}
 
-                      {qt === "oneword" && (
-                        <div className="space-y-4 max-w-md mx-auto">
-                          <Input
-                            value={oneWordInput}
-                            onChange={(e) => setOneWordInput(e.target.value)}
-                            placeholder="Type your answer"
-                            className="text-lg h-14"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                const accepted =
-                                  question.acceptedAnswers?.map((a: string) =>
-                                    a.toLowerCase().trim()
-                                  ) || [];
-                                const ok = accepted.includes(
-                                  oneWordInput.trim().toLowerCase()
-                                );
-                                handleAnswer(ok);
-                              }
-                            }}
-                          />
-                          <Button
-                            className="w-full h-14 text-lg"
-                            onClick={() => {
-                              const accepted =
-                                question.acceptedAnswers?.map((a: string) =>
-                                  a.toLowerCase().trim()
-                                ) || [];
-                              const ok = accepted.includes(
-                                oneWordInput.trim().toLowerCase()
-                              );
-                              handleAnswer(ok);
-                            }}
-                          >
-                            Submit
-                          </Button>
-                        </div>
-                      )}
+                          {qt === "oneword" && (
+                            <div className="space-y-4 max-w-md mx-auto">
+                              <Input
+                                value={oneWordInput}
+                                onChange={(e) => setOneWordInput(e.target.value)}
+                                placeholder="Type your answer"
+                                className="text-lg h-14"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    const accepted =
+                                      question.acceptedAnswers?.map((a: string) =>
+                                        a.toLowerCase().trim()
+                                      ) || [];
+                                    const ok = accepted.includes(
+                                      oneWordInput.trim().toLowerCase()
+                                    );
+                                    handleAnswer(ok);
+                                  }
+                                }}
+                              />
+                              <Button
+                                className="w-full h-14 text-lg"
+                                onClick={() => {
+                                  const accepted =
+                                    question.acceptedAnswers?.map((a: string) =>
+                                      a.toLowerCase().trim()
+                                    ) || [];
+                                  const ok = accepted.includes(
+                                    oneWordInput.trim().toLowerCase()
+                                  );
+                                  handleAnswer(ok);
+                                }}
+                              >
+                                Submit
+                              </Button>
+                            </div>
+                          )}
 
-                      {qt === "mcq" && (
-                        <div className="space-y-3 max-w-lg mx-auto">
-                          {question.options?.map((opt: string, idx: number) => (
-                            <Button
-                              key={idx}
-                              variant="outline"
-                              className="w-full py-6 text-lg md:text-xl text-left justify-start h-auto"
-                              onClick={() =>
-                                handleAnswer(
-                                  idx === question.correctOptionIndex
-                                )
-                              }
-                            >
-                              {opt}
-                            </Button>
-                          ))}
+                          {qt === "mcq" && (
+                            <div className="space-y-3 max-w-lg mx-auto">
+                              {question.options?.map((opt: string, idx: number) => (
+                                <Button
+                                  key={idx}
+                                  variant="outline"
+                                  className="w-full py-6 text-lg md:text-xl text-left justify-start h-auto"
+                                  onClick={() =>
+                                    handleAnswer(
+                                      idx === question.correctOptionIndex
+                                    )
+                                  }
+                                >
+                                  {opt}
+                                </Button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* MANUAL MODE: Assign/Jump buttons below answer buttons */}
+                          {testPromotionType === "manual" && (
+                            <div className="border-t pt-4 mt-4 space-y-3 max-w-md mx-auto">
+                              <Button
+                                className="w-full h-14 text-base bg-green-600 hover:bg-green-700"
+                                onClick={handleManualAssign}
+                              >
+                                Assign Level {currentLevel + 1}
+                              </Button>
+                              {currentLevel + 1 < (active?.levels?.length || 0) && (
+                                <Button
+                                  className="w-full h-14 text-base"
+                                  variant="outline"
+                                  onClick={handleManualJump}
+                                >
+                                  Jump to Level {currentLevel + 2} →
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
 
-              {/* End Assessment Button - Fixed at bottom */}
-              {showQuickComplete && !showFeedback && (
+              {/* End Test Button - Fixed at bottom (automatic mode only) */}
+              {testPromotionType === "automatic" && showQuickComplete && !showFeedback && (
                 <div className="mt-auto">
                   <Button
                     className="w-full h-14 text-lg"
                     variant="outline"
                     onClick={finalizeProgram}
                   >
-                    End Assessment
+                    End Test
                   </Button>
                 </div>
               )}
@@ -652,9 +753,9 @@ export function BaselineAssessmentModal({
             <div className="space-y-4 py-4">
               <div className="text-center py-4">
                 <Trophy className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                <h2 className="text-xl font-bold">Assessment Complete!</h2>
+                <h2 className="text-xl font-bold">Test Complete!</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  All programs have been assessed
+                  All programs have been tested
                 </p>
               </div>
 

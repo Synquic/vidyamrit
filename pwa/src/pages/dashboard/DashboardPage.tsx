@@ -18,6 +18,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -47,6 +48,10 @@ function DashboardPage() {
     // Redirect view users to their dashboard
     if (user && (user.role as string) === "view_user") {
       navigate(DASHBOARD_ROUTE_PATHS.viewDashboard, { replace: true });
+    }
+    // Redirect tutors to their dashboard
+    if (user && (user.role as string) === "tutor") {
+      navigate(DASHBOARD_ROUTE_PATHS.tutorDashboard, { replace: true });
     }
   }, [user, navigate]);
 
@@ -221,9 +226,9 @@ function DashboardPage() {
           color="from-blue-500 to-blue-600"
         />
         <StatsCard
-          title="Total Cohorts"
+          title="Total Groups"
           value={overview.totalCohorts}
-          subtitle={`${overview.activeCohorts} active cohorts`}
+          subtitle={`${overview.activeCohorts} active groups`}
           icon={BookOpen}
           color="from-purple-500 to-purple-600"
         />
@@ -241,7 +246,7 @@ function DashboardPage() {
         <StatsCard
           title="Schools with Baseline"
           value={overview.schoolsWithBaseline}
-          subtitle="Completed baseline assessments"
+          subtitle="Completed baseline tests"
           icon={Target}
           color="from-emerald-500 to-emerald-600"
         />
@@ -260,7 +265,7 @@ function DashboardPage() {
           color="from-red-500 to-red-600"
         />
         <StatsCard
-          title="Total Assessments"
+          title="Total Tests"
           value={overview.totalAssessments}
           subtitle={`${overview.assessmentSuccessRate.toFixed(
             1
@@ -277,13 +282,13 @@ function DashboardPage() {
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">
-              Assessment Coverage
+              Test Coverage
             </h2>
             <Activity className="w-6 h-6 text-orange-600" />
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative w-32 h-32">
-              <svg className="w-full h-full transform -rotate-90">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 128 128">
                 <circle
                   cx="64"
                   cy="64"
@@ -310,20 +315,20 @@ function DashboardPage() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">
                   {(overview.assessmentCoverage || 0).toFixed(1)}%
                 </span>
               </div>
             </div>
-            <div>
+            <div className="text-center sm:text-left">
               <p className="text-sm text-gray-600 mb-2">
-                Students with baseline assessments
+                Students with baseline tests
               </p>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
                   <span className="text-gray-600">
-                    {overview.studentsWithAssessments || 0} Assessed
+                    {overview.studentsWithAssessments || 0} Tested
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -342,13 +347,13 @@ function DashboardPage() {
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">
-              Assessment Success
+              Test Success
             </h2>
             <CheckCircle className="w-6 h-6 text-orange-600" />
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative w-32 h-32">
-              <svg className="w-full h-full transform -rotate-90">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 128 128">
                 <circle
                   cx="64"
                   cy="64"
@@ -375,17 +380,17 @@ function DashboardPage() {
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">
                   {overview.assessmentSuccessRate.toFixed(1)}%
                 </span>
               </div>
             </div>
-            <div>
+            <div className="text-center sm:text-left">
               <p className="text-sm text-gray-600 mb-2">
-                Students passing assessments
+                Students passing tests
               </p>
               <p className="text-xs text-gray-500">
-                Based on {overview.totalAssessments} total assessments
+                Based on {overview.totalAssessments} total tests
               </p>
             </div>
           </div>
@@ -442,10 +447,8 @@ function DashboardPage() {
                 <Pie
                   data={progressData}
                   cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => entry.name}
-                  outerRadius={100}
+                  cy="45%"
+                  outerRadius="65%"
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -461,21 +464,22 @@ function DashboardPage() {
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
                 />
+                <Legend verticalAlign="bottom" height={36} formatter={(value, entry) => `${value}: ${(entry.payload as { value?: number })?.value ?? ''}`} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          /* Fallback: Assessment Status Distribution */
+          /* Fallback: Test Status Distribution */
           <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900 mb-6">
-              Assessment Status
+              Test Status
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={[
                     {
-                      name: "Assessed",
+                      name: "Tested",
                       value: overview.studentsWithAssessments || 0,
                       color: COLORS.success,
                     },
@@ -490,10 +494,8 @@ function DashboardPage() {
                     },
                   ]}
                   cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => `${entry.name}: ${entry.value}`}
-                  outerRadius={100}
+                  cy="45%"
+                  outerRadius="65%"
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -508,16 +510,17 @@ function DashboardPage() {
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
                 />
+                <Legend verticalAlign="bottom" height={36} formatter={(value, entry) => `${value}: ${(entry.payload as { value?: number })?.value ?? ''}`} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         )}
 
-        {/* Cohort Performance - Show if data exists */}
+        {/* Group Performance - Show if data exists */}
         {charts.cohortPerformance.length > 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900 mb-6">
-              Top Performing Cohorts
+              Top Performing Groups
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={charts.cohortPerformance.slice(0, 5)}>
@@ -561,10 +564,10 @@ function DashboardPage() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      Students Assessed (Last 7 Days)
+                      Students Tested (Last 7 Days)
                     </p>
                     <p className="text-sm text-gray-500">
-                      Recently completed baseline assessments
+                      Recently completed baseline tests
                     </p>
                   </div>
                 </div>
@@ -583,7 +586,7 @@ function DashboardPage() {
                       Average Student Level
                     </p>
                     <p className="text-sm text-gray-500">
-                      Across all assessed students
+                      Across all tested students
                     </p>
                   </div>
                 </div>
@@ -599,10 +602,10 @@ function DashboardPage() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      Total Assessments Completed
+                      Total Tests Completed
                     </p>
                     <p className="text-sm text-gray-500">
-                      All-time baseline assessments
+                      All-time baseline tests
                     </p>
                   </div>
                 </div>

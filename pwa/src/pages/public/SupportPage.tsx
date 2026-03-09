@@ -831,7 +831,7 @@ export default function SupportPage() {
                   </p>
                   <ul className="mt-3 text-sm text-muted-foreground list-disc pl-5 space-y-1">
                     <li>Go on-ground to teach and facilitate learning</li>
-                    <li>Conduct baseline assessments and track progress</li>
+                    <li>Conduct baseline tests and track progress</li>
                     <li>Receive training, curriculum, and ongoing support</li>
                   </ul>
                   <div className="mt-5">
@@ -906,7 +906,7 @@ export default function SupportPage() {
                   </p>
                   <ul className="mt-3 text-sm text-muted-foreground list-disc pl-5 space-y-1">
                     <li>Go on-ground to teach and facilitate learning</li>
-                    <li>Conduct baseline assessments and track progress</li>
+                    <li>Conduct baseline tests and track progress</li>
                     <li>Receive training, curriculum, and ongoing support</li>
                   </ul>
                   <div className="mt-5">
@@ -958,13 +958,13 @@ export default function SupportPage() {
                   <p className="mt-2 text-sm text-muted-foreground">
                     If you are a principal or school representative: register
                     your school. After review and qualification, our mentors
-                    will conduct baseline assessments and begin cohorts.
+                    will conduct baseline tests and begin groups.
                   </p>
                   <ol className="mt-3 text-sm text-muted-foreground list-decimal pl-5 space-y-1">
                     <li>Register school</li>
                     <li>Submit qualification data</li>
-                    <li>Baseline assessment by mentor</li>
-                    <li>Cohorts formed and sessions begin</li>
+                    <li>Baseline test by mentor</li>
+                    <li>Groups formed and sessions begin</li>
                   </ol>
                   <div className="mt-5">
                     <Button
@@ -995,7 +995,7 @@ export default function SupportPage() {
                     <DialogTitle>Register School</DialogTitle>
                     <DialogDescription>
                       After review and qualification, we’ll coordinate a mentor
-                      baseline assessment and form cohorts.
+                      baseline test and form groups.
                     </DialogDescription>
                   </DialogHeader>
                   <SchoolForm />

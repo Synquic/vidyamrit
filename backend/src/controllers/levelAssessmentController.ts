@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../types/auth";
 import Cohort from "../models/CohortModel";
 import Program from "../models/ProgramModel";
+import Student from "../models/StudentModel";
 import logger from "../utils/logger";
 
 /**
@@ -228,6 +229,44 @@ export const conductLevelAssessment = async (req: AuthRequest, res: Response) =>
     }
 
     await cohort.save();
+
+    // Update student's progressHistory for individual report tracking
+    try {
+      const subject = (program.subject || "").toLowerCase();
+      let flag: string;
+      let reason: string;
+
+      if (passed) {
+        flag = "improving";
+        reason = `Passed Level ${currentLevel} test with ${score.toFixed(1)}% score`;
+      } else {
+        const failCount = cohort.progress[progressIndex].failureCount || 1;
+        if (failCount >= 3) {
+          flag = "needs_attention";
+          reason = `Failed Level ${currentLevel} test (attempt ${failCount}) with ${score.toFixed(1)}% score - urgent attention needed`;
+        } else if (failCount >= 2) {
+          flag = "struggling";
+          reason = `Failed Level ${currentLevel} test (attempt ${failCount}) with ${score.toFixed(1)}% score`;
+        } else {
+          flag = "average";
+          reason = `Failed Level ${currentLevel} test (attempt ${failCount}) with ${score.toFixed(1)}% score`;
+        }
+      }
+
+      await Student.findByIdAndUpdate(studentId, {
+        $push: {
+          progressHistory: {
+            flag,
+            subject: subject || "hindi",
+            reason,
+            date: assessmentDate,
+            mentorId: tutorId,
+          },
+        },
+      });
+    } catch (progressError) {
+      logger.warn(`Failed to update student progressHistory for ${studentId}:`, progressError);
+    }
 
     res.json({
       message: passed 

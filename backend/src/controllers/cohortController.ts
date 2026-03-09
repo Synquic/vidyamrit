@@ -133,8 +133,51 @@ export const createCohort = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const cohort = new Cohort({ ...req.body, name: name.trim() });
+    const cohortData = { ...req.body, name: name.trim() };
+
+    // Initialize progress records for students being added
+    if (cohortData.students && cohortData.students.length > 0) {
+      const students = await Student.find({ _id: { $in: cohortData.students } });
+      cohortData.progress = students.map((student: any) => {
+        // Get the most recent knowledgeLevel for the assigned program
+        let level = 1;
+        if (cohortData.programId && Array.isArray(student.knowledgeLevel) && student.knowledgeLevel.length > 0) {
+          const programLevel = student.knowledgeLevel
+            .filter((kl: any) => kl.program?.toString() === cohortData.programId?.toString())
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          if (programLevel.length > 0) {
+            level = programLevel[0].level;
+          }
+        }
+        return {
+          studentId: student._id,
+          currentLevel: level,
+          status: "green",
+          failureCount: 0,
+          lastUpdated: new Date(),
+          assessmentHistory: [],
+        };
+      });
+    }
+
+    const cohort = new Cohort(cohortData);
     await cohort.save();
+
+    // Update students with cohort membership info
+    if (cohortData.students && cohortData.students.length > 0) {
+      await Student.updateMany(
+        { _id: { $in: cohortData.students } },
+        {
+          $push: {
+            cohort: {
+              cohortId: cohort._id,
+              dateJoined: new Date(),
+            },
+          },
+        }
+      );
+    }
+
     res.status(201).json(cohort);
   } catch (error: any) {
     if (error.name === "ValidationError") {
@@ -171,11 +214,91 @@ export const updateCohort = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // If students are being updated, initialize progress for new students
+    if (req.body.students) {
+      const existingProgressStudentIds = cohort.progress.map(
+        (p: any) => p.studentId.toString()
+      );
+      const newStudentIds = req.body.students.filter(
+        (id: string) => !existingProgressStudentIds.includes(id.toString())
+      );
+
+      if (newStudentIds.length > 0) {
+        const newStudents = await Student.find({ _id: { $in: newStudentIds } });
+        const programId = req.body.programId || cohort.programId;
+        const newProgressRecords = newStudents.map((student: any) => {
+          let level = cohort.currentLevel || 1;
+          if (programId && Array.isArray(student.knowledgeLevel) && student.knowledgeLevel.length > 0) {
+            const programLevel = student.knowledgeLevel
+              .filter((kl: any) => kl.program?.toString() === programId?.toString())
+              .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (programLevel.length > 0) {
+              level = programLevel[0].level;
+            }
+          }
+          return {
+            studentId: student._id,
+            currentLevel: level,
+            status: "green",
+            failureCount: 0,
+            lastUpdated: new Date(),
+            assessmentHistory: [],
+          };
+        });
+
+        // Push new progress records to existing ones
+        if (!req.body.progress) {
+          req.body.progress = [...cohort.progress, ...newProgressRecords];
+        }
+      }
+    }
+
+    // Track which students are being added/removed for cohort membership update
+    const existingStudentIds = (cohort.students || []).map((s: any) => s.toString());
+    const incomingStudentIds = (req.body.students || []).map((s: any) => s.toString());
+
     const updatedCohort = await Cohort.findByIdAndUpdate(
       req.params.id,
       { ...req.body, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
+
+    // Add cohort membership for newly added students
+    if (req.body.students) {
+      const addedStudentIds = incomingStudentIds.filter(
+        (id: string) => !existingStudentIds.includes(id)
+      );
+      if (addedStudentIds.length > 0) {
+        await Student.updateMany(
+          { _id: { $in: addedStudentIds } },
+          {
+            $push: {
+              cohort: {
+                cohortId: cohort._id,
+                dateJoined: new Date(),
+              },
+            },
+          }
+        );
+      }
+
+      // Set dateLeaved for removed students
+      const removedStudentIds = existingStudentIds.filter(
+        (id: string) => !incomingStudentIds.includes(id)
+      );
+      if (removedStudentIds.length > 0) {
+        await Student.updateMany(
+          {
+            _id: { $in: removedStudentIds },
+            "cohort.cohortId": cohort._id,
+            "cohort.dateLeaved": { $exists: false },
+          },
+          {
+            $set: { "cohort.$.dateLeaved": new Date() },
+          }
+        );
+      }
+    }
 
     res.json(updatedCohort);
   } catch (error: any) {
@@ -1423,6 +1546,19 @@ export const generateOptimalCohorts = async (
             globalTutorIndex++;
           }
 
+          // Initialize progress records for students
+          const cohortStudentDocs = await Student.find({ _id: { $in: cohortStudents } });
+          const progressRecords = cohortStudentDocs.map((student: any) => ({
+            studentId: student._id,
+            currentLevel: student.knowledgeLevel?.find(
+              (kl: any) => kl.program?.toString() === program._id.toString()
+            )?.level || level,
+            status: "green",
+            failureCount: 0,
+            lastUpdated: new Date(),
+            assessmentHistory: [],
+          }));
+
           const cohort = new Cohort({
             name: `${program.subject.toUpperCase()} Level ${level} - Cohort ${globalCohortNumber}${strategy === 'high-first' ? ' (High Priority)' : ''}`,
             schoolId: schoolId,
@@ -1431,6 +1567,7 @@ export const generateOptimalCohorts = async (
             currentLevel: level,
             status: 'active',
             students: cohortStudents,
+            progress: progressRecords,
             // Don't set startDate or timeTracking.cohortStartDate - let user start manually
             timeTracking: {
               attendanceDays: 0,
@@ -1589,6 +1726,19 @@ export const createCohortsFromPlan = async (
         continue;
       }
 
+      // Initialize progress records for students
+      const studentDocs = await Student.find({ _id: { $in: students } });
+      const progressRecords = studentDocs.map((student: any) => ({
+        studentId: student._id,
+        currentLevel: student.knowledgeLevel?.find(
+          (kl: any) => kl.program?.toString() === programId.toString()
+        )?.level || currentLevel || 1,
+        status: "green",
+        failureCount: 0,
+        lastUpdated: new Date(),
+        assessmentHistory: [],
+      }));
+
       const cohort = new Cohort({
         name,
         schoolId: schoolId,
@@ -1597,6 +1747,7 @@ export const createCohortsFromPlan = async (
         currentLevel: currentLevel || 1,
         status: 'active',
         students: students,
+        progress: progressRecords,
         // Don't set startDate or timeTracking.cohortStartDate - let user start manually
         timeTracking: {
           attendanceDays: 0,

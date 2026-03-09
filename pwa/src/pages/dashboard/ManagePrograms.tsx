@@ -853,7 +853,7 @@ function CreateProgramForm({
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="basic">Basic Info</TabsTrigger>
                     <TabsTrigger value="questions">
-                      Assessment Questions
+                      Test Questions
                     </TabsTrigger>
                   </TabsList>
 
@@ -1064,7 +1064,7 @@ function ViewProgramDetails({ program }: ViewProgramDetailsProps) {
                 {level.assessmentQuestions &&
                   level.assessmentQuestions.length > 0 && (
                     <div className="mt-3">
-                      <Label className="text-xs">Assessment Questions:</Label>
+                      <Label className="text-xs">Test Questions:</Label>
                       <p className="text-sm text-muted-foreground mt-1">
                         {level.assessmentQuestions.length} question(s) available
                         -
@@ -1087,7 +1087,7 @@ function ViewProgramDetails({ program }: ViewProgramDetailsProps) {
               level.assessmentQuestions && level.assessmentQuestions.length > 0
           ).length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No assessment questions found in any level.
+              No test questions found in any level.
             </div>
           ) : (
             <>
@@ -1114,13 +1114,13 @@ function ViewProgramDetails({ program }: ViewProgramDetailsProps) {
                           {showAllQuestions
                             ? `All ${
                                 level.assessmentQuestions?.length || 0
-                              } Assessment Question(s)`
+                              } Test Question(s)`
                             : `Showing ${Math.min(
                                 5,
                                 level.assessmentQuestions?.length || 0
                               )} of ${
                                 level.assessmentQuestions?.length || 0
-                              } Assessment Question(s)`}
+                              } Test Question(s)`}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -1405,7 +1405,7 @@ function AssessmentQuestionsTab({
         {questions.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <BookOpen className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No assessment questions added yet</p>
+            <p>No test questions added yet</p>
             <p className="text-sm">Add questions to assess student progress</p>
           </div>
         ) : (

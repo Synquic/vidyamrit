@@ -432,7 +432,7 @@ export default function StudentLevelsReport({
               Student Levels - Class & School Wise
             </h1>
             <p className="text-muted-foreground mt-1 md:mt-2">
-              Assessment levels grouped by school and class
+              Test levels grouped by school and class
             </p>
           </div>
         </div>
@@ -1197,10 +1197,10 @@ export default function StudentLevelsReport({
                                                       Levels (by Subject)
                                                     </TableHead>
                                                     <TableHead className="hidden md:table-cell">
-                                                      Last Assessment
+                                                      Last Test
                                                     </TableHead>
                                                     <TableHead className="hidden lg:table-cell">
-                                                      Total Assessments
+                                                      Total Tests
                                                     </TableHead>
                                                   </TableRow>
                                                 </TableHeader>
@@ -1293,7 +1293,7 @@ export default function StudentLevelsReport({
                                                               </div>
                                                             ) : (
                                                               <Badge variant="outline">
-                                                                Not Assessed
+                                                                Not Tested
                                                               </Badge>
                                                             )}
                                                           </TableCell>

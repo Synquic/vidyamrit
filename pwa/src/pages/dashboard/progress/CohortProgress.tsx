@@ -38,7 +38,7 @@ export default function CohortProgress() {
       setCohortData(data);
     } catch (error) {
       console.error('Error fetching cohort progress:', error);
-      toast.error('Failed to load cohort progress');
+      toast.error('Failed to load group progress');
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function CohortProgress() {
   if (!cohortData) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Cohort not found</p>
+        <p className="text-gray-500">Group not found</p>
         <Button onClick={() => window.location.href = '/progress'} className="mt-4">
           Go Back
         </Button>
@@ -137,27 +137,27 @@ export default function CohortProgress() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+      <div className="flex items-start gap-3 sm:gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => window.location.href = '/progress'}
-          className="p-2"
+          className="p-2 mt-1 flex-shrink-0"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4" />
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <TrendingUp className="h-6 w-6" />
-            {cohortData.cohort.name} Progress
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+            <span className="truncate">{cohortData.cohort.name} Progress</span>
           </h1>
-          <div className="space-y-1">
-            <p className="text-gray-600">
+          <div className="space-y-1.5 mt-1">
+            <p className="text-sm sm:text-base text-gray-600">
               {cohortData.cohort.school?.name || 'School not assigned'} • {cohortData.studentsProgress.length} students
             </p>
             {/* Program Information */}
             {cohortData.cohort.program && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <Badge variant="default" className="text-xs">
                   {cohortData.cohort.program.subject} Program
                 </Badge>
@@ -174,50 +174,50 @@ export default function CohortProgress() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-sm text-gray-600">On Track</p>
-                <p className="text-2xl font-bold text-green-600">{progressCounts.green}</p>
+                <p className="text-sm sm:text-sm font-medium text-green-700">On Track</p>
+                <p className="text-2xl sm:text-2xl font-bold text-green-600">{progressCounts.green}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
               <div>
-                <p className="text-sm text-gray-600">Need Support</p>
-                <p className="text-2xl font-bold text-yellow-600">{progressCounts.yellow}</p>
+                <p className="text-sm sm:text-sm font-medium text-yellow-700">Need Support</p>
+                <p className="text-2xl sm:text-2xl font-bold text-yellow-600">{progressCounts.yellow}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
+
+        <Card className="bg-orange-50 border-orange-200">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
               <div>
-                <p className="text-sm text-gray-600">Struggling</p>
-                <p className="text-2xl font-bold text-orange-600">{progressCounts.orange}</p>
+                <p className="text-sm sm:text-sm font-medium text-orange-700">Struggling</p>
+                <p className="text-2xl sm:text-2xl font-bold text-orange-600">{progressCounts.orange}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+
+        <Card className="bg-red-50 border-red-200">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
               <div>
-                <p className="text-sm text-gray-600">Urgent</p>
-                <p className="text-2xl font-bold text-red-600">{progressCounts.red}</p>
+                <p className="text-sm sm:text-sm font-medium text-red-700">Urgent</p>
+                <p className="text-2xl sm:text-2xl font-bold text-red-600">{progressCounts.red}</p>
               </div>
             </div>
           </CardContent>
@@ -238,7 +238,7 @@ export default function CohortProgress() {
               Enhanced Time Tracking Available
             </p>
             <p className="text-yellow-600 text-sm mt-2">
-              Backend implementation required for program timeline and assessment scheduling features.
+              Backend implementation required for program timeline and test scheduling features.
             </p>
           </CardContent>
         </Card>
@@ -250,7 +250,7 @@ export default function CohortProgress() {
               No Program Assigned
             </p>
             <p className="text-gray-600 text-sm mt-2">
-              Assign a program to this cohort to enable time-based progress tracking.
+              Assign a program to this group to enable time-based progress tracking.
             </p>
           </CardContent>
         </Card>

@@ -2,6 +2,7 @@ import { UserRole } from "@/types/user";
 import { DASHBOARD_ROUTE_PATHS } from "./index";
 
 export const routePermissions: Record<string, UserRole[]> = {
+  [DASHBOARD_ROUTE_PATHS.tutorDashboard]: [UserRole.TUTOR],
   [DASHBOARD_ROUTE_PATHS.schools]: [UserRole.SUPER_ADMIN],
   // [DASHBOARD_ROUTE_PATHS.schoolAdmin]: [UserRole.SUPER_ADMIN],
   [DASHBOARD_ROUTE_PATHS.mentors]: [UserRole.SUPER_ADMIN],

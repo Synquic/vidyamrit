@@ -65,12 +65,12 @@ export default function Notifications() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className="relative h-12 w-12 sm:h-9 sm:w-9"
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
       >
-        <Bell className="h-5 w-5" />
-        <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full" />
+        <Bell className="h-7 w-7 sm:h-5 sm:w-5" />
+        <span className="absolute top-0.5 right-0.5 sm:top-0 sm:right-0 h-2.5 w-2.5 sm:h-2 sm:w-2 bg-red-500 rounded-full" />
       </Button>
       {isOpen && (
         <Card className="absolute right-0 mt-2 w-96 z-50">

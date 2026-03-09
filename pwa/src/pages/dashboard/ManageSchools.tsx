@@ -81,6 +81,7 @@ function ManageSchools() {
     pointOfContact: "",
     phone: "",
     block: "",
+    testPromotionType: "automatic" as "automatic" | "manual",
     pointOfContacts: [{ name: "", phone: "" }],
   });
 
@@ -146,6 +147,7 @@ function ManageSchools() {
       pointOfContact: school.pointOfContact || "",
       phone: school.phone || "",
       block: school.block || "",
+      testPromotionType: school.testPromotionType || "automatic",
       pointOfContacts:
         (school as any).pointOfContacts && (school as any).pointOfContacts.length
           ? (school as any).pointOfContacts
@@ -180,6 +182,7 @@ function ManageSchools() {
       pointOfContact: "",
       phone: "",
       block: "",
+      testPromotionType: "automatic" as "automatic" | "manual",
       pointOfContacts: [{ name: "", phone: "" }],
     });
   };
@@ -226,6 +229,7 @@ function ManageSchools() {
               pointOfContact: "",
               phone: "",
               block: "",
+              testPromotionType: "automatic" as "automatic" | "manual",
               pointOfContacts: [{ name: "", phone: "" }],
             });
             setIsDialogOpen(true);
@@ -267,6 +271,7 @@ function ManageSchools() {
                       pinCode: "",
                       pointOfContact: "",
                       phone: "",
+                      testPromotionType: "automatic" as "automatic" | "manual",
                       pointOfContacts: [{ name: "", phone: "" }],
                     });
                     setIsDialogOpen(true);
@@ -296,6 +301,7 @@ function ManageSchools() {
                 <TableHead>Established</TableHead>
                 <TableHead>Point of Contact</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Test Mode</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -320,6 +326,11 @@ function ManageSchools() {
                   <TableCell>{school.establishedYear || "-"}</TableCell>
                   <TableCell>{school.pointOfContact || "-"}</TableCell>
                   <TableCell>{school.phone || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant={school.testPromotionType === "manual" ? "default" : "secondary"} className="capitalize">
+                      {school.testPromotionType || "automatic"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -451,6 +462,28 @@ function ManageSchools() {
                 </div>
               </div>
 
+
+              {/* Test Promotion Type */}
+              <div className="space-y-2">
+                <Label htmlFor="testPromotionType">Test Mode</Label>
+                <Select
+                  value={formData.testPromotionType || "automatic"}
+                  onValueChange={(value: "automatic" | "manual") =>
+                    setFormData((prev) => ({ ...prev, testPromotionType: value }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select promotion type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="automatic">Automatic</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Automatic: System promotes/ends test based on score. Manual: Teacher decides when to promote or assign level.
+                </p>
+              </div>
 
               {/* Address */}
               <div className="space-y-2">
