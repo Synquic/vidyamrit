@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -18,6 +18,8 @@ import {
   ChevronRight,
   AlertTriangle,
   Play,
+  Search,
+  User,
 } from "lucide-react";
 import {
   getTutorProgressSummary,
@@ -42,6 +44,8 @@ import {
   getTutorAttendanceSummary,
   getCohortAttendance,
   recordCohortAttendance,
+  getAttendanceRecords,
+  bulkMarkAttendance,
   AttendanceStatus,
   CohortAttendanceRecord,
 } from "@/services/attendance";
@@ -50,6 +54,24 @@ import {
   getCohorts,
   startCohort,
 } from "@/services/cohorts";
+import { getStudents } from "@/services/students";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Link } from "react-router";
 import { useSchoolContext } from "@/contexts/SchoolContext";
@@ -144,10 +166,10 @@ function AttendanceOverview() {
       setIsStartDialogOpen(false);
       setStartingCohort(null);
       setCustomStartDate("");
-      toast.success("Cohort started successfully");
+      toast.success("Group started successfully");
     },
     onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to start cohort"));
+      toast.error(getApiErrorMessage(error, "Failed to start group"));
     },
   });
 
@@ -245,51 +267,49 @@ function AttendanceOverview() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Cohort Overview
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <Users className="h-5 w-5 flex-shrink-0" />
+            Group Overview
           </h2>
           <p className="text-gray-600 text-sm mt-1">
-            View and manage attendance across all cohorts
+            View and manage attendance across all groups
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => {
-                const selected = new Date(e.target.value);
-                const dayOfWeek = selected.getDay();
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Calendar className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              const selected = new Date(e.target.value);
+              const dayOfWeek = selected.getDay();
 
-                // Prevent Sunday selection (day 0)
-                if (dayOfWeek === 0) {
-                  toast.error(
-                    "Sunday is a holiday. Please select a teaching day (Monday-Saturday)."
-                  );
-                  // Auto-select next Monday
-                  const nextMonday = new Date(selected);
-                  const daysUntilMonday = (8 - dayOfWeek) % 7 || 7;
-                  nextMonday.setDate(selected.getDate() + daysUntilMonday);
-                  setSelectedDate(nextMonday.toISOString().split("T")[0]);
-                  return;
-                }
+              // Prevent Sunday selection (day 0)
+              if (dayOfWeek === 0) {
+                toast.error(
+                  "Sunday is a holiday. Please select a teaching day (Monday-Saturday)."
+                );
+                // Auto-select next Monday
+                const nextMonday = new Date(selected);
+                const daysUntilMonday = (8 - dayOfWeek) % 7 || 7;
+                nextMonday.setDate(selected.getDate() + daysUntilMonday);
+                setSelectedDate(nextMonday.toISOString().split("T")[0]);
+                return;
+              }
 
-                setSelectedDate(e.target.value);
-              }}
-              onFocus={(e) => {
-                // Set min date to prevent selecting past Sundays
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                e.currentTarget.min = today.toISOString().split("T")[0];
-              }}
-              className="flex-1 sm:flex-none px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
-          </div>
+              setSelectedDate(e.target.value);
+            }}
+            onFocus={(e) => {
+              // Set min date to prevent selecting past Sundays
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              e.currentTarget.min = today.toISOString().split("T")[0];
+            }}
+            className="flex-1 sm:flex-none px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+          />
           <span className="text-xs text-gray-500 hidden sm:inline">
             (Mon-Sat only)
           </span>
@@ -302,7 +322,7 @@ function AttendanceOverview() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Clock className="h-5 w-5 text-blue-600" />
-              Upcoming Assessments (Next 7 Days)
+              Upcoming Tests (Next 7 Days)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -320,7 +340,7 @@ function AttendanceOverview() {
                   >
                     <div className="flex-1">
                       <div className="font-medium text-sm">
-                        {summary.cohort?.name || "Unknown Cohort"}
+                        {summary.cohort?.name || "Unknown Group"}
                       </div>
                       <div className="text-xs text-gray-600 mt-1">
                         {summary.program?.name ||
@@ -451,7 +471,7 @@ function AttendanceOverview() {
                         className="w-full bg-green-600 hover:bg-green-700"
                       >
                         <Play className="mr-2 h-4 w-4" />
-                        Start Cohort
+                        Start Group
                       </Button>
                     ) : (
                       <Button
@@ -540,11 +560,11 @@ function AttendanceOverview() {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-blue-600" />
               <CardTitle className="text-lg text-blue-900">
-                Upcoming Assessments
+                Upcoming Tests
               </CardTitle>
             </div>
             <p className="text-sm text-blue-700">
-              Cohorts with assessments due in the next 7 days
+              Groups with tests due in the next 7 days
             </p>
           </CardHeader>
           <CardContent>
@@ -603,13 +623,13 @@ function AttendanceOverview() {
         </Card>
       )}
 
-      {/* Start Cohort Dialog */}
+      {/* Start Group Dialog */}
       <Dialog open={isStartDialogOpen} onOpenChange={setIsStartDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Start Cohort</DialogTitle>
+            <DialogTitle>Start Group</DialogTitle>
             <DialogDescription>
-              Set a start date for "{startingCohort?.name}". The cohort will
+              Set a start date for "{startingCohort?.name}". The group will
               begin tracking progress and attendance from this date.
             </DialogDescription>
           </DialogHeader>
@@ -628,18 +648,18 @@ function AttendanceOverview() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Select a date to start the cohort. Leave as today's date to
+                Select a date to start the group. Leave as today's date to
                 start immediately.
               </p>
             </div>
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Once started, the cohort will begin
+                <strong>Note:</strong> Once started, the group will begin
                 tracking:
                 <ul className="list-disc list-inside mt-1 space-y-1">
                   <li>Progress tracking from the start date</li>
                   <li>Attendance recording</li>
-                  <li>Assessment timelines</li>
+                  <li>Test timelines</li>
                 </ul>
               </p>
             </div>
@@ -669,7 +689,7 @@ function AttendanceOverview() {
               ) : (
                 <>
                   <Play className="mr-2 h-4 w-4" />
-                  Start Cohort
+                  Start Group
                 </>
               )}
             </Button>
@@ -757,15 +777,15 @@ function CohortAttendanceDetail() {
       // Overdue
       const overdueDays = Math.abs(days);
       if (overdueDays === 1) {
-        return "Assessment pending (1 day overdue)";
+        return "Test pending (1 day overdue)";
       }
-      return `Assessment pending (${overdueDays} days overdue)`;
+      return `Test pending (${overdueDays} days overdue)`;
     } else if (days === 0) {
-      return "Assessment today";
+      return "Test today";
     } else if (days === 1) {
-      return "Assessment in 1 day";
+      return "Test in 1 day";
     } else {
-      return `Assessment in ${days} days`;
+      return `Test in ${days} days`;
     }
   };
 
@@ -806,7 +826,7 @@ function CohortAttendanceDetail() {
         return data;
       } catch (error) {
         console.error("Error fetching cohort attendance:", error);
-        toast.error(getApiErrorMessage(error, "Failed to load cohort attendance"));
+        toast.error(getApiErrorMessage(error, "Failed to load group attendance"));
         return null;
       }
     },
@@ -974,7 +994,7 @@ function CohortAttendanceDetail() {
   if (!cohortData) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Cohort not found</p>
+        <p className="text-gray-500">Group not found</p>
         <Button onClick={() => navigate("/attendance")} className="mt-4">
           Go Back
         </Button>
@@ -1016,13 +1036,13 @@ function CohortAttendanceDetail() {
       </div>
 
       {/* Date and Quick Actions */}
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="space-y-3">
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3 sm:pb-4">
+          <div className="space-y-3 sm:space-y-3">
             {/* Row 1: Date Picker and Progress Indicator */}
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <Calendar className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
                 <input
                   type="date"
                   value={selectedDate}
@@ -1051,7 +1071,7 @@ function CohortAttendanceDetail() {
                     today.setHours(0, 0, 0, 0);
                     e.currentTarget.min = today.toISOString().split("T")[0];
                   }}
-                  className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm w-full sm:w-auto"
                 />
                 <span className="text-xs text-gray-500 hidden sm:inline">
                   (Mon-Sat only)
@@ -1062,7 +1082,7 @@ function CohortAttendanceDetail() {
               <button
                 onClick={handleProgressClick}
                 style={getGradientStyle(daysUntilAssessment)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md hover:scale-105 active:scale-100"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md hover:scale-105 active:scale-100 w-full sm:w-auto"
               >
                 {daysUntilAssessment !== null && daysUntilAssessment < 0 && (
                   <AlertTriangle className="h-4 w-4 animate-pulse" />
@@ -1076,15 +1096,15 @@ function CohortAttendanceDetail() {
             </div>
 
             {/* Row 2: Quick Action Buttons */}
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={markAllPresent}
                 disabled={isHoliday}
-                className="flex-1 sm:flex-none"
+                className="h-11 sm:h-9 text-sm sm:flex-none"
               >
-                <CheckCircle className="h-4 w-4 mr-1 sm:mr-2" />
+                <CheckCircle className="h-4 w-4 mr-1.5" />
                 <span className="hidden sm:inline">All Present</span>
                 <span className="sm:hidden">All P</span>
               </Button>
@@ -1093,9 +1113,9 @@ function CohortAttendanceDetail() {
                 size="sm"
                 onClick={markAllAbsent}
                 disabled={isHoliday}
-                className="flex-1 sm:flex-none"
+                className="h-11 sm:h-9 text-sm sm:flex-none"
               >
-                <XCircle className="h-4 w-4 mr-1 sm:mr-2" />
+                <XCircle className="h-4 w-4 mr-1.5" />
                 <span className="hidden sm:inline">All Absent</span>
                 <span className="sm:hidden">All A</span>
               </Button>
@@ -1104,9 +1124,9 @@ function CohortAttendanceDetail() {
                 size="sm"
                 onClick={clearAll}
                 disabled={isHoliday}
-                className="flex-1 sm:flex-none"
+                className="h-11 sm:h-9 text-sm sm:flex-none"
               >
-                <RotateCcw className="h-4 w-4 mr-1 sm:mr-2" />
+                <RotateCcw className="h-4 w-4 mr-1.5" />
                 Clear
               </Button>
             </div>
@@ -1117,7 +1137,7 @@ function CohortAttendanceDetail() {
               size="sm"
               onClick={handleMarkHoliday}
               disabled={markingHoliday}
-              className={`w-full ${
+              className={`w-full h-11 sm:h-9 text-sm ${
                 isHoliday ? "bg-purple-600 hover:bg-purple-700 text-white" : ""
               }`}
             >
@@ -1127,46 +1147,46 @@ function CohortAttendanceDetail() {
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="pt-0">
           {isHoliday && (
-            <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-md">
+            <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
               <div className="flex items-center gap-2 text-purple-700">
-                <PartyPopper className="h-4 w-4" />
-                <span className="font-medium">
+                <PartyPopper className="h-4 w-4 flex-shrink-0" />
+                <span className="font-medium text-sm">
                   This date is marked as a holiday. No teaching will occur on
                   this day.
                 </span>
               </div>
             </div>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
-            <div>
-              <div className="text-base sm:text-lg font-bold text-green-600">
+          <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
+            <div className="bg-green-50 rounded-xl p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {presentCount}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Present</div>
+              <div className="text-xs sm:text-sm text-green-700 font-medium mt-0.5">Present</div>
             </div>
-            <div>
-              <div className="text-base sm:text-lg font-bold text-red-600">
+            <div className="bg-red-50 rounded-xl p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-red-600">
                 {absentCount}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Absent</div>
+              <div className="text-xs sm:text-sm text-red-700 font-medium mt-0.5">Absent</div>
             </div>
-            <div>
-              <div className="text-base sm:text-lg font-bold text-orange-600">
+            <div className="bg-orange-50 rounded-xl p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-orange-600">
                 {totalStudents - totalMarked}
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">Unmarked</div>
+              <div className="text-xs sm:text-sm text-orange-700 font-medium mt-0.5">Unmarked</div>
             </div>
-            <div>
-              <div className="text-base sm:text-lg font-bold text-blue-600">
+            <div className="bg-blue-50 rounded-xl p-3 sm:p-4">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {totalMarked > 0
                   ? ((presentCount / totalMarked) * 100).toFixed(1)
                   : 0}
                 %
               </div>
-              <div className="text-xs sm:text-sm text-gray-600">
-                Attendance Rate
+              <div className="text-xs sm:text-sm text-blue-700 font-medium mt-0.5">
+                Rate
               </div>
             </div>
           </div>
@@ -1296,10 +1316,431 @@ function CohortAttendanceDetail() {
   );
 }
 
+// Stable empty array to prevent useEffect infinite loops from unstable [] default
+const EMPTY_ATTENDANCE: never[] = [];
+
+// Individual Attendance Component
+function IndividualAttendance() {
+  const { selectedSchool, isSchoolContextActive } = useSchoolContext();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [attendanceMap, setAttendanceMap] = useState<
+    Map<string, AttendanceStatus>
+  >(new Map());
+  const [hasChanges, setHasChanges] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({ open: false, title: "", description: "" });
+  const confirmResolveRef = useRef<((confirmed: boolean) => void) | null>(null);
+
+  const showConfirm = useCallback((title: string, description: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      confirmResolveRef.current = resolve;
+      setConfirmDialog({ open: true, title, description });
+    });
+  }, []);
+
+  const handleConfirmResult = useCallback((confirmed: boolean) => {
+    setConfirmDialog((prev) => ({ ...prev, open: false }));
+    confirmResolveRef.current?.(confirmed);
+    confirmResolveRef.current = null;
+  }, []);
+
+  const schoolId =
+    isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
+
+  // Fetch all students for this school
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ["students", schoolId],
+    queryFn: () => getStudents(schoolId),
+    enabled: !!schoolId,
+  });
+
+  // Fetch existing attendance for selected date + subject
+  const { data: existingAttendance = EMPTY_ATTENDANCE, isLoading: loadingAttendance } =
+    useQuery({
+      queryKey: [
+        "attendance-records",
+        schoolId,
+        selectedDate,
+        selectedSubject,
+      ],
+      queryFn: () =>
+        getAttendanceRecords({
+          schoolId,
+          date: selectedDate,
+          subject: selectedSubject as "math" | "hindi" | "english",
+        }),
+      enabled: !!schoolId && !!selectedSubject,
+    });
+
+  // Initialize attendance map from existing records when data loads
+  useEffect(() => {
+    const map = new Map<string, AttendanceStatus>();
+    existingAttendance.forEach((record) => {
+      const studentId =
+        typeof record.student === "string"
+          ? record.student
+          : record.student._id;
+      map.set(studentId, record.status);
+    });
+    setAttendanceMap(map);
+    setHasChanges(false);
+  }, [existingAttendance]);
+
+  // Warn user before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasChanges]);
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const records = Array.from(attendanceMap.entries()).map(
+        ([studentId, status]) => ({
+          studentId,
+          status,
+          subject: selectedSubject as "math" | "hindi" | "english",
+        })
+      );
+      return bulkMarkAttendance({
+        attendanceRecords: records,
+        schoolId: schoolId!,
+        date: selectedDate,
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance-records"] });
+      toast.success(`Attendance saved: ${data.success} students`);
+      setHasChanges(false);
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to save attendance"));
+    },
+  });
+
+  // Toggle attendance for a student
+  const toggleAttendance = (studentId: string, status: AttendanceStatus) => {
+    setAttendanceMap((prev) => {
+      const next = new Map(prev);
+      // If same status clicked again, remove it (unmark)
+      if (next.get(studentId) === status) {
+        next.delete(studentId);
+      } else {
+        next.set(studentId, status);
+      }
+      return next;
+    });
+    setHasChanges(true);
+  };
+
+  // Mark all students
+  const markAll = (status: AttendanceStatus) => {
+    setAttendanceMap((prev) => {
+      const next = new Map(prev);
+      filteredStudents.forEach((s) => {
+        if (s._id) next.set(s._id, status);
+      });
+      return next;
+    });
+    setHasChanges(true);
+  };
+
+  // Filter students by search
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery) return students;
+    const q = searchQuery.toLowerCase();
+    return students.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.roll_no?.toLowerCase().includes(q) ||
+        s.class?.toLowerCase().includes(q)
+    );
+  }, [students, searchQuery]);
+
+  const markedCount = attendanceMap.size;
+  const presentCount = Array.from(attendanceMap.values()).filter(
+    (s) => s === "present"
+  ).length;
+  const absentCount = Array.from(attendanceMap.values()).filter(
+    (s) => s === "absent"
+  ).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Controls Row */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+        {/* Subject Select */}
+        <div className="flex-1 sm:max-w-[200px]">
+          <Label className="text-sm font-medium mb-1.5 block">Subject</Label>
+          <Select value={selectedSubject} onValueChange={async (value) => {
+              if (hasChanges) {
+                const confirmed = await showConfirm(
+                  "Unsaved Changes",
+                  "You have unsaved attendance changes. Switching subject will discard them. Continue?"
+                );
+                if (!confirmed) return;
+              }
+              setSelectedSubject(value);
+            }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Subject" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hindi">Hindi</SelectItem>
+              <SelectItem value="math">Math</SelectItem>
+              <SelectItem value="english">English</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date Picker */}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={async (e) => {
+              const newDate = e.target.value;
+              if (hasChanges) {
+                const confirmed = await showConfirm(
+                  "Unsaved Changes",
+                  "You have unsaved attendance changes. Switching date will discard them. Continue?"
+                );
+                if (!confirmed) return;
+              }
+              const selected = new Date(newDate);
+              if (selected.getDay() === 0) {
+                toast.error(
+                  "Sunday is a holiday. Please select a teaching day (Monday-Saturday)."
+                );
+                return;
+              }
+              setSelectedDate(newDate);
+            }}
+            onFocus={(e) => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              e.currentTarget.min = today.toISOString().split("T")[0];
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          />
+          <span className="text-xs text-gray-500 hidden sm:inline">
+            (Mon-Sat only)
+          </span>
+        </div>
+      </div>
+
+      {/* No subject selected */}
+      {!selectedSubject && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <BookOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-lg font-medium text-muted-foreground">
+              Select a subject to mark attendance
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Students List */}
+      {selectedSubject && (
+        <>
+          {/* Search + Quick Actions */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+            <div className="relative flex-1 sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search student..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => markAll("present")}
+                className="text-green-700 border-green-300 hover:bg-green-50"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                All Present
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => markAll("absent")}
+                className="text-red-700 border-red-300 hover:bg-red-50"
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                All Absent
+              </Button>
+            </div>
+          </div>
+
+          {/* Loading */}
+          {(loadingStudents || loadingAttendance) && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {/* Student Cards */}
+          {!loadingStudents && !loadingAttendance && (
+            <div className="space-y-2">
+              {filteredStudents.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center">
+                    <p className="text-muted-foreground">No students found</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredStudents.map((student) => {
+                  const status = attendanceMap.get(student._id || "");
+                  return (
+                    <Card
+                      key={student._id}
+                      className={`transition-colors ${
+                        status === "present"
+                          ? "border-green-200 bg-green-50"
+                          : status === "absent"
+                          ? "border-red-200 bg-red-50"
+                          : "border-gray-200"
+                      }`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="flex-1 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/reports/student/${student._id}`)}
+                                className="font-medium text-primary hover:underline truncate cursor-pointer text-left"
+                              >
+                                {student.name}
+                              </button>
+                              <p className="text-xs sm:text-sm text-gray-600 truncate">
+                                Roll No: {student.roll_no} • Class: {student.class}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button
+                              variant={
+                                status === "present" ? "default" : "outline"
+                              }
+                              size="sm"
+                              onClick={() =>
+                                toggleAttendance(student._id || "", "present")
+                              }
+                              className={`flex-1 sm:flex-none ${
+                                status === "present"
+                                  ? "bg-green-600 hover:bg-green-700"
+                                  : ""
+                              }`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Present
+                            </Button>
+                            <Button
+                              variant={
+                                status === "absent" ? "destructive" : "outline"
+                              }
+                              size="sm"
+                              onClick={() =>
+                                toggleAttendance(student._id || "", "absent")
+                              }
+                              className="flex-1 sm:flex-none"
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Absent
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* Bottom Sticky Save Bar */}
+          {selectedSubject && filteredStudents.length > 0 && (
+            <div className="sticky bottom-0 bg-background border-t pt-3 pb-2 flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">{markedCount}</span> of{" "}
+                {filteredStudents.length} marked
+                {markedCount > 0 && (
+                  <span className="ml-2">
+                    (<span className="text-green-600">{presentCount} P</span> /{" "}
+                    <span className="text-red-600">{absentCount} A</span>)
+                  </span>
+                )}
+              </div>
+              <Button
+                onClick={() => saveMutation.mutate()}
+                disabled={
+                  !hasChanges || markedCount === 0 || saveMutation.isPending
+                }
+              >
+                {saveMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Save Attendance
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => {
+        if (!open) handleConfirmResult(false);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleConfirmResult(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleConfirmResult(true)} className="bg-destructive hover:bg-destructive/90">
+              Discard & Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 // Main Attendance Management Component
 export default function AttendanceManagement() {
   const { cohortId } = useParams<{ cohortId?: string }>();
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<"group" | "individual">("group");
 
   // If cohortId is present, show detail view; otherwise show overview
   if (cohortId) {
@@ -1310,20 +1751,46 @@ export default function AttendanceManagement() {
     <div className="space-y-6">
       {/* Main Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Users className="h-6 w-6" />
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Users className="h-6 w-6 flex-shrink-0" />
           {t("attendance.title")}
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-sm sm:text-base text-gray-600 mt-1">
           {t("attendance.subtitle")}
-          <div style={{ color: "red", fontWeight: "bold" }}>
-            a cohort must have tutor assigned to mark attendence.
-          </div>
         </p>
+        {activeTab === "group" && (
+          <div className="mt-2 p-2.5 sm:p-2 bg-red-50 border border-red-200 rounded-lg">
+            <span className="text-sm font-semibold text-red-700">
+              A group must have tutor assigned to mark attendance.
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Overview Content */}
-      <AttendanceOverview />
+      {/* Toggle: Group / Individual */}
+      <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
+        <Button
+          variant={activeTab === "group" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("group")}
+          className="gap-2"
+        >
+          <Users className="h-4 w-4" />
+          Group
+        </Button>
+        <Button
+          variant={activeTab === "individual" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("individual")}
+          className="gap-2"
+        >
+          <User className="h-4 w-4" />
+          Individual
+        </Button>
+      </div>
+
+      {/* Content based on active tab */}
+      {activeTab === "group" ? <AttendanceOverview /> : <IndividualAttendance />}
     </div>
   );
 }

@@ -44,16 +44,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       {!isViewUser && <AppSidebar />}
       <SidebarInset className={isViewUser ? "w-full" : ""}>
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-4 shadow-sm">
+        <header className="flex h-16 sm:h-16 shrink-0 items-center gap-2 sm:gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-3 sm:px-4 shadow-sm overflow-hidden">
           {!isViewUser && (
-            <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors" />
+            <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-12 w-12 sm:h-7 sm:w-7 [&_svg]:size-6 sm:[&_svg]:size-4" />
           )}
           {!isViewUser && (
-            <Separator orientation="vertical" className="mr-2 h-6" />
+            <Separator orientation="vertical" className="mr-1 sm:mr-2 h-6" />
           )}
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
+          <Breadcrumb className="min-w-0 flex-1 hidden md:block">
+            <BreadcrumbList className="flex-nowrap">
+              <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Link
                     to="/dashboard"
@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </BreadcrumbItem>
               {location.pathname !== "/dashboard" && (
                 <>
-                  <BreadcrumbSeparator className="hidden md:block" />
+                  <BreadcrumbSeparator />
                   <BreadcrumbItem>
                     <BreadcrumbPage className="font-medium">
                       {t(getBreadcrumbTitle())}
@@ -75,9 +75,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               )}
             </BreadcrumbList>
           </Breadcrumb>
-          <div className="flex-1" />
-          <Notifications />
-          <LanguageToggleButton />
+          <div className="flex-1 min-w-0" />
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <Notifications />
+            <LanguageToggleButton className="h-12 sm:h-8 px-4 sm:px-2.5 text-base sm:text-xs [&_svg]:size-6 sm:[&_svg]:size-4" />
+          </div>
         </header>
         <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 min-h-0">
           {children}

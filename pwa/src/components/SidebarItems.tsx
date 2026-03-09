@@ -43,14 +43,14 @@ export function SidebarItems({ items }: SidebarItemsProps) {
                     to={item.url}
                     onClick={handleLinkClick}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-full shadow-md",
+                      "flex items-center gap-3 sm:gap-3 px-4 py-4 sm:py-3 rounded-full shadow-md",
                       "bg-black text-white"
                     )}
                     aria-current="page"
                     title={item.description || item.title}
                   >
-                    {item.icon && <item.icon className="h-4 w-4" />}
-                    <span className="text-sm font-medium">{item.title}</span>
+                    {item.icon && <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />}
+                    <span className="text-base sm:text-sm font-medium">{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -64,11 +64,11 @@ export function SidebarItems({ items }: SidebarItemsProps) {
                 <Link
                   to={item.url}
                   onClick={handleLinkClick}
-                  className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-3 sm:gap-3 px-3 py-3.5 sm:py-2 text-muted-foreground hover:text-foreground"
                   title={item.description || item.title}
                 >
-                  {item.icon && <item.icon className="h-4 w-4" />}
-                  <span className="text-sm">{item.title}</span>
+                  {item.icon && <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />}
+                  <span className="text-base sm:text-sm">{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -146,7 +146,7 @@ function ViewDashboard() {
                   {data.schools.withAssessments !== undefined && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">
-                        With Assessments
+                        With Tests
                       </span>
                       <span className="text-xl font-semibold">
                         {data.schools.withAssessments}
@@ -236,11 +236,11 @@ function ViewDashboard() {
             </Card>
           )}
 
-          {/* Cohorts Metrics */}
+          {/* Groups Metrics */}
           {data.cohorts && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cohorts</CardTitle>
+                <CardTitle className="text-sm font-medium">Groups</CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -270,12 +270,12 @@ function ViewDashboard() {
             </Card>
           )}
 
-          {/* Assessments Metrics */}
+          {/* Tests Metrics */}
           {data.assessments && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Assessments
+                  Tests
                 </CardTitle>
                 <ClipboardList className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -323,10 +323,10 @@ function ViewDashboard() {
                         <TableHead>City</TableHead>
                         <TableHead>Level</TableHead>
                         <TableHead>Students</TableHead>
-                        <TableHead>Cohorts</TableHead>
-                        <TableHead>Active Cohorts</TableHead>
+                        <TableHead>Groups</TableHead>
+                        <TableHead>Active Groups</TableHead>
                         <TableHead>Tutors</TableHead>
-                        <TableHead>Assessments</TableHead>
+                        <TableHead>Tests</TableHead>
                         <TableHead>Contact</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -411,8 +411,8 @@ function ViewDashboard() {
                         <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>School</TableHead>
-                        <TableHead>Cohorts</TableHead>
-                        <TableHead>Active Cohorts</TableHead>
+                        <TableHead>Groups</TableHead>
+                        <TableHead>Active Groups</TableHead>
                         <TableHead>Students</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
@@ -502,9 +502,9 @@ function ViewDashboard() {
                         <TableHead>Gender</TableHead>
                         <TableHead>Class</TableHead>
                         <TableHead>School</TableHead>
-                        <TableHead>Cohorts</TableHead>
-                        <TableHead>Assessments</TableHead>
-                        <TableHead>Latest Assessment</TableHead>
+                        <TableHead>Groups</TableHead>
+                        <TableHead>Tests</TableHead>
+                        <TableHead>Latest Test</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -602,17 +602,17 @@ function ViewDashboard() {
           </div>
         )}
 
-        {/* Detailed Cohorts List */}
+        {/* Detailed Groups List */}
         {data.cohorts?.details && data.cohorts.details.length > 0 && (
           <div className="mb-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
-                  Cohorts Details
+                  Groups Details
                 </CardTitle>
                 <CardDescription>
-                  Complete list of cohorts with performance metrics
+                  Complete list of groups with performance metrics
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -620,7 +620,7 @@ function ViewDashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Cohort Name</TableHead>
+                        <TableHead>Group Name</TableHead>
                         <TableHead>School</TableHead>
                         <TableHead>Tutor</TableHead>
                         <TableHead>Program</TableHead>
@@ -751,17 +751,17 @@ function ViewDashboard() {
           </div>
         )}
 
-        {/* Detailed Assessments List */}
+        {/* Detailed Tests List */}
         {data.assessments?.details && data.assessments.details.length > 0 && (
           <div className="mb-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ClipboardList className="h-5 w-5" />
-                  Assessments Details
+                  Tests Details
                 </CardTitle>
                 <CardDescription>
-                  Complete list of assessments conducted
+                  Complete list of tests conducted
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -942,13 +942,13 @@ function ViewDashboard() {
                 {data.progress.cohort && data.progress.cohort.length > 0 && (
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold mb-4">
-                      Cohort Progress
+                      Group Progress
                     </h3>
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Cohort Name</TableHead>
+                            <TableHead>Group Name</TableHead>
                             <TableHead>Current Level</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Progress Count</TableHead>
@@ -1004,7 +1004,7 @@ function ViewDashboard() {
                             <TableHead>Block</TableHead>
                             <TableHead>State</TableHead>
                             <TableHead>Students</TableHead>
-                            <TableHead>Cohorts</TableHead>
+                            <TableHead>Groups</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1046,7 +1046,7 @@ function ViewDashboard() {
                             <TableHead>Block</TableHead>
                             <TableHead>Schools</TableHead>
                             <TableHead>Students</TableHead>
-                            <TableHead>Cohorts</TableHead>
+                            <TableHead>Groups</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1085,7 +1085,7 @@ function ViewDashboard() {
                             <TableHead>State</TableHead>
                             <TableHead>Schools</TableHead>
                             <TableHead>Students</TableHead>
-                            <TableHead>Cohorts</TableHead>
+                            <TableHead>Groups</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1123,7 +1123,7 @@ function ViewDashboard() {
                           <TableRow>
                             <TableHead>Program Name</TableHead>
                             <TableHead>Subject</TableHead>
-                            <TableHead>Cohorts</TableHead>
+                            <TableHead>Groups</TableHead>
                             <TableHead>Students</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1229,13 +1229,13 @@ function ViewDashboard() {
                   data.attendance.cohort.length > 0 && (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-4">
-                        Cohort Attendance
+                        Group Attendance
                       </h3>
                       <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Cohort Name</TableHead>
+                              <TableHead>Group Name</TableHead>
                               <TableHead>Students</TableHead>
                               <TableHead>Present</TableHead>
                               <TableHead>Absent</TableHead>

@@ -16,6 +16,7 @@ export type AuthRoutePath = (typeof AUTH_ROUTE_PATHS)[AuthRouteKey];
 
 export const DASHBOARD_ROUTE_PATHS = {
   dashboard: "/dashboard",
+  tutorDashboard: "/tutor-dashboard",
   //
   students: "/students",
   studentReport: "/reports/student/:studentId",

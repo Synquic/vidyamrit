@@ -172,10 +172,10 @@ function ProgressOverview() {
       <div>
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
           <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-          <span>Cohort Overview</span>
+          <span>Group Overview</span>
         </h2>
         <p className="text-gray-600 text-xs sm:text-sm mt-1">
-          Monitor student progress across all cohorts
+          Monitor student progress across all groups
         </p>
       </div>
 
@@ -243,7 +243,7 @@ function ProgressOverview() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-orange-700/70 font-medium truncate">
-                  Assessment Soon
+                  Test Soon
                 </p>
                 <p className="text-2xl sm:text-3xl font-bold text-orange-700 tracking-tight">
                   {timeMetrics.cohortsNearingAssessment}
@@ -296,7 +296,7 @@ function ProgressOverview() {
                   {timeMetrics.cohortsNearingAssessment}
                 </p>
                 <p className="text-xs sm:text-sm text-gray-600">
-                  Assessments Due (7 days)
+                  Tests Due (7 days)
                 </p>
               </div>
               <div className="text-center">
@@ -304,7 +304,7 @@ function ProgressOverview() {
                   {timeMetrics.cohortsOverdue}
                 </p>
                 <p className="text-xs sm:text-sm text-gray-600">
-                  Overdue Assessments
+                  Overdue Tests
                 </p>
               </div>
             </div>
@@ -330,7 +330,7 @@ function ProgressOverview() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[180px] sm:min-w-[200px]">
-                    Cohort
+                    Group
                   </TableHead>
                   <TableHead className="hidden md:table-cell min-w-[150px]">
                     School
@@ -467,7 +467,7 @@ function ProgressOverview() {
                               variant="default"
                               className="text-xs mt-1 w-fit bg-green-600"
                             >
-                              Ready for Assessment
+                              Ready for Test
                             </Badge>
                           )}
                         </div>
@@ -520,7 +520,7 @@ function CohortProgressDetail() {
         return data;
       } catch (error) {
         console.error("Error fetching cohort progress:", error);
-        toast.error(getApiErrorMessage(error, "Failed to load cohort progress"));
+        toast.error(getApiErrorMessage(error, "Failed to load group progress"));
         return null;
       }
     },
@@ -548,7 +548,7 @@ function CohortProgressDetail() {
   // Handle start level assessment - navigate to level assessment page
   const handleStartLevelAssessment = () => {
     if (!cohortId) {
-      toast.error("Cohort ID not available");
+      toast.error("Group ID not available");
       return;
     }
     navigate(`/progress/cohort/${cohortId}/level-assessment`);
@@ -610,7 +610,7 @@ function CohortProgressDetail() {
   if (!cohortData) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Cohort not found</p>
+        <p className="text-gray-500">Group not found</p>
         <Button onClick={() => navigate("/progress/tutor")} className="mt-4">
           Go Back
         </Button>
@@ -741,7 +741,7 @@ function CohortProgressDetail() {
         </Card>
       </div>
 
-      {/* Level Progress and Assessment Readiness */}
+      {/* Level Progress and Test Readiness */}
       {assessmentReadiness && cohortData.cohort.program && (
         <Card className="border-blue-200 bg-blue-50">
           <CardHeader className="pb-3 sm:pb-6">
@@ -786,12 +786,12 @@ function CohortProgressDetail() {
               <Alert className="border-green-200 bg-green-50">
                 <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                 <AlertTitle className="text-green-800 text-sm sm:text-base">
-                  Ready for Level Assessment
+                  Ready for Level Test
                 </AlertTitle>
                 <AlertDescription className="text-green-700 text-xs sm:text-sm">
-                  This cohort has completed Level{" "}
+                  This group has completed Level{" "}
                   {assessmentReadiness.currentLevel}. Conduct a level-specific
-                  assessment to verify student mastery.
+                  test to verify student mastery.
                   {assessmentReadiness.nextLevel && (
                     <span className="block mt-1">
                       Next:{" "}
@@ -805,7 +805,7 @@ function CohortProgressDetail() {
                     className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                     onClick={handleStartLevelAssessment}
                   >
-                    Start Level Assessment
+                    Start Level Test
                   </Button>
                   <Button
                     size="sm"
@@ -814,7 +814,7 @@ function CohortProgressDetail() {
                     onClick={() => {
                       // Show assessment details
                       toast.info(
-                        "Assessment will test only Level " +
+                        "Test will cover only Level " +
                           assessmentReadiness.currentLevel
                       );
                     }}
@@ -827,12 +827,12 @@ function CohortProgressDetail() {
               <Alert className="border-orange-200 bg-orange-50">
                 <Clock className="h-4 w-4 text-orange-600 flex-shrink-0" />
                 <AlertTitle className="text-orange-800 text-sm sm:text-base">
-                  Assessment Approaching
+                  Test Approaching
                 </AlertTitle>
                 <AlertDescription className="text-orange-700 text-xs sm:text-sm">
-                  This cohort is{" "}
+                  This group is{" "}
                   {assessmentReadiness.completionPercentage.toFixed(0)}% through
-                  Level {assessmentReadiness.currentLevel}. Assessment will be
+                  Level {assessmentReadiness.currentLevel}. Test will be
                   due soon.
                 </AlertDescription>
               </Alert>
@@ -879,7 +879,7 @@ function CohortProgressDetail() {
             </p>
             <p className="text-yellow-600 text-sm mt-2">
               Backend implementation required for program timeline and
-              assessment scheduling features.
+              test scheduling features.
             </p>
           </CardContent>
         </Card>
@@ -891,7 +891,7 @@ function CohortProgressDetail() {
               No Program Assigned
             </p>
             <p className="text-gray-600 text-sm mt-2">
-              Assign a program to this cohort to enable time-based progress
+              Assign a program to this group to enable time-based progress
               tracking.
             </p>
           </CardContent>

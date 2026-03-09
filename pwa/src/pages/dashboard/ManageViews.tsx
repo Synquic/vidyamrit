@@ -125,8 +125,8 @@ function ManageViews() {
     if (view.config.sections.schools?.enabled) sections.push("Schools");
     if (view.config.sections.tutors?.enabled) sections.push("Tutors");
     if (view.config.sections.students?.enabled) sections.push("Students");
-    if (view.config.sections.cohorts?.enabled) sections.push("Cohorts");
-    if (view.config.sections.assessments?.enabled) sections.push("Assessments");
+    if (view.config.sections.cohorts?.enabled) sections.push("Groups");
+    if (view.config.sections.assessments?.enabled) sections.push("Tests");
     if (view.config.sections.progress?.enabled) sections.push("Progress");
     if (view.config.sections.attendance?.enabled) sections.push("Attendance");
     return sections.length > 0 ? sections.join(", ") : "No sections enabled";

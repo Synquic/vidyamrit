@@ -141,7 +141,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
               urgency.color === 'orange' ? 'text-orange-900' :
               'text-green-900'
             }`}>
-              Next Assessment - {urgency.text}
+              Next Test - {urgency.text}
             </h3>
           </div>
           
@@ -184,7 +184,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
           {urgency.color === 'red' && (
             <div className="mt-3 p-2 sm:p-3 bg-red-100 rounded border border-red-200">
               <p className="text-xs sm:text-sm text-red-800 font-medium">
-                🚨 Action Required: Schedule assessment immediately or update progress
+                🚨 Action Required: Schedule test immediately or update progress
               </p>
             </div>
           )}
@@ -192,7 +192,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
           {urgency.color === 'orange' && (
             <div className="mt-3 p-2 sm:p-3 bg-orange-100 rounded border border-orange-200">
               <p className="text-xs sm:text-sm text-orange-800 font-medium">
-                ⚠️ Reminder: Assessment due within a week - prepare students
+                ⚠️ Reminder: Test due within a week - prepare students
               </p>
             </div>
           )}
@@ -202,7 +202,7 @@ export function TimelineProgress({ timeTracking, programName }: TimelineProgress
         <div className="text-xs text-gray-500 italic bg-white p-3 rounded border">
           <Calendar className="h-3 w-3 inline mr-1" />
           Progress updates automatically based on daily attendance recording. 
-          Each teaching day advances the timeline toward assessment readiness.
+          Each teaching day advances the timeline toward test readiness.
         </div>
       </CardContent>
     </Card>
