@@ -33,14 +33,6 @@ const SchoolSchema = new mongoose.Schema(
     phone: { type: String, required: true },
     block: {
       type: String,
-      enum: [
-        "Indore Urban 1",
-        "Indore Urban 2",
-        "Indore Rural",
-        "Sanwer",
-        "Mhow",
-        "Depalpur",
-      ],
       required: false,
     },
     testPromotionType: {

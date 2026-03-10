@@ -64,7 +64,8 @@ export const getLevelAssessmentQuestions = async (req: AuthRequest, res: Respons
       questionType: question.questionType,
       options: question.options, // For multiple choice
       points: question.points || 1,
-      isRequired: question.isRequired !== false
+      isRequired: question.isRequired !== false,
+      questionImage: question.questionImage
       // Don't include correctOptionIndex or acceptedAnswers
     }));
 

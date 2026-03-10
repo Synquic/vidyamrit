@@ -31,6 +31,7 @@ export interface IAssessmentQuestion {
 
   points?: number; // Points awarded for correct answer (default: 1)
   isRequired?: boolean; // Whether this question is mandatory (default: true)
+  questionImage?: string; // URL path to question image (optional)
 }
 
 export interface IProgramLevel {
@@ -622,8 +623,8 @@ class ProgramsService {
   validateQuestion(question: IAssessmentQuestion): string[] {
     const errors: string[] = [];
 
-    if (!question.questionText.trim()) {
-      errors.push("Question text is required");
+    if (!question.questionText?.trim() && !question.questionImage) {
+      errors.push("Question text or image is required");
     }
 
     if (!question.questionType) {
@@ -676,4 +677,31 @@ class ProgramsService {
 
 // Export singleton instance
 export const programsService = new ProgramsService();
+// Upload question image
+export async function uploadQuestionImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("image", file);
+  const response = await authAxios.post(
+    `${apiUrl}/uploads/question-image`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  return response.data.imageUrl;
+}
+
+// Delete question image
+export async function deleteQuestionImage(imageUrl: string): Promise<void> {
+  await authAxios.delete(`${apiUrl}/uploads/question-image`, {
+    data: { imageUrl },
+  });
+}
+
+// Get full image URL from relative path
+export function getQuestionImageUrl(imageUrl: string): string {
+  if (!imageUrl) return "";
+  if (imageUrl.startsWith("http")) return imageUrl;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+  return `${backendUrl}${imageUrl}`;
+}
+
 export default programsService;

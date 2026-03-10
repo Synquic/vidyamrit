@@ -32,6 +32,7 @@ export interface IAssessmentQuestion {
   points?: number; // Points awarded for correct answer (default: 1)
   isRequired?: boolean; // Whether this question is mandatory (default: true)
   levelNumber?: number; // Level number for baseline assessment (added dynamically)
+  questionImage?: string; // URL path to question image (optional)
 }
 
 // Interface for Program Level
@@ -94,9 +95,10 @@ const AssessmentQuestionSchema = new Schema<IAssessmentQuestion>(
   {
     questionText: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       maxlength: 1000,
+      default: "",
     },
     questionType: {
       type: String,
@@ -132,6 +134,10 @@ const AssessmentQuestionSchema = new Schema<IAssessmentQuestion>(
     isRequired: {
       type: Boolean,
       default: true,
+    },
+    questionImage: {
+      type: String,
+      trim: true,
     },
   },
   {
