@@ -498,7 +498,7 @@ export function BaselineAssessmentModal({
                                 variant="outline"
                                 className="bg-green-100 text-green-700 border-green-300 text-xs"
                               >
-                                Completed: Level {res.level}
+                                Assigned: Level {res.level}
                               </Badge>
                             )}
                           </div>
@@ -553,6 +553,17 @@ export function BaselineAssessmentModal({
                         `Level ${currentLevel + 1}`}
                     </p>
                   </div>
+
+                  {/* Question Image */}
+                  {question?.questionImage && (
+                    <div className="flex justify-center">
+                      <img
+                        src={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${question.questionImage}`}
+                        alt="Question"
+                        className="max-h-48 md:max-h-64 rounded-lg border object-contain"
+                      />
+                    </div>
+                  )}
 
                   {/* Question Display - Large and centered with Devanagari font */}
                   <div

@@ -36,6 +36,9 @@ app.use(
 
 httpLoggers.forEach((middleware) => app.use(middleware));
 
+// Serve uploaded files (question images etc.)
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 app.use("/api", router);
 
 // Serve static files from the frontend build (in production)

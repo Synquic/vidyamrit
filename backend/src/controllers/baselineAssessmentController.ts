@@ -213,7 +213,8 @@ export const getAssessmentQuestions = async (req: AuthRequest, res: Response) =>
       questionType: question.questionType,
       options: question.options, // For multiple choice
       points: question.points,
-      isRequired: question.isRequired
+      isRequired: question.isRequired,
+      questionImage: question.questionImage
       // Don't include correctOptionIndex or acceptedAnswers
     }));
 

@@ -929,10 +929,79 @@ export function CreateViewDialog({
               </div>
 
               <div className="space-y-2">
+                <Label>Allowed Cities (leave empty for all)</Label>
+                {schools && schools.length > 0 ? (
+                  <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
+                    {Array.from(
+                      schools
+                        .map((s) => s.city)
+                        .filter(Boolean)
+                        .reduce((map, city) => {
+                          const key = city.toLowerCase().trim();
+                          if (!map.has(key)) map.set(key, city.trim());
+                          return map;
+                        }, new Map<string, string>())
+                        .values()
+                    ).sort().map(
+                      (city) => (
+                        <div
+                          key={city}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={`city-${city}`}
+                            checked={
+                              formData.config.access.allowedCities?.includes(
+                                city
+                              ) || false
+                            }
+                            onCheckedChange={(checked) => {
+                              const current =
+                                formData.config.access.allowedCities || [];
+                              const newCities = checked
+                                ? [...current, city]
+                                : current.filter((c) => c !== city);
+                              setFormData((prev) => ({
+                                ...prev,
+                                config: {
+                                  ...prev.config,
+                                  access: {
+                                    ...prev.config.access,
+                                    allowedCities: newCities,
+                                  },
+                                },
+                              }));
+                            }}
+                          />
+                          <Label htmlFor={`city-${city}`} className="text-sm">
+                            {city}
+                          </Label>
+                        </div>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Loading cities...
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label>Allowed States (leave empty for all)</Label>
                 {schools && schools.length > 0 ? (
                   <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
-                    {Array.from(new Set(schools.map((s) => s.state))).map(
+                    {Array.from(
+                      schools
+                        .map((s) => s.state)
+                        .filter(Boolean)
+                        .reduce((map, state) => {
+                          const key = state.toLowerCase().trim();
+                          if (!map.has(key)) map.set(key, state.trim());
+                          return map;
+                        }, new Map<string, string>())
+                        .values()
+                    ).sort().map(
                       (state) => (
                         <div
                           key={state}

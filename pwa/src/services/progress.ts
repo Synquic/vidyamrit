@@ -232,6 +232,7 @@ export interface LevelAssessmentQuestion {
   options?: string[];
   points: number;
   isRequired: boolean;
+  questionImage?: string;
 }
 
 export interface LevelAssessmentData {

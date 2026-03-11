@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx tsc --noEmit --pretty)"
+      "Bash(npx tsc --noEmit --pretty)",
+      "Bash(npx shadcn@latest add popover command -y)",
+      "Bash(npx shadcn@latest add popover -y --overwrite)"
     ]
   }
 }

@@ -4,3 +4,4 @@ firebaseServiceAccountKey.json
 .env
 *.log
 logs/
+uploads/
