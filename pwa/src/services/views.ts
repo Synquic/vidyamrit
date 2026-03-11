@@ -92,6 +92,7 @@ export interface ViewConfig {
     allowedSchools?: string[];
     allowedBlocks?: string[];
     allowedStates?: string[];
+    allowedCities?: string[];
   };
 }
 

@@ -89,11 +89,15 @@ function buildSchoolFilter(
   }
 
   if (access.allowedBlocks && access.allowedBlocks.length > 0) {
-    query.block = { $in: access.allowedBlocks };
+    query.block = { $in: access.allowedBlocks.map(b => new RegExp(`^${b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')) };
   }
 
   if (access.allowedStates && access.allowedStates.length > 0) {
-    query.state = { $in: access.allowedStates };
+    query.state = { $in: access.allowedStates.map(s => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')) };
+  }
+
+  if (access.allowedCities && access.allowedCities.length > 0) {
+    query.city = { $in: access.allowedCities.map(c => new RegExp(`^${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')) };
   }
 
   // Apply section-specific filters

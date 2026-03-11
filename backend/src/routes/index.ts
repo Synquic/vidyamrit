@@ -14,6 +14,7 @@ import baselineAssessmentRouter from "./BaselineAssessmentRoutes";
 import levelAssessmentRouter from "./LevelAssessmentRoutes";
 import viewRouter from "./ViewRoutes";
 import analyticsRouter from "./AnalyticsRoutes";
+import uploadRouter from "./UploadRoutes";
 import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router = express.Router();
@@ -46,6 +47,7 @@ router.use("/students", studentRouter);
 router.use("/volunteers", volunteerRouter);
 router.use("/views", viewRouter);
 router.use("/analytics", analyticsRouter);
+router.use("/uploads", uploadRouter);
 // router.use("/super-admin", superAdminRouter);
 // router.use("/program-assessments", programAssessmentRouter);
 // router.use("/level-transitions", levelTransitionRouter);

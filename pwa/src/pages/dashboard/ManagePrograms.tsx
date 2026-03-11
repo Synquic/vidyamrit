@@ -64,6 +64,9 @@ import {
   IAssessmentQuestion,
   QuestionType,
   TimeframeUnit,
+  uploadQuestionImage,
+  deleteQuestionImage,
+  getQuestionImageUrl,
 } from "@/services/programs";
 import { getApiErrorMessage } from "@/services";
 
@@ -1476,6 +1479,13 @@ function QuestionDisplay({
             Q{questionIndex + 1}:{" "}
             {question.questionText || "Question text not set"}
           </p>
+          {question.questionImage && (
+            <img
+              src={getQuestionImageUrl(question.questionImage)}
+              alt="Question"
+              className="max-h-36 rounded border object-contain mb-2"
+            />
+          )}
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" onClick={onEdit}>
@@ -1554,6 +1564,7 @@ function QuestionEditor({
   const [question, setQuestion] =
     useState<IAssessmentQuestion>(initialQuestion);
   const [errors, setErrors] = useState<string[]>([]);
+  const [imageUploading, setImageUploading] = useState(false);
 
   const handleSave = () => {
     const validationErrors = programsService.validateQuestion(question);
@@ -1570,6 +1581,38 @@ function QuestionEditor({
     value: string | number | boolean | string[] | number[] | QuestionType
   ) => {
     setQuestion((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setImageUploading(true);
+    try {
+      const imageUrl = await uploadQuestionImage(file);
+      setQuestion((prev) => ({ ...prev, questionImage: imageUrl }));
+      toast.success("Image uploaded");
+    } catch {
+      toast.error("Failed to upload image");
+    } finally {
+      setImageUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleImageRemove = async () => {
+    if (!question.questionImage) return;
+    try {
+      await deleteQuestionImage(question.questionImage);
+    } catch {
+      // Ignore delete error, still remove from question
+    }
+    setQuestion((prev) => ({ ...prev, questionImage: undefined }));
   };
 
   const updateOption = (index: number, value: string) => {
@@ -1625,6 +1668,46 @@ function QuestionEditor({
             rows={3}
           />
         </div>
+
+        {/* Question Image */}
+        <div className="col-span-2">
+          <Label>Question Image (Optional)</Label>
+          {question.questionImage ? (
+            <div className="mt-2 space-y-2">
+              <img
+                src={getQuestionImageUrl(question.questionImage)}
+                alt="Question"
+                className="max-h-48 rounded border object-contain"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleImageRemove}
+                className="text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Remove Image
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-2">
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageUpload}
+                disabled={imageUploading}
+                className="cursor-pointer"
+              />
+              {imageUploading && (
+                <p className="text-sm text-muted-foreground mt-1">Uploading...</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Max 5MB. JPG, PNG, or WebP.
+              </p>
+            </div>
+          )}
+        </div>
+
         <div>
           <Label htmlFor="points">Points</Label>
           <Input

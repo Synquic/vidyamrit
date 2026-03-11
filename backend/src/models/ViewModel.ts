@@ -90,6 +90,7 @@ export interface IViewConfig {
     allowedSchools?: mongoose.Types.ObjectId[];
     allowedBlocks?: string[];
     allowedStates?: string[];
+    allowedCities?: string[];
   };
 }
 
@@ -218,6 +219,7 @@ const ViewConfigSchema = new mongoose.Schema(
       ],
       allowedBlocks: [{ type: String }],
       allowedStates: [{ type: String }],
+      allowedCities: [{ type: String }],
     },
   },
   { _id: false }

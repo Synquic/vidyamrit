@@ -338,6 +338,15 @@ export default function LevelAssessmentPage() {
               <p className="text-center text-muted-foreground text-xs sm:text-sm mb-3">
                 {question.questionType === "verbal_evaluation" ? "Ask student to read:" : "Question:"}
               </p>
+              {question.questionImage && (
+                <div className="flex justify-center mb-4">
+                  <img
+                    src={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${question.questionImage}`}
+                    alt="Question"
+                    className="max-h-48 sm:max-h-64 rounded-lg border object-contain"
+                  />
+                </div>
+              )}
               <div className="text-center py-6 sm:py-10">
                 <p className="text-4xl sm:text-6xl font-bold text-gray-900">
                   {question.questionText}

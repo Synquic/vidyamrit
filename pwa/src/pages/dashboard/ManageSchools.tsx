@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,8 +45,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/services";
 import {
@@ -56,6 +70,7 @@ import {
   updateSchool,
   deleteSchool,
 } from "@/services/schools";
+import { INDIAN_STATES, STATE_CITIES } from "@/data/indianLocations";
 
 function ManageSchools() {
   const queryClient = useQueryClient();
@@ -85,6 +100,11 @@ function ManageSchools() {
     pointOfContacts: [{ name: "", phone: "" }],
   });
 
+  const [cityOpen, setCityOpen] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [blockSearch, setBlockSearch] = useState("");
+
   const {
     data: schools = [],
     isLoading,
@@ -93,6 +113,23 @@ function ManageSchools() {
     queryKey: ["schools"],
     queryFn: getSchools,
   });
+
+  // Get static cities for selected state
+  const citiesForState = useMemo(() => {
+    if (!formData.state) return [];
+    return STATE_CITIES[formData.state] || [];
+  }, [formData.state]);
+
+  // Default blocks + unique blocks from existing schools
+  const DEFAULT_BLOCKS = [
+    "Indore Urban 1", "Indore Urban 2", "Indore Rural", "Sanwer", "Mhow", "Depalpur",
+  ];
+  const blocksForDropdown = useMemo(() => {
+    const schoolBlocks = schools
+      .filter((s) => s.block)
+      .map((s) => s.block!);
+    return [...new Set([...DEFAULT_BLOCKS, ...schoolBlocks])].sort();
+  }, [schools]);
 
   const createMutation = useMutation({
     mutationFn: createSchool,
@@ -440,25 +477,87 @@ function ManageSchools() {
                   />
                 </div>
                 <div className="space-y-2 col-span-1">
-                  <Label htmlFor="block">Block</Label>
-                  <Select
-                    value={formData.block || ""}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, block: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select block" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Indore Urban 1">Indore Urban 1</SelectItem>
-                      <SelectItem value="Indore Urban 2">Indore Urban 2</SelectItem>
-                      <SelectItem value="Indore Rural">Indore Rural</SelectItem>
-                      <SelectItem value="Sanwer">Sanwer</SelectItem>
-                      <SelectItem value="Mhow">Mhow</SelectItem>
-                      <SelectItem value="Depalpur">Depalpur</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Block</Label>
+                  <Popover open={blockOpen} onOpenChange={setBlockOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={blockOpen}
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.block || "Select block..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[--radix-popover-trigger-width] p-0"
+                      align="start"
+                      side="bottom"
+                      sideOffset={4}
+                      style={{ maxHeight: "var(--radix-popover-content-available-height, 300px)" }}
+                    >
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search block..."
+                          value={blockSearch}
+                          onValueChange={setBlockSearch}
+                        />
+                        <CommandList
+                          className="max-h-[200px] overflow-y-auto"
+                          onWheel={(e) => {
+                            e.stopPropagation();
+                            e.currentTarget.scrollTop += e.deltaY;
+                          }}
+                        >
+                          <CommandEmpty className="py-2 px-3 text-sm">
+                            No block found.
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {blockSearch.trim() &&
+                              !blocksForDropdown.some(
+                                (b) => b.toLowerCase() === blockSearch.trim().toLowerCase()
+                              ) && (
+                                <CommandItem
+                                  value={`add-${blockSearch.trim()}`}
+                                  onSelect={() => {
+                                    setFormData((prev) => ({ ...prev, block: blockSearch.trim() }));
+                                    setBlockSearch("");
+                                    setBlockOpen(false);
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add "{blockSearch.trim()}"
+                                </CommandItem>
+                              )}
+                            {blocksForDropdown
+                              .filter((b) =>
+                                b.toLowerCase().includes(blockSearch.toLowerCase())
+                              )
+                              .map((block) => (
+                                <CommandItem
+                                  key={block}
+                                  value={block}
+                                  onSelect={() => {
+                                    setFormData((prev) => ({ ...prev, block }));
+                                    setBlockSearch("");
+                                    setBlockOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.block === block ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {block}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
@@ -500,30 +599,115 @@ function ManageSchools() {
                 />
               </div>
 
-              {/* City & State */}
+              {/* State & City */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, city: e.target.value }))
+                  <Label>State</Label>
+                  <Select
+                    value={formData.state}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, state: value, city: "" }))
                     }
-                  />
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDIAN_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        state: e.target.value,
-                      }))
-                    }
-                  />
+                  <Label>City</Label>
+                  <Popover open={cityOpen} onOpenChange={setCityOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={cityOpen}
+                        className="w-full justify-between font-normal"
+                        disabled={!formData.state}
+                      >
+                        {formData.city || "Select city..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[--radix-popover-trigger-width] p-0"
+                      align="start"
+                      side="bottom"
+                      sideOffset={4}
+                      style={{ maxHeight: "var(--radix-popover-content-available-height, 300px)" }}
+                    >
+                      <Command shouldFilter={false}>
+                        <CommandInput
+                          placeholder="Search city..."
+                          value={citySearch}
+                          onValueChange={setCitySearch}
+                        />
+                        <CommandList
+                          className="max-h-[200px] overflow-y-auto"
+                          onWheel={(e) => {
+                            e.stopPropagation();
+                            const target = e.currentTarget;
+                            target.scrollTop += e.deltaY;
+                          }}
+                        >
+                          <CommandEmpty className="py-2 px-3 text-sm">
+                            No city found.
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {citySearch.trim() &&
+                              !citiesForState.some(
+                                (c) => c.toLowerCase() === citySearch.trim().toLowerCase()
+                              ) && (
+                                <CommandItem
+                                  value={`add-${citySearch.trim()}`}
+                                  onSelect={() => {
+                                    setFormData((prev) => ({ ...prev, city: citySearch.trim() }));
+                                    setCitySearch("");
+                                    setCityOpen(false);
+                                  }}
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Add "{citySearch.trim()}"
+                                </CommandItem>
+                              )}
+                            {citiesForState
+                              .filter((c) =>
+                                c.toLowerCase().includes(citySearch.toLowerCase())
+                              )
+                              .map((city) => (
+                                <CommandItem
+                                  key={city}
+                                  value={city}
+                                  onSelect={() => {
+                                    setFormData((prev) => ({ ...prev, city }));
+                                    setCitySearch("");
+                                    setCityOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      formData.city === city ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {city}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {!formData.state && (
+                    <p className="text-xs text-muted-foreground">Select state first</p>
+                  )}
                 </div>
               </div>
 
