@@ -8,6 +8,7 @@ import {
   recordCohortAttendance,
   getCohortAttendance,
   getTutorAttendanceSummary,
+  getTutorAvgAttendance,
 } from "../controllers/attendanceController";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
 import { UserRole } from "../configs/roles";
@@ -61,6 +62,13 @@ attendanceRouter.get(
   "/cohort/:cohortId",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   getCohortAttendance
+);
+
+// Get average attendance for tutor's cohorts (last N days)
+attendanceRouter.get(
+  "/tutor/avg",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  getTutorAvgAttendance
 );
 
 // Get attendance summary for tutor's cohorts

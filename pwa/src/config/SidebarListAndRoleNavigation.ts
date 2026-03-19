@@ -12,6 +12,7 @@ import {
   Eye,
   BarChart3,
   LayoutDashboard,
+  FileText,
   // Settings   // Temporarily hidden - School Admin Management
 } from "lucide-react";
 
@@ -95,6 +96,13 @@ export const navigationItems: NavigationItem[] = [
     icon: TrendingUp,
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
     description: "Monitor student learning progress",
+  },
+  {
+    title: "Test Reports",
+    url: DASHBOARD_ROUTE_PATHS.testReports,
+    icon: FileText,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "View student test scores and results",
   },
   {
     title: "School Management",

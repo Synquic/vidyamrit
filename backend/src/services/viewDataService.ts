@@ -328,24 +328,32 @@ export async function aggregateStudentMetrics(
 
   // Build school filter first
   const schoolFilter = buildSchoolFilter(access, config.filters);
+  console.log("[StudentMetrics] schoolFilter:", JSON.stringify(schoolFilter));
   const allowedSchools = await School.find(schoolFilter).distinct("_id");
+  console.log("[StudentMetrics] allowedSchools count:", allowedSchools.length, "ids:", allowedSchools.map(id => id.toString()));
 
   const query: mongoose.FilterQuery<any> = {};
 
   if (config.filters?.schoolId && config.filters.schoolId.length > 0) {
     query.school = { $in: toObjectIds(config.filters.schoolId) };
+    console.log("[StudentMetrics] Using config.filters.schoolId");
   } else if (allowedSchools.length > 0) {
     query.school = { $in: allowedSchools };
+    console.log("[StudentMetrics] Using allowedSchools filter");
+  } else {
+    console.log("[StudentMetrics] WARNING: No school filter applied - querying ALL students");
   }
 
-  // Apply block/state filters if specified
-  if (config.filters?.block || config.filters?.state) {
+  // Apply block/state filters if specified (only if non-empty arrays)
+  const hasBlockFilter = config.filters?.block && config.filters.block.length > 0;
+  const hasStateFilter = config.filters?.state && config.filters.state.length > 0;
+  if (hasBlockFilter || hasStateFilter) {
     const additionalSchoolFilter: mongoose.FilterQuery<any> = {};
-    if (config.filters?.block) {
-      additionalSchoolFilter.block = { $in: config.filters.block };
+    if (hasBlockFilter) {
+      additionalSchoolFilter.block = { $in: config.filters!.block };
     }
-    if (config.filters?.state) {
-      additionalSchoolFilter.state = { $in: config.filters.state };
+    if (hasStateFilter) {
+      additionalSchoolFilter.state = { $in: config.filters!.state };
     }
     const additionalSchools = await School.find(additionalSchoolFilter).distinct(
       "_id"
@@ -363,14 +371,17 @@ export async function aggregateStudentMetrics(
 
   const result: any = {};
 
+  console.log("[StudentMetrics] Final query:", JSON.stringify(query));
+
   if (config.showTotal !== false) {
     result.total = await Student.countDocuments(query);
+    console.log("[StudentMetrics] Total students found:", result.total);
   }
 
   if (config.showActive) {
     result.active = await Student.countDocuments({
       ...query,
-      isArchived: false,
+      isArchived: { $ne: true },
     });
   }
 
@@ -387,6 +398,8 @@ export async function aggregateStudentMetrics(
       .populate("school", "name block state city type")
       .lean()
       .limit(1000); // Limit to prevent performance issues
+
+    console.log("[StudentMetrics] Students found in DB:", students.length);
 
     const detailedStudents = await Promise.all(
       students.map(async (student: any) => {
@@ -836,17 +849,26 @@ export async function aggregateProgressData(
           studentQuery.school = { $in: allowedSchools };
         }
         const students = await Student.find(studentQuery)
-          .select("name knowledgeLevel")
+          .select("name knowledgeLevel fln")
           .lean();
-        result.student = students.map((s: any) => ({
-          studentId: s._id,
-          name: s.name,
-          latestLevel:
+        result.student = students.map((s: any) => {
+          const latestLevel =
             s.knowledgeLevel && s.knowledgeLevel.length > 0
               ? s.knowledgeLevel[s.knowledgeLevel.length - 1].level
-              : 0,
-          // Removed currentProgressFlags field
-        }));
+              : 0;
+          const status = latestLevel > 1 ? "progressing" : latestLevel === 1 ? "not_progressing" : "not_assessed";
+          return {
+            studentId: s._id,
+            name: s.name,
+            latestLevel,
+            status,
+            fln: (s.fln || []).map((f: any) => ({
+              program: f.program,
+              subject: f.subject,
+              clearedAt: f.clearedAt,
+            })),
+          };
+        });
         break;
 
       case "cohort":

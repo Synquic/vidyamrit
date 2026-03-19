@@ -710,6 +710,67 @@ export const getCohortAttendance = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Get average attendance for tutor's cohorts over last N days
+export const getTutorAvgAttendance = async (req: AuthRequest, res: Response) => {
+  try {
+    const tutorId = req.user?._id;
+    const { days = "7", schoolId } = req.query;
+    const UserRole = require("../configs/roles").UserRole;
+    const Cohort = require("../models/CohortModel").default;
+
+    const numDays = Math.min(parseInt(days as string) || 7, 30);
+
+    // Build query - only active cohorts
+    const query: any = { status: "active" };
+    if (req.user?.role === UserRole.TUTOR) {
+      query.tutorId = tutorId;
+    }
+    if (schoolId) {
+      query.schoolId = schoolId;
+    }
+
+    const cohorts = await Cohort.find(query);
+
+    // Calculate date range (last N days excluding today)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - numDays);
+
+    let totalPresent = 0;
+    let totalMarked = 0;
+
+    for (const cohort of cohorts) {
+      const relevantAttendance = cohort.attendance.filter((att: any) => {
+        const attDate = new Date(att.date);
+        attDate.setHours(0, 0, 0, 0);
+        return attDate >= startDate && attDate < today;
+      });
+
+      totalPresent += relevantAttendance.filter(
+        (att: any) => att.status === "present"
+      ).length;
+      totalMarked += relevantAttendance.length;
+    }
+
+    const avgRate =
+      totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
+
+    res.json({
+      avgAttendanceRate: avgRate,
+      totalPresent,
+      totalMarked,
+      days: numDays,
+      cohortCount: cohorts.length,
+    });
+  } catch (error: any) {
+    logger.error("Error fetching tutor avg attendance:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to load average attendance." });
+  }
+};
+
 // Get attendance summary for tutor's cohorts
 export const getTutorAttendanceSummary = async (req: AuthRequest, res: Response) => {
   try {

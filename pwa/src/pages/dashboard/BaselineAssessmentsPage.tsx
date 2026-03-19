@@ -332,8 +332,8 @@ export default function BaselineAssessmentsPage() {
 
   const handleCloseModal = () => {
     setModalOpen(false);
-    setSelectedStudent(null); // Clear selection when modal closes
-    setSelectedProgramId(undefined); // Clear pre-selected program
+    setSelectedStudent(null);
+    setSelectedProgramId(undefined);
   };
 
   const handleAssessNow = (student: Student, programId: string) => {
@@ -985,13 +985,19 @@ export default function BaselineAssessmentsPage() {
                   </CardHeader>
                   <CardContent className="px-0 sm:px-6">
                     <div className="overflow-x-auto">
+                      {(() => {
+                        // Filter programs: only show columns where at least one student has completed baseline
+                        const visiblePrograms = programs.filter((program) =>
+                          students.some((student) => getStudentBaselineStatus(student._id, program._id).completed)
+                        );
+                        return (
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/40 hover:bg-muted/40">
                             <TableHead className="font-semibold text-foreground text-sm sm:text-base py-3 sm:py-4 pl-4 sm:pl-6">
                               Student
                             </TableHead>
-                            {programs.map((program) => (
+                            {visiblePrograms.map((program) => (
                               <TableHead
                                 key={program._id}
                                 className="text-center font-semibold text-foreground text-sm sm:text-base py-3 sm:py-4 min-w-[100px]"
@@ -1025,7 +1031,7 @@ export default function BaselineAssessmentsPage() {
                               return (
                                 <TableRow>
                                   <TableCell
-                                    colSpan={2 + programs.length}
+                                    colSpan={2 + visiblePrograms.length}
                                     className="text-center py-8 text-muted-foreground"
                                   >
                                     {searchQuery.trim()
@@ -1038,11 +1044,16 @@ export default function BaselineAssessmentsPage() {
 
                             return filteredStudents.map((student) => {
                               // Get all statuses for this student
-                              const programStatuses = programs.map((program) => ({
+                              const programStatuses = visiblePrograms.map((program) => ({
                                 program,
                                 status: getStudentBaselineStatus(student._id, program._id),
                               }));
-                              const pendingPrograms = programStatuses.filter((ps) => !ps.status.completed);
+                              // Pending programs should check ALL programs, not just visible ones
+                              const allProgramStatuses = programs.map((program) => ({
+                                program,
+                                status: getStudentBaselineStatus(student._id, program._id),
+                              }));
+                              const pendingPrograms = allProgramStatuses.filter((ps) => !ps.status.completed);
                               const allDone = pendingPrograms.length === 0;
 
                               return (
@@ -1124,6 +1135,8 @@ export default function BaselineAssessmentsPage() {
                           })()}
                         </TableBody>
                       </Table>
+                        );
+                      })()}
                     </div>
                     {programs.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">

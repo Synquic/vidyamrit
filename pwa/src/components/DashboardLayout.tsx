@@ -46,7 +46,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <SidebarInset className={isViewUser ? "w-full" : ""}>
         <header className="flex h-16 sm:h-16 shrink-0 items-center gap-2 sm:gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-3 sm:px-4 shadow-sm overflow-hidden">
           {!isViewUser && (
-            <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-12 w-12 sm:h-7 sm:w-7 [&_svg]:size-6 sm:[&_svg]:size-4" />
+            <>
+              {/* Desktop: icon only */}
+              <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-7 w-7 [&_svg]:size-4 hidden sm:flex" />
+              {/* Mobile: icon + "Menu" text */}
+              <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-12 px-3 [&_svg]:size-6 flex sm:hidden">
+                <span className="text-base font-medium">Menu</span>
+              </SidebarTrigger>
+            </>
           )}
           {!isViewUser && (
             <Separator orientation="vertical" className="mr-1 sm:mr-2 h-6" />

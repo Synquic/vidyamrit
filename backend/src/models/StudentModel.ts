@@ -29,6 +29,7 @@ export interface IStudent extends Document {
   school: mongoose.Types.ObjectId;
   contactInfo: IGuardianInfo[];
   knowledgeLevel: IKnowledgeLevel[];
+  fln: IFLN[];
   cohort: ICohort[];
 
   // Progress flags
@@ -58,6 +59,12 @@ export interface IKnowledgeLevel {
   subject: string; // Subject value (same as programName for consistency)
   level: number;
   date: Date;
+}
+
+export interface IFLN {
+  program: mongoose.Types.ObjectId;
+  subject: string;
+  clearedAt: Date;
 }
 
 export interface ICohort {
@@ -132,6 +139,13 @@ const StudentSchema = new mongoose.Schema({
       subject: { type: String, required: true, trim: true },
       level: { type: Number, required: true },
       date: { type: Date, required: true },
+    },
+  ],
+  fln: [
+    {
+      program: { type: mongoose.Schema.Types.ObjectId, ref: "Program", required: true },
+      subject: { type: String, required: true, trim: true },
+      clearedAt: { type: Date, default: Date.now },
     },
   ],
   cohort: [
