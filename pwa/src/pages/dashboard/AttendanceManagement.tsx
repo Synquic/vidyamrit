@@ -1328,6 +1328,7 @@ function IndividualAttendance() {
     new Date().toISOString().split("T")[0]
   );
   const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceMap, setAttendanceMap] = useState<
     Map<string, AttendanceStatus>
@@ -1459,17 +1460,37 @@ function IndividualAttendance() {
     setHasChanges(true);
   };
 
-  // Filter students by search
+  // Get unique class list from students
+  const availableClasses = useMemo(() => {
+    const classes = new Set<string>();
+    students.forEach((s) => {
+      if (s.class) classes.add(s.class);
+    });
+    return Array.from(classes).sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [students]);
+
+  // Filter students by class and search
   const filteredStudents = useMemo(() => {
-    if (!searchQuery) return students;
-    const q = searchQuery.toLowerCase();
-    return students.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.roll_no?.toLowerCase().includes(q) ||
-        s.class?.toLowerCase().includes(q)
-    );
-  }, [students, searchQuery]);
+    let filtered = students;
+    if (selectedClass !== "all") {
+      filtered = filtered.filter((s) => s.class === selectedClass);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.roll_no?.toLowerCase().includes(q) ||
+          s.class?.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [students, selectedClass, searchQuery]);
 
   const markedCount = attendanceMap.size;
   const presentCount = Array.from(attendanceMap.values()).filter(
@@ -1503,6 +1524,24 @@ function IndividualAttendance() {
               <SelectItem value="hindi">Hindi</SelectItem>
               <SelectItem value="math">Math</SelectItem>
               <SelectItem value="english">English</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Class Filter */}
+        <div className="flex-1 sm:max-w-[150px]">
+          <Label className="text-sm font-medium mb-1.5 block">Class</Label>
+          <Select value={selectedClass} onValueChange={setSelectedClass}>
+            <SelectTrigger>
+              <SelectValue placeholder="All Classes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {availableClasses.map((cls) => (
+                <SelectItem key={cls} value={cls}>
+                  Class {cls}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -1740,7 +1779,7 @@ function IndividualAttendance() {
 export default function AttendanceManagement() {
   const { cohortId } = useParams<{ cohortId?: string }>();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"group" | "individual">("group");
+  const [activeTab, setActiveTab] = useState<"group" | "individual">("individual");
 
   // If cohortId is present, show detail view; otherwise show overview
   if (cohortId) {
@@ -1770,15 +1809,6 @@ export default function AttendanceManagement() {
       {/* Toggle: Group / Individual */}
       <div className="flex gap-1 bg-muted p-1 rounded-lg w-fit">
         <Button
-          variant={activeTab === "group" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("group")}
-          className="gap-2"
-        >
-          <Users className="h-4 w-4" />
-          Group
-        </Button>
-        <Button
           variant={activeTab === "individual" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("individual")}
@@ -1786,6 +1816,15 @@ export default function AttendanceManagement() {
         >
           <User className="h-4 w-4" />
           Individual
+        </Button>
+        <Button
+          variant={activeTab === "group" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("group")}
+          className="gap-2"
+        >
+          <Users className="h-4 w-4" />
+          Group
         </Button>
       </div>
 

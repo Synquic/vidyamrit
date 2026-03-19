@@ -16,6 +16,7 @@ import {
   CheckIcon,
 } from "lucide-react";
 import { createAssessment } from "@/services/assessments";
+import { createTestReport } from "@/services/testReports";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Student } from "@/services/students";
@@ -108,7 +109,17 @@ export function BaselineAssessmentModal({
     if (!isOpen) return;
     setModalState("program-selection");
     setCurrentProgramIndex(-1);
-    setCompletedPrograms(new Set());
+    // Initialize completed programs from student's history
+    const alreadyDone = new Set(
+      programs
+        .filter((p) =>
+          student?.knowledgeLevel?.some(
+            (h: { program: string }) => h.program === p._id
+          )
+        )
+        .map((p) => p._id)
+    );
+    setCompletedPrograms(alreadyDone);
     setProgramResults({});
     setShuffledCache({});
   }, [isOpen]);
@@ -236,23 +247,26 @@ export function BaselineAssessmentModal({
 
     // MANUAL MODE: no auto-decisions, teacher controls everything
     if (testPromotionType === "manual") {
-      // After 10 questions, force decision screen (no more questions available)
-      if (answered >= 10) {
+      const shuffled = active ? ensureShuffled(active._id, currentLevel) : [];
+      const totalAvailable = shuffled?.length || 0;
+      if (answered >= totalAvailable) {
         setShowManualDecision(true);
       }
-      // Otherwise, questions keep coming - teacher can use Assign/Jump buttons anytime
       return;
     }
 
     // AUTOMATIC MODE (existing logic)
     // Termination condition: 3 wrong answers in current level → end test
     if (wrong >= 3) {
+      await saveCurrentLevelReport(false);
       await finalizeProgram();
       return;
     }
 
     // Promotion condition: 8 correct answers → move to next level
     if (correct >= 8) {
+      // Save current level as passed
+      await saveCurrentLevelReport(true);
       // Student passed current level, save it as last completed
       setLastCompletedLevel(currentLevel);
       setCurrentLevel((l) => l + 1);
@@ -267,6 +281,8 @@ export function BaselineAssessmentModal({
     // After 10 questions: if 8+ correct → promote, if <8 correct → end test
     if (answered >= 10) {
       if (correct >= 8) {
+        // Save current level as passed
+        await saveCurrentLevelReport(true);
         // Student passed current level, save it as last completed
         setLastCompletedLevel(currentLevel);
         // Promote to next level
@@ -276,6 +292,8 @@ export function BaselineAssessmentModal({
         levelWrongAnswers.current = 0;
         setShowQuickComplete(false);
       } else {
+        // Save current level as failed
+        await saveCurrentLevelReport(false);
         // Stay at current level and end test
         await finalizeProgram();
       }
@@ -283,7 +301,7 @@ export function BaselineAssessmentModal({
     }
   };
 
-  const finalizeProgram = async () => {
+  const finalizeProgram = async (overrideLevel?: number) => {
     const active = getActiveProgram();
     if (!active) return;
 
@@ -292,7 +310,9 @@ export function BaselineAssessmentModal({
     // If they didn't pass any level (lastCompletedLevel === -1), they're at level 0 (displayed as level 1)
     // Example: Pass level 1 (index 0) → lastCompletedLevel = 0 → knowledge level = 1
     //          Fail level 2 → lastCompletedLevel still 0 → knowledge level = 1
-    const knowledgeLevel = lastCompletedLevel >= 0 ? lastCompletedLevel + 1 : 1;
+    // overrideLevel: used in manual assign - teacher assigns current level directly
+    const effectiveLevel = overrideLevel !== undefined ? overrideLevel : lastCompletedLevel;
+    const knowledgeLevel = effectiveLevel >= 0 ? effectiveLevel + 1 : 1;
     const result: TestResult = {
       subject: active.subject,
       level: knowledgeLevel, // Already 1-indexed
@@ -307,7 +327,9 @@ export function BaselineAssessmentModal({
         mentor: user?.id || "",
         subject: active.subject,
         level: result.level,
-        program: active._id, // Add program ID
+        program: active._id,
+        totalQuestions: result.totalQuestions,
+        correctAnswers: result.correctAnswers,
       });
       toast.success(`${active.name}: Level ${result.level} saved`);
     } catch {
@@ -351,9 +373,12 @@ export function BaselineAssessmentModal({
       const correct = levelCorrectAnswers.current;
       const wrong = levelWrongAnswers.current;
 
-      // MANUAL MODE: only stop at 10 questions (force decision), otherwise keep going
+      // MANUAL MODE: show all questions, force decision when all done
       if (testPromotionType === "manual") {
-        if (answered >= 10) {
+        const active = getActiveProgram();
+        const shuffled = active ? ensureShuffled(active._id, currentLevel) : [];
+        const totalAvailable = shuffled?.length || 0;
+        if (answered >= totalAvailable) {
           setShowManualDecision(true);
         }
         return;
@@ -386,18 +411,47 @@ export function BaselineAssessmentModal({
     }, 600);
   };
 
+  // Save current level test report
+  const saveCurrentLevelReport = async (passed: boolean | null, action: "jump" | "assigned" | null = null) => {
+    const active = getActiveProgram();
+    const answered = levelQuestionsAnswered.current;
+    const correct = levelCorrectAnswers.current;
+    if (!active || !student || answered === 0) return;
+    try {
+      const levelTotalQuestions = active.levels?.[currentLevel]?.assessmentQuestions?.length || answered;
+      const score = (correct / levelTotalQuestions) * 100;
+      await createTestReport({
+        student: student._id,
+        school: student.schoolId._id,
+        program: active._id,
+        subject: active.subject,
+        testType: "baseline",
+        level: currentLevel + 1,
+        score,
+        passed,
+        action,
+        totalQuestions: levelTotalQuestions,
+        correctAnswers: correct,
+      });
+    } catch {
+      // Don't block flow if save fails
+    }
+  };
+
   // Manual mode: Assign current level and end test
   const handleManualAssign = async () => {
-    // Current level is what the student was tested on
-    // If they haven't passed any level yet, assign level 1
-    // lastCompletedLevel tracks what they've passed via "Jump"
-    await finalizeProgram();
+    await saveCurrentLevelReport(true, "assigned");
+    // Teacher clicked "Assign Level X" on currentLevel → that level is the assigned level
+    await finalizeProgram(currentLevel);
   };
 
   // Manual mode: Jump to next level
-  const handleManualJump = () => {
+  const handleManualJump = async () => {
     const active = getActiveProgram();
     if (!active) return;
+
+    // Save current level's test report before jumping
+    await saveCurrentLevelReport(true, "jump");
 
     // Mark current level as completed
     setLastCompletedLevel(currentLevel);
@@ -458,8 +512,8 @@ export function BaselineAssessmentModal({
       </div>
 
       {/* CONTENT - Centered and Full Height */}
-      <div className="flex-1 overflow-y-auto flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl mx-auto">
+      <div className="flex-1 overflow-y-auto flex items-start justify-center p-4">
+        <div className="w-full max-w-2xl md:max-w-4xl mx-auto">
           {/* PROGRAM LIST */}
           {modalState === "program-selection" && (
             <div className="space-y-4">
@@ -535,7 +589,9 @@ export function BaselineAssessmentModal({
                 <div className="flex gap-2">
                   <Badge variant="outline" className="text-xs px-3 py-1">
                     Q{levelQuestionsAnswered.current + 1}
-                    {levelQuestionsAnswered.current < 5 ? "/5" : "/10"}
+                    {testPromotionType === "manual"
+                      ? `/${active?.levels?.[currentLevel]?.assessmentQuestions?.length || "?"}`
+                      : levelQuestionsAnswered.current < 5 ? "/5" : "/10"}
                   </Badge>
                   <Badge variant="outline" className="text-xs px-3 py-1">
                     ✓ {levelCorrectAnswers.current} | ✗{" "}
@@ -750,7 +806,7 @@ export function BaselineAssessmentModal({
                   <Button
                     className="w-full h-14 text-lg"
                     variant="outline"
-                    onClick={finalizeProgram}
+                    onClick={() => finalizeProgram()}
                   >
                     End Test
                   </Button>

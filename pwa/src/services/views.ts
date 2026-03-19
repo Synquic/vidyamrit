@@ -268,7 +268,13 @@ export interface ViewData {
         studentId: string;
         name: string;
         latestLevel: number;
+        status: string;
         progressFlags: any;
+        fln: Array<{
+          program: string;
+          subject: string;
+          clearedAt: string;
+        }>;
       }>;
       cohort?: Array<{
         cohortId: string;

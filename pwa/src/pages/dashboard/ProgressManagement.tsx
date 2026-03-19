@@ -180,93 +180,67 @@ function ProgressOverview() {
       </div>
 
       {/* Overall Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col items-center text-center gap-1 sm:gap-2">
               <div className="p-2 rounded-lg bg-blue-500/10">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-blue-700/70 font-medium truncate">
-                  Total Students
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-blue-700 tracking-tight">
-                  {totalStudents}
-                </p>
-              </div>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-700 tracking-tight">
+                {totalStudents}
+              </p>
+              <p className="text-xs sm:text-sm text-blue-700/70 font-medium">
+                Total
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-green-50 to-emerald-100/50 border-green-200/50 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col items-center text-center gap-1 sm:gap-2">
               <div className="p-2 rounded-lg bg-green-500/10">
-                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
+                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-green-700/70 font-medium truncate">
-                  On Track
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-green-700 tracking-tight">
-                  {overallProgressCounts.green}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-50 to-yellow-100/50 border-amber-200/50 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600 flex-shrink-0" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-amber-700/70 font-medium truncate">
-                  Need Support
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-amber-700 tracking-tight">
-                  {overallProgressCounts.yellow + overallProgressCounts.orange}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/10">
-                <Timer className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 flex-shrink-0" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-orange-700/70 font-medium truncate">
-                  Test Soon
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-orange-700 tracking-tight">
-                  {timeMetrics.cohortsNearingAssessment}
-                </p>
-              </div>
+              <p className="text-2xl sm:text-3xl font-bold text-green-700 tracking-tight">
+                {overallProgressCounts.green}
+              </p>
+              <p className="text-xs sm:text-sm text-green-700/70 font-medium">
+                Progressing
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-red-50 to-rose-100/50 border-red-200/50 hover:shadow-lg transition-all duration-300">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col items-center text-center gap-1 sm:gap-2">
               <div className="p-2 rounded-lg bg-red-500/10">
-                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 flex-shrink-0" />
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-red-700/70 font-medium truncate">
-                  Urgent Attention
-                </p>
-                <p className="text-2xl sm:text-3xl font-bold text-red-700 tracking-tight">
-                  {overallProgressCounts.red}
-                </p>
+              <p className="text-2xl sm:text-3xl font-bold text-red-700 tracking-tight">
+                {overallProgressCounts.yellow + overallProgressCounts.orange + overallProgressCounts.red}
+              </p>
+              <p className="text-xs sm:text-sm text-red-700/70 font-medium">
+                Not Progressing
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50 hover:shadow-lg transition-all duration-300">
+          <CardContent className="p-3 sm:p-6">
+            <div className="flex flex-col items-center text-center gap-1 sm:gap-2">
+              <div className="p-2 rounded-lg bg-orange-500/10">
+                <Timer className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
               </div>
+              <p className="text-2xl sm:text-3xl font-bold text-orange-700 tracking-tight">
+                {timeMetrics.cohortsNearingAssessment}
+              </p>
+              <p className="text-xs sm:text-sm text-orange-700/70 font-medium">
+                Test Soon
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -432,25 +406,13 @@ function ProgressOverview() {
                           <div className="flex items-center gap-1">
                             {getStatusIcon("green")}
                             <span className="text-xs">
-                              {summary.summary.progressCounts.green}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon("yellow")}
-                            <span className="text-xs">
-                              {summary.summary.progressCounts.yellow}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon("orange")}
-                            <span className="text-xs">
-                              {summary.summary.progressCounts.orange}
+                              {summary.summary.progressCounts.green} Progressing
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
                             {getStatusIcon("red")}
                             <span className="text-xs">
-                              {summary.summary.progressCounts.red}
+                              {summary.summary.progressCounts.yellow + summary.summary.progressCounts.orange + summary.summary.progressCounts.red} Not Progressing
                             </span>
                           </div>
                           {summary.summary.studentsNeedingAttention > 0 && (
@@ -675,14 +637,14 @@ function CohortProgressDetail() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 truncate">
-                  On Track
+                  Progressing
                 </p>
                 <p className="text-xl sm:text-2xl font-bold text-green-600">
                   {progressCounts.green}
@@ -695,45 +657,13 @@ function CohortProgressDetail() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">
-                  Need Support
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-yellow-600">
-                  {progressCounts.yellow}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-gray-600 truncate">
-                  Struggling
-                </p>
-                <p className="text-xl sm:text-2xl font-bold text-orange-600">
-                  {progressCounts.orange}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-gray-600 truncate">
-                  Urgent
+                  Not Progressing
                 </p>
                 <p className="text-xl sm:text-2xl font-bold text-red-600">
-                  {progressCounts.red}
+                  {progressCounts.yellow + progressCounts.orange + progressCounts.red}
                 </p>
               </div>
             </div>
@@ -934,13 +864,7 @@ function CohortProgressDetail() {
               className={`transition-colors ${
                 progress.status === "green"
                   ? "border-green-200"
-                  : progress.status === "yellow"
-                  ? "border-yellow-200"
-                  : progress.status === "orange"
-                  ? "border-orange-200"
-                  : progress.status === "red"
-                  ? "border-red-200"
-                  : "border-gray-200"
+                  : "border-red-200"
               }`}
             >
               <CardContent className="p-3 sm:p-4">
@@ -980,7 +904,7 @@ function CohortProgressDetail() {
                       variant={getStatusBadgeVariant(progress.status)}
                       className="text-xs"
                     >
-                      {progress.status.toUpperCase()}
+                      {progress.status === "green" ? "PROGRESSING" : "NOT PROGRESSING"}
                     </Badge>
                   </div>
                 </div>

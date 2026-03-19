@@ -177,20 +177,25 @@ function ViewDashboard() {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="border-b px-4 md:px-6 py-3 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold">{viewData.viewName}</h1>
-          {user && (
-            <p className="text-sm text-muted-foreground">
-              Welcome, {user.name}
-            </p>
-          )}
+      <div className="border-b bg-white px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary/10">
+            <LayoutDashboard className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-gray-900 capitalize">{viewData.viewName}</h1>
+            {user && (
+              <p className="text-xs text-gray-500">
+                Welcome, {user.name}
+              </p>
+            )}
+          </div>
         </div>
         <Button
-          variant="destructive"
+          variant="outline"
           size="sm"
           onClick={handleLogout}
-          className="flex items-center gap-2"
+          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex items-center gap-2"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Logout</span>
@@ -289,174 +294,112 @@ function ViewDashboard() {
 
 /* ============ Overview Section ============ */
 function OverviewSection({ data }: { data: any }) {
+  const overviewCards = [
+    data.schools && {
+      title: "Schools",
+      icon: <School className="h-5 w-5 text-blue-600" />,
+      bg: "from-blue-50 to-blue-100/50",
+      border: "border-blue-200/50",
+      iconBg: "bg-blue-500/10",
+      mainValue: data.schools.total,
+      mainColor: "text-blue-700",
+      subColor: "text-blue-600/70",
+      stats: [
+        data.schools.active !== undefined && { label: "Active", value: data.schools.active },
+        data.schools.withAssessments !== undefined && { label: "With Tests", value: data.schools.withAssessments },
+      ].filter(Boolean),
+    },
+    data.tutors && {
+      title: "Tutors",
+      icon: <Users className="h-5 w-5 text-purple-600" />,
+      bg: "from-purple-50 to-purple-100/50",
+      border: "border-purple-200/50",
+      iconBg: "bg-purple-500/10",
+      mainValue: data.tutors.total,
+      mainColor: "text-purple-700",
+      subColor: "text-purple-600/70",
+      stats: [
+        data.tutors.engaged !== undefined && { label: "Engaged", value: data.tutors.engaged },
+      ].filter(Boolean),
+    },
+    data.students && {
+      title: "Students",
+      icon: <GraduationCap className="h-5 w-5 text-emerald-600" />,
+      bg: "from-emerald-50 to-emerald-100/50",
+      border: "border-emerald-200/50",
+      iconBg: "bg-emerald-500/10",
+      mainValue: data.students.total,
+      mainColor: "text-emerald-700",
+      subColor: "text-emerald-600/70",
+      stats: [
+        data.students.active !== undefined && { label: "Active", value: data.students.active, color: "text-green-600" },
+        data.students.dropped !== undefined && data.students.dropped > 0 && { label: "Dropped", value: data.students.dropped, color: "text-red-500" },
+      ].filter(Boolean),
+    },
+    data.cohorts && {
+      title: "Groups",
+      icon: <BookOpen className="h-5 w-5 text-orange-600" />,
+      bg: "from-orange-50 to-orange-100/50",
+      border: "border-orange-200/50",
+      iconBg: "bg-orange-500/10",
+      mainValue: data.cohorts.total,
+      mainColor: "text-orange-700",
+      subColor: "text-orange-600/70",
+      stats: [
+        data.cohorts.active !== undefined && { label: "Active", value: data.cohorts.active },
+      ].filter(Boolean),
+    },
+    data.assessments && {
+      title: "Tests",
+      icon: <ClipboardList className="h-5 w-5 text-indigo-600" />,
+      bg: "from-indigo-50 to-indigo-100/50",
+      border: "border-indigo-200/50",
+      iconBg: "bg-indigo-500/10",
+      mainValue: data.assessments.total,
+      mainColor: "text-indigo-700",
+      subColor: "text-indigo-600/70",
+      stats: [],
+    },
+  ].filter(Boolean) as any[];
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Dashboard Overview</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {data.schools && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Schools</CardTitle>
-              <School className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data.schools.total !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold">
-                      {data.schools.total}
-                    </span>
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold text-gray-800">Overview</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        {overviewCards.map((card) => (
+          <Card
+            key={card.title}
+            className={`bg-gradient-to-br ${card.bg} ${card.border} hover:shadow-lg transition-all duration-300`}
+          >
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-semibold ${card.mainColor}`}>
+                    {card.title}
+                  </span>
+                  <div className={`p-1.5 rounded-lg ${card.iconBg}`}>
+                    {card.icon}
                   </div>
-                )}
-                {data.schools.active !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Active
-                    </span>
-                    <span className="text-xl font-semibold">
-                      {data.schools.active}
-                    </span>
-                  </div>
-                )}
-                {data.schools.withAssessments !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      With Tests
-                    </span>
-                    <span className="text-xl font-semibold">
-                      {data.schools.withAssessments}
-                    </span>
+                </div>
+                <p className={`text-3xl sm:text-4xl font-bold ${card.mainColor} tracking-tight`}>
+                  {card.mainValue ?? 0}
+                </p>
+                {card.stats.length > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-black/5">
+                    {card.stats.map((stat: any) => (
+                      <div key={stat.label} className="flex items-center justify-between">
+                        <span className={`text-xs ${card.subColor}`}>{stat.label}</span>
+                        <span className={`text-sm font-semibold ${stat.color || card.mainColor}`}>
+                          {stat.value}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {data.tutors && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tutors</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data.tutors.total !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold">
-                      {data.tutors.total}
-                    </span>
-                  </div>
-                )}
-                {data.tutors.engaged !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Engaged
-                    </span>
-                    <span className="text-xl font-semibold">
-                      {data.tutors.engaged}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {data.students && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Students</CardTitle>
-              <GraduationCap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data.students.total !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold">
-                      {data.students.total}
-                    </span>
-                  </div>
-                )}
-                {data.students.active !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Active
-                    </span>
-                    <span className="text-xl font-semibold">
-                      {data.students.active}
-                    </span>
-                  </div>
-                )}
-                {data.students.dropped !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Dropped
-                    </span>
-                    <span className="text-xl font-semibold">
-                      {data.students.dropped}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {data.cohorts && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Groups</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data.cohorts.total !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold">
-                      {data.cohorts.total}
-                    </span>
-                  </div>
-                )}
-                {data.cohorts.active !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Active
-                    </span>
-                    <span className="text-xl font-semibold">
-                      {data.cohorts.active}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {data.assessments && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tests</CardTitle>
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {data.assessments.total !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="text-2xl font-bold">
-                      {data.assessments.total}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        ))}
       </div>
     </div>
   );
@@ -1074,6 +1017,7 @@ function ProgressSection({ data }: { data: any }) {
                     <TableHead>Student Name</TableHead>
                     <TableHead>Latest Level</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>FLN</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1082,7 +1026,8 @@ function ProgressSection({ data }: { data: any }) {
                       studentId: string;
                       name: string;
                       latestLevel: number;
-                      progressFlags?: Record<string, string>;
+                      status: string;
+                      fln: Array<{ program: string; subject: string; clearedAt: string }>;
                     }) => (
                       <TableRow key={student.studentId}>
                         <TableCell className="font-medium">
@@ -1092,20 +1037,33 @@ function ProgressSection({ data }: { data: any }) {
                           <Badge>Level {student.latestLevel}</Badge>
                         </TableCell>
                         <TableCell>
-                          {student.progressFlags && (
-                            <div className="flex gap-2">
-                              {Object.entries(student.progressFlags || {}).map(
-                                ([subject, flag]: [string, string]) => (
-                                  <Badge
-                                    key={subject}
-                                    variant="outline"
-                                    className="capitalize"
-                                  >
-                                    {subject}: {flag}
-                                  </Badge>
-                                )
-                              )}
-                            </div>
+                          <Badge
+                            variant="outline"
+                            className={
+                              student.status === "progressing"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : student.status === "not_progressing"
+                                ? "bg-red-50 text-red-700 border-red-200"
+                                : "bg-gray-50 text-gray-600 border-gray-200"
+                            }
+                          >
+                            {student.status === "progressing"
+                              ? "Progressing"
+                              : student.status === "not_progressing"
+                              ? "Not Progressing"
+                              : "Not Assessed"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {student.fln && student.fln.length > 0 ? (
+                            <Badge className="bg-green-600 text-white text-xs flex flex-col items-center gap-0.5 py-1 px-2 w-fit">
+                              <span className="font-semibold">✓ Proficient</span>
+                              <span className="font-normal lowercase">
+                                {student.fln.map((f) => f.subject).join(" • ")}
+                              </span>
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
                           )}
                         </TableCell>
                       </TableRow>

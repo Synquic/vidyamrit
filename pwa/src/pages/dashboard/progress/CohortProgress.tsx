@@ -174,38 +174,14 @@ export default function CohortProgress() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
               <CheckCircle className="h-6 w-6 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
               <div>
-                <p className="text-sm sm:text-sm font-medium text-green-700">On Track</p>
+                <p className="text-sm sm:text-sm font-medium text-green-700">Progressing</p>
                 <p className="text-2xl sm:text-2xl font-bold text-green-600">{progressCounts.green}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-yellow-50 border-yellow-200">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-6 w-6 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm sm:text-sm font-medium text-yellow-700">Need Support</p>
-                <p className="text-2xl sm:text-2xl font-bold text-yellow-600">{progressCounts.yellow}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-orange-50 border-orange-200">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-6 w-6 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
-              <div>
-                <p className="text-sm sm:text-sm font-medium text-orange-700">Struggling</p>
-                <p className="text-2xl sm:text-2xl font-bold text-orange-600">{progressCounts.orange}</p>
               </div>
             </div>
           </CardContent>
@@ -216,8 +192,8 @@ export default function CohortProgress() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
               <div>
-                <p className="text-sm sm:text-sm font-medium text-red-700">Urgent</p>
-                <p className="text-2xl sm:text-2xl font-bold text-red-600">{progressCounts.red}</p>
+                <p className="text-sm sm:text-sm font-medium text-red-700">Not Progressing</p>
+                <p className="text-2xl sm:text-2xl font-bold text-red-600">{progressCounts.yellow + progressCounts.orange + progressCounts.red}</p>
               </div>
             </div>
           </CardContent>

@@ -292,10 +292,24 @@ export const getTutorAttendanceSummary = async (
     params.append('schoolId', schoolId);
   }
 
-  const url = params.toString() 
+  const url = params.toString()
     ? `${baseUrl}/tutor/summary?${params.toString()}`
     : `${baseUrl}/tutor/summary`;
-  
+
   const response = await authAxios.get(url);
+  return response.data;
+};
+
+// Get average attendance for tutor's cohorts over last N days
+export const getTutorAvgAttendance = async (
+  days: number = 7,
+  schoolId?: string
+): Promise<{ avgAttendanceRate: number; totalPresent: number; totalMarked: number; days: number; cohortCount: number }> => {
+  const params = new URLSearchParams();
+  params.append("days", days.toString());
+  if (schoolId) {
+    params.append("schoolId", schoolId);
+  }
+  const response = await authAxios.get(`${baseUrl}/tutor/avg?${params.toString()}`);
   return response.data;
 };
