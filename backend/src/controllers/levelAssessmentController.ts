@@ -3,6 +3,7 @@ import { AuthRequest } from "../types/auth";
 import Cohort from "../models/CohortModel";
 import Program from "../models/ProgramModel";
 import Student from "../models/StudentModel";
+import TestReport from "../models/TestReportModel";
 import logger from "../utils/logger";
 
 /**
@@ -230,6 +231,30 @@ export const conductLevelAssessment = async (req: AuthRequest, res: Response) =>
     }
 
     await cohort.save();
+
+    // Save to TestReport model
+    try {
+      const studentDoc = await Student.findById(studentId).select("school");
+      if (studentDoc) {
+        await new TestReport({
+          student: studentId,
+          school: studentDoc.school,
+          program: cohort.programId,
+          subject: (program.subject || "").toLowerCase(),
+          testType: "level_test",
+          level: currentLevel,
+          score,
+          passed,
+          totalQuestions,
+          correctAnswers,
+          mentor: tutorId,
+          date: assessmentDate,
+        }).save();
+        logger.info(`TestReport saved for level assessment - student: ${studentId}, level: ${currentLevel}, score: ${score.toFixed(1)}%`);
+      }
+    } catch (testReportError) {
+      logger.warn(`Failed to save TestReport for student ${studentId}:`, testReportError);
+    }
 
     // Update student's progressHistory for individual report tracking
     try {

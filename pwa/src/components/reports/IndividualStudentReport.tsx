@@ -255,15 +255,25 @@ export default function IndividualStudentReport({
               <ArrowLeft className="h-5 w-5 mr-2" />
               <span className="text-base">Back</span>
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="hidden sm:flex"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete Student
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/test-report/student/${student._id}`)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Test Report
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="hidden sm:flex"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Student
+              </Button>
+            </div>
             <Button
               variant="destructive"
               size="icon"

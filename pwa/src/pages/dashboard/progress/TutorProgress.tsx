@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendingUp, Users, AlertTriangle, CheckCircle, Target, Clock, Timer } from 'lucide-react';
+import { TrendingUp, Users, AlertTriangle, CheckCircle, Target, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -135,46 +135,22 @@ export default function TutorProgress() {
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-gray-600">On Track</p>
+                <p className="text-sm text-gray-600">Progressing</p>
                 <p className="text-2xl font-bold text-green-600">{overallProgressCounts.green}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              <div>
-                <p className="text-sm text-gray-600">Need Support</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {overallProgressCounts.yellow + overallProgressCounts.orange}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2">
-              <Timer className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm text-gray-600">Test Soon</p>
-                <p className="text-2xl font-bold text-orange-600">{timeMetrics.cohortsNearingAssessment}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
               <div>
-                <p className="text-sm text-gray-600">Urgent Attention</p>
-                <p className="text-2xl font-bold text-red-600">{overallProgressCounts.red}</p>
+                <p className="text-sm text-gray-600">Not Progressing</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {overallProgressCounts.yellow + overallProgressCounts.orange + overallProgressCounts.red}
+                </p>
               </div>
             </div>
           </CardContent>

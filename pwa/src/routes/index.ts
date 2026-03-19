@@ -32,6 +32,8 @@ export const DASHBOARD_ROUTE_PATHS = {
   views: "/views",
   viewDashboard: "/view-dashboard",
   reports: "/reports",
+  testReports: "/test-reports",
+  testReport: "/test-report/student/:studentId",
   //
   // schoolAdmin: "/school-admins",
   //

@@ -52,7 +52,7 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
     console.log("Request headers auth:", req.headers.authorization);
     console.log("===================================");
 
-    const { student: studentId, school: schoolId, subject, level, program: programId } = req.body;
+    const { student: studentId, school: schoolId, subject, level, program: programId, totalQuestions, correctAnswers } = req.body;
     let { mentor: mentorId } = req.body;
 
     // If mentor is not provided, use the authenticated user's MongoDB _id
@@ -119,6 +119,23 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
 
     await student.save();
     console.log("Updated student knowledge level:", studentId, "Program:", programId, "Level:", level);
+
+    // Check FLN: if assigned level = total levels in program → student cleared all levels
+    if (program && program.levels && level >= program.levels.length) {
+      const alreadyFLN = student.fln?.some(
+        (f) => f.program.toString() === programId.toString()
+      );
+      if (!alreadyFLN) {
+        student.fln = student.fln || [];
+        student.fln.push({
+          program: new mongoose.Types.ObjectId(programId),
+          subject: programSubject,
+          clearedAt: new Date(),
+        });
+        await student.save();
+        console.log("FLN set for student:", studentId, "Program:", programId);
+      }
+    }
 
     // No longer automatically creating cohorts - students will await cohort assignment
 
