@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown } from "lucide-react";
+import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown, Eye } from "lucide-react";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import {
   Collapsible,
@@ -118,7 +118,7 @@ function ManageStudents() {
   // Fetch programs
   const { data: programsResponse } = useQuery({
     queryKey: ["programs"],
-    queryFn: () => programsService.getPrograms({ isActive: "true" }),
+    queryFn: () => programsService.getPrograms({ isActive: "true", schoolId: selectedSchool?._id }),
   });
 
   const programs = programsResponse?.programs || [];
@@ -546,9 +546,6 @@ function ManageStudents() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Manage Students</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Create and manage students for your schools
-            </p>
           </div>
           {viewMode === "active" && (
             <Button
@@ -582,7 +579,7 @@ function ManageStudents() {
                 }`}
               >
                 <Archive className="h-4 w-4" />
-                Archived
+                Inactive
               </button>
             </div>
             <div className="flex flex-wrap gap-2 items-center w-full sm:w-auto">
@@ -717,17 +714,16 @@ function ManageStudents() {
         </div>
       </div>
 
-      <div className="rounded-md border overflow-auto max-h-[60vh]">
+      <div className="rounded-md border overflow-auto max-h-[60vh] overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead className="hidden sm:table-cell">Age</TableHead>
-              <TableHead className="hidden sm:table-cell">Gender</TableHead>
-              <TableHead className="hidden sm:table-cell">Category</TableHead>
+              <TableHead className="">Age</TableHead>
+              <TableHead className="">Gender</TableHead>
+              <TableHead className="">Category</TableHead>
               <TableHead>Class</TableHead>
-              <TableHead>Level & Tests</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -747,40 +743,19 @@ function ManageStudents() {
                         {student.name}
                       </button>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.age}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.gender}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.caste || "N/A"}</TableCell>
+                    <TableCell className="">{student.age}</TableCell>
+                    <TableCell className="">{student.gender}</TableCell>
+                    <TableCell className="">{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
-                      <div className="space-y-2">
-                        {(() => {
-                          const levelInfo = getStudentLevelInfo(student);
-                          if (levelInfo.length === 0) {
-                            return (
-                              <div className="space-y-1">
-                                <Badge variant="secondary">Not Tested</Badge>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div className="space-y-1">
-                              {levelInfo.map((info, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <Badge variant="default" className="text-xs">
-                                    {info.subject}: L{info.level}
-                                  </Badge>
-                                </div>
-                              ))}
-                              <div className="text-xs text-muted-foreground">
-                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} tested
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/reports/student/${student._id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -817,40 +792,19 @@ function ManageStudents() {
                         {student.name}
                       </button>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.age}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.gender}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{student.caste || "N/A"}</TableCell>
+                    <TableCell className="">{student.age}</TableCell>
+                    <TableCell className="">{student.gender}</TableCell>
+                    <TableCell className="">{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
-                      <div className="space-y-2">
-                        {(() => {
-                          const levelInfo = getStudentLevelInfo(student);
-                          if (levelInfo.length === 0) {
-                            return (
-                              <div className="space-y-1">
-                                <Badge variant="secondary">Not Tested</Badge>
-                              </div>
-                            );
-                          }
-                          return (
-                            <div className="space-y-1">
-                              {levelInfo.map((info, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <Badge variant="default" className="text-xs">
-                                    {info.subject}: L{info.level}
-                                  </Badge>
-                                </div>
-                              ))}
-                              <div className="text-xs text-muted-foreground">
-                                {levelInfo.length} program{levelInfo.length > 1 ? "s" : ""} tested
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/reports/student/${student._id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -875,7 +829,7 @@ function ManageStudents() {
                     ? `No students found matching "${searchQuery}"`
                     : viewMode === "active"
                     ? "No active students found"
-                    : "No archived students found"}
+                    : "No inactive students found"}
                 </TableCell>
               </TableRow>
             )}

@@ -205,6 +205,19 @@ export const getTutorProgressSummary = async (schoolId?: string): Promise<TutorP
   return response.data;
 };
 
+// Get tutor dashboard extra stats
+export const getTutorDashboardStats = async (schoolId?: string): Promise<{
+  inactive: number;
+  proficient: number;
+  progressing: number;
+  notProgressing: number;
+}> => {
+  const params: any = {};
+  if (schoolId) params.schoolId = schoolId;
+  const response = await authAxios.get(`${baseUrl}/tutor/dashboard-stats`, { params });
+  return response.data;
+};
+
 // Get students ready for level transition assessment
 export const getStudentsReadyForAssessment = async (
   cohortId: string

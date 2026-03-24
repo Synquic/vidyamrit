@@ -37,7 +37,7 @@ export const routePermissions: Record<string, UserRole[]> = {
   [DASHBOARD_ROUTE_PATHS.managePrograms]: [UserRole.SUPER_ADMIN],
   [DASHBOARD_ROUTE_PATHS.views]: [UserRole.SUPER_ADMIN],
   [DASHBOARD_ROUTE_PATHS.viewDashboard]: [UserRole.VIEW_USER],
-  [DASHBOARD_ROUTE_PATHS.reports]: [UserRole.SUPER_ADMIN],
+  [DASHBOARD_ROUTE_PATHS.reports]: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
   [DASHBOARD_ROUTE_PATHS.testReports]: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
   [DASHBOARD_ROUTE_PATHS.testReport]: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
 };

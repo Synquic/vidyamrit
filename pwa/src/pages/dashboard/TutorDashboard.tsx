@@ -1,27 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router";
 import {
   Users,
   GraduationCap,
-  AlertTriangle,
-  TrendingUp,
-  ArrowRight,
   LayoutDashboard,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getTutorProgressSummary,
+  getTutorDashboardStats,
   TutorProgressSummary,
 } from "@/services/progress";
 import { getTutorAvgAttendance } from "@/services/attendance";
 import { useAuth } from "@/hooks/useAuth";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { toast } from "sonner";
-import { Calendar } from "lucide-react";
+import { Calendar, UserX, Award, TrendingDown, CheckCircle } from "lucide-react";
 
 export default function TutorDashboard() {
   const { user } = useAuth();
@@ -29,6 +23,7 @@ export default function TutorDashboard() {
 
   const [progressData, setProgressData] = useState<TutorProgressSummary[]>([]);
   const [avgAttendance, setAvgAttendance] = useState<number>(0);
+  const [dashboardStats, setDashboardStats] = useState({ inactive: 0, proficient: 0, progressing: 0, notProgressing: 0 });
   const [loadingProgress, setLoadingProgress] = useState(true);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
 
@@ -39,6 +34,7 @@ export default function TutorDashboard() {
         : undefined;
     fetchProgressData(schoolId);
     fetchAvgAttendance(schoolId);
+    fetchDashboardStats(schoolId);
   }, [selectedSchool, isSchoolContextActive]);
 
   const fetchProgressData = async (schoolId?: string) => {
@@ -54,10 +50,19 @@ export default function TutorDashboard() {
     }
   };
 
+  const fetchDashboardStats = async (schoolId?: string) => {
+    try {
+      const data = await getTutorDashboardStats(schoolId);
+      setDashboardStats(data);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    }
+  };
+
   const fetchAvgAttendance = async (schoolId?: string) => {
     try {
       setLoadingAttendance(true);
-      const data = await getTutorAvgAttendance(7, schoolId);
+      const data = await getTutorAvgAttendance(0, schoolId);
       setAvgAttendance(data.avgAttendanceRate);
     } catch (error) {
       console.error("Error fetching avg attendance:", error);
@@ -86,8 +91,8 @@ export default function TutorDashboard() {
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-5 w-48" />
         {/* Skeleton for stats */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          {[...Array(3)].map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[...Array(7)].map((_, i) => (
             <Skeleton key={i} className="h-28 sm:h-32 rounded-2xl" />
           ))}
         </div>
@@ -113,7 +118,7 @@ export default function TutorDashboard() {
       </div>
 
       {/* Section 1: Quick Stats */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Students */}
         <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-2xl">
           <CardContent className="p-4 sm:p-6">
@@ -164,150 +169,86 @@ export default function TutorDashboard() {
                   {avgAttendance}%
                 </p>
                 <p className="text-sm sm:text-base text-green-600/80 font-medium mt-0.5">
-                  Avg Attendance (7d)
+                  Avg Attendance
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Groups Progress */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6">
-        {/* My Groups Progress */}
-        <Card className="rounded-2xl shadow-sm border-gray-100">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-                Groups Progress
-              </CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link
-                  to="/progress/tutor"
-                  className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1"
-                >
-                  View All <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {progressData.length === 0 ? (
-              <div className="text-center py-8">
-                <TrendingUp className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-base">
-                  No groups assigned yet
+        {/* Inactive Students */}
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-gray-500/10">
+                <UserX className="h-6 w-6 sm:h-7 sm:w-7 text-gray-600" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-2xl sm:text-3xl font-bold text-gray-700">
+                  {dashboardStats.inactive}
+                </p>
+                <p className="text-sm sm:text-base text-gray-600/80 font-medium mt-0.5">
+                  Inactive
                 </p>
               </div>
-            ) : (
-              progressData.map((summary) => {
-                const {
-                  progressCounts,
-                  totalStudents,
-                  studentsNeedingAttention,
-                } = summary.summary;
-                const onTrackPercent =
-                  totalStudents > 0
-                    ? Math.round(
-                        (progressCounts.green / totalStudents) * 100
-                      )
-                    : 0;
+            </div>
+          </CardContent>
+        </Card>
 
-                // Determine dominant status color
-                let statusColor = "bg-green-500";
-                let statusBg = "bg-green-50 border-green-200";
-                if (progressCounts.red > 0) {
-                  statusColor = "bg-red-500";
-                  statusBg = "bg-red-50 border-red-200";
-                } else if (progressCounts.orange > 0) {
-                  statusColor = "bg-orange-500";
-                  statusBg = "bg-orange-50 border-orange-200";
-                } else if (progressCounts.yellow > 0) {
-                  statusColor = "bg-yellow-500";
-                  statusBg = "bg-yellow-50 border-yellow-200";
-                }
+        {/* Proficient Students */}
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-amber-500/10">
+                <Award className="h-6 w-6 sm:h-7 sm:w-7 text-amber-600" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-2xl sm:text-3xl font-bold text-amber-700">
+                  {dashboardStats.proficient}
+                </p>
+                <p className="text-sm sm:text-base text-amber-600/80 font-medium mt-0.5">
+                  Proficient
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                return (
-                  <Link
-                    key={summary.cohort._id}
-                    to={`/progress/cohort/${summary.cohort._id}`}
-                    className={`block p-3 sm:p-4 rounded-xl border transition-all hover:shadow-md ${statusBg}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className={`w-3 h-3 rounded-full flex-shrink-0 ${statusColor}`}
-                        />
-                        <p className="font-semibold text-base sm:text-lg text-gray-900 truncate">
-                          {summary.cohort.name}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs sm:text-sm ml-2 flex-shrink-0"
-                      >
-                        {totalStudents} students
-                      </Badge>
-                    </div>
+        {/* Progressing */}
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-500/10">
+                <CheckCircle className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-600" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-700">
+                  {dashboardStats.progressing}
+                </p>
+                <p className="text-sm sm:text-base text-emerald-600/80 font-medium mt-0.5">
+                  Progressing
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                    {/* Progress bar */}
-                    <div className="mb-2">
-                      <div className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>On track</span>
-                        <span className="font-medium">{onTrackPercent}%</span>
-                      </div>
-                      <Progress value={onTrackPercent} className="h-2" />
-                    </div>
-
-                    {/* Status counts */}
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-green-700 font-medium">
-                          {progressCounts.green}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                        <span className="text-yellow-700 font-medium">
-                          {progressCounts.yellow}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-orange-500" />
-                        <span className="text-orange-700 font-medium">
-                          {progressCounts.orange}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
-                        <span className="text-red-700 font-medium">
-                          {progressCounts.red}
-                        </span>
-                      </span>
-                      {studentsNeedingAttention > 0 && (
-                        <span className="ml-auto text-orange-600 font-medium flex items-center gap-1">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          {studentsNeedingAttention} need help
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Level info */}
-                    {summary.cohort.program && (
-                      <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
-                        <span>
-                          {summary.cohort.program.subject} - Level{" "}
-                          {summary.cohort.currentLevel || 1}/
-                          {summary.cohort.program.totalLevels}
-                        </span>
-                      </div>
-                    )}
-                  </Link>
-                );
-              })
-            )}
+        {/* Not Progressing */}
+        <Card className="border-0 shadow-sm bg-gradient-to-br from-red-50 to-red-100/50 rounded-2xl">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col items-center sm:items-start gap-2">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-red-500/10">
+                <TrendingDown className="h-6 w-6 sm:h-7 sm:w-7 text-red-600" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-2xl sm:text-3xl font-bold text-red-700">
+                  {dashboardStats.notProgressing}
+                </p>
+                <p className="text-sm sm:text-base text-red-600/80 font-medium mt-0.5">
+                  Not Progressing
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

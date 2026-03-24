@@ -1,4 +1,5 @@
 import { Response } from "express";
+import mongoose from "mongoose";
 import { AuthRequest } from "../types/auth";
 import Cohort from "../models/CohortModel";
 import Program from "../models/ProgramModel";
@@ -200,6 +201,32 @@ export const conductLevelAssessment = async (req: AuthRequest, res: Response) =>
       }
 
       logger.info(`Student ${studentId} passed Level ${currentLevel} assessment with ${score.toFixed(1)}%. Moving to Level ${nextLevel}.`);
+
+      // Check FLN: if student passed the last level of the program
+      if (currentLevel >= program.totalLevels) {
+        try {
+          const studentDoc = await Student.findById(studentId);
+          if (studentDoc) {
+            const programId = cohort.programId._id || cohort.programId;
+            const alreadyFLN = studentDoc.fln?.some(
+              (f: any) => f.program.toString() === programId.toString()
+            );
+            if (!alreadyFLN) {
+              studentDoc.fln = studentDoc.fln || [];
+              studentDoc.fln.push({
+                program: new mongoose.Types.ObjectId(programId.toString()),
+                subject: program.subject || "",
+                source: "level_test",
+                clearedAt: assessmentDate,
+              });
+              await studentDoc.save();
+              logger.info(`FLN set for student ${studentId} via level test - Program: ${programId}`);
+            }
+          }
+        } catch (flnError) {
+          logger.warn(`Failed to set FLN for student ${studentId}:`, flnError);
+        }
+      }
     } else {
       // Student failed - increment failure count
       const newFailureCount = (currentProgress.failureCount || 0) + 1;

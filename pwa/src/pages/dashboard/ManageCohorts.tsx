@@ -11,6 +11,8 @@ import {
   generateOptimalCohorts,
   previewOptimalCohorts,
   createCohortsFromPlan,
+  autoGenerateGroups,
+  resetGroups,
   type Cohort,
   type CreateCohortDTO,
   type UpdateCohortDTO,
@@ -68,6 +70,8 @@ import {
   User,
   Play,
   Clock,
+  Zap,
+  RotateCcw,
 } from "lucide-react";
 
 function ManageCohorts() {
@@ -81,6 +85,12 @@ function ManageCohorts() {
   const [startingCohort, setStartingCohort] = useState<Cohort | null>(null);
   const [customStartDate, setCustomStartDate] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isAutoPreviewOpen, setIsAutoPreviewOpen] = useState(false);
+  const [autoPreviewData, setAutoPreviewData] = useState<any>(null);
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [editableCohorts, setEditableCohorts] = useState<PreviewCohort[]>([]);
@@ -144,7 +154,7 @@ function ManageCohorts() {
   // Fetch programs for cohort generation
   const { data: programsResponse } = useQuery({
     queryKey: ["programs"],
-    queryFn: () => programsService.getPrograms({ isActive: "true" }),
+    queryFn: () => programsService.getPrograms({ isActive: "true", schoolId: selectedSchool?._id }),
   });
 
   const programs = useMemo(
@@ -162,7 +172,7 @@ function ManageCohorts() {
   );
 
   // Filter cohorts to show only those from the selected school (additional safety filter)
-  const filteredCohorts =
+  const allSchoolCohorts =
     cohorts?.filter((cohort) => {
       const cohortSchoolId =
         typeof cohort.schoolId === "string"
@@ -170,6 +180,10 @@ function ManageCohorts() {
           : cohort.schoolId?._id;
       return cohortSchoolId === selectedSchool?._id;
     }) || [];
+
+  const filteredCohorts = allSchoolCohorts.filter((c) => c.status !== "archived");
+  const archivedCohorts = allSchoolCohorts.filter((c) => c.status === "archived");
+  const displayedCohorts = activeTab === "active" ? filteredCohorts : archivedCohorts;
 
   // Create cohort mutation
   const createMutation = useMutation({
@@ -808,34 +822,56 @@ function ManageCohorts() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Manage Groups</h1>
-          <p className="text-muted-foreground">
-            Create and manage student groups
-            {selectedSchool && (
-              <span className="ml-2 text-primary font-medium">
-                • {selectedSchool.name}
-              </span>
-            )}
-          </p>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-2xl sm:text-3xl font-bold">Manage Groups</h1>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {cohortStatus && cohortStatus.studentsAwaitingAssignment > 0 && (
-            <Button
-              onClick={() => setIsGenerateModalOpen(true)}
-              disabled={isGenerating || programsWithAssessments.length === 0}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              {isGenerating ? "Generating..." : `Generate Groups`}
-            </Button>
-          )}
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
+            variant="outline"
+            size="sm"
+            disabled={isAutoGenerating || !selectedSchool?._id}
+            onClick={async () => {
+              if (!selectedSchool?._id) return;
+              setIsAutoGenerating(true);
+              try {
+                const result = await autoGenerateGroups(selectedSchool._id, true);
+                if (result.created.length === 0 && result.updated.length === 0) {
+                  toast.info("No new groups to create. All students are already in appropriate groups.");
+                } else {
+                  setAutoPreviewData(result);
+                  setIsAutoPreviewOpen(true);
+                }
+              } catch (error: any) {
+                toast.error(getApiErrorMessage(error, "Failed to preview groups"));
+              } finally {
+                setIsAutoGenerating(false);
+              }
+            }}
+          >
+            {isAutoGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="mr-2 h-4 w-4" />
+            )}
+            {isAutoGenerating ? "Loading..." : "Auto Generate"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-red-300 text-red-600 hover:bg-red-50"
+            disabled={isResetting || !selectedSchool?._id}
+            onClick={() => setIsResetDialogOpen(true)}
+          >
+            {isResetting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="mr-2 h-4 w-4" />
+            )}
+            {isResetting ? "Resetting..." : "Reset"}
+          </Button>
+          <Button
+            size="sm"
             onClick={() => {
               setFormData((prev) => ({
                 ...prev,
@@ -888,11 +924,7 @@ function ManageCohorts() {
           {cohortStatus.studentsAwaitingAssignment > 0 && (
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-sm text-blue-800">
-                <strong>💡 Recommendation:</strong> Use automated group
-                generation for most efficient grouping. Our algorithm creates
-                optimal groups based on test levels and your capacity
-                limit. Choose a strategy (Low First or High First) and set the
-                maximum number of active groups you can teach simultaneously.
+                <strong>💡 Recommendation:</strong> Use "Auto Generate" to automatically create groups based on students' baseline test levels. Groups are organized by subject and level for easy management.
               </p>
             </div>
           )}
@@ -1031,8 +1063,26 @@ function ManageCohorts() {
           </Card>
         )}
 
+      {/* Active/Inactive Tabs */}
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={activeTab === "active" ? "default" : "outline"}
+          onClick={() => setActiveTab("active")}
+          size="sm"
+        >
+          Active Groups ({filteredCohorts.length})
+        </Button>
+        <Button
+          variant={activeTab === "inactive" ? "default" : "outline"}
+          onClick={() => setActiveTab("inactive")}
+          size="sm"
+        >
+          Inactive ({archivedCohorts.length})
+        </Button>
+      </div>
+
       {/* Cohorts Grid View */}
-      {filteredCohorts.length === 0 ? (
+      {displayedCohorts.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -1057,7 +1107,7 @@ function ManageCohorts() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCohorts.map((cohort) => {
+          {displayedCohorts.map((cohort) => {
             const studentCount = Array.isArray(cohort.students)
               ? cohort.students.length
               : 0;
@@ -1321,7 +1371,13 @@ function ManageCohorts() {
               <Label>Students</Label>
               <ScrollArea className="h-48 border rounded-md p-2">
                 <div className="space-y-2">
-                  {filteredStudents.map((student) => {
+                  {filteredStudents.filter((student: any) => {
+                    // Hide students who are proficient (FLN) in the selected program
+                    if (formData.programId && student.fln?.length > 0) {
+                      return !student.fln.some((f: any) => f.program?.toString() === formData.programId);
+                    }
+                    return true;
+                  }).map((student) => {
                     const studentLevels = getStudentLevels(student._id);
                     return (
                       <div
@@ -2401,6 +2457,137 @@ function ManageCohorts() {
                   Approve & Create Groups
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Reset Groups Confirmation Dialog */}
+      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All Groups?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will:
+              <ul className="list-disc ml-4 mt-2 space-y-1">
+                <li>Archive all active and pending groups</li>
+                <li>Reset all students&apos; assigned levels (knowledgeLevel)</li>
+                <li>Students will need to take baseline tests again</li>
+              </ul>
+              <p className="mt-2 font-semibold text-red-600">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={async () => {
+                if (!selectedSchool?._id) return;
+                setIsResetting(true);
+                try {
+                  const result = await resetGroups(selectedSchool._id);
+                  toast.success(`${result.groupsArchived} groups archived, ${result.studentsReset} students reset.`);
+                  queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+                } catch (error: any) {
+                  toast.error(getApiErrorMessage(error, "Failed to reset groups"));
+                } finally {
+                  setIsResetting(false);
+                }
+              }}
+            >
+              Reset All Groups
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Auto Generate Preview Dialog */}
+      <Dialog open={isAutoPreviewOpen} onOpenChange={setIsAutoPreviewOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Auto Generate Preview</DialogTitle>
+            <DialogDescription>
+              Review the groups that will be created or updated.
+            </DialogDescription>
+          </DialogHeader>
+
+          {autoPreviewData && (
+            <div className="space-y-4">
+              {autoPreviewData.created.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-green-700 mb-2">
+                    New Groups ({autoPreviewData.created.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {autoPreviewData.created.map((g: any, i: number) => (
+                      <div key={i} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{g.name}</span>
+                          <Badge variant="secondary">{g.studentCount} students</Badge>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {g.students.map((s: any) => s.name).join(", ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {autoPreviewData.updated.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-blue-700 mb-2">
+                    Updated Groups ({autoPreviewData.updated.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {autoPreviewData.updated.map((g: any, i: number) => (
+                      <div key={i} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{g.name}</span>
+                          <Badge variant="secondary">+{g.newStudentCount} students</Badge>
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {g.students.map((s: any) => s.name).join(", ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 bg-gray-50 rounded-lg text-sm">
+                <strong>Total:</strong> {autoPreviewData.created.length} new groups, {autoPreviewData.updated.length} updated, {autoPreviewData.studentsAdded} students
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsAutoPreviewOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={isAutoGenerating}
+              onClick={async () => {
+                if (!selectedSchool?._id) return;
+                setIsAutoGenerating(true);
+                try {
+                  await autoGenerateGroups(selectedSchool._id, false);
+                  toast.success("Groups created successfully!");
+                  queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+                  setIsAutoPreviewOpen(false);
+                  setAutoPreviewData(null);
+                } catch (error: any) {
+                  toast.error(getApiErrorMessage(error, "Failed to create groups"));
+                } finally {
+                  setIsAutoGenerating(false);
+                }
+              }}
+            >
+              {isAutoGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle className="mr-2 h-4 w-4" />
+              )}
+              {isAutoGenerating ? "Creating..." : "Confirm & Create"}
             </Button>
           </DialogFooter>
         </DialogContent>

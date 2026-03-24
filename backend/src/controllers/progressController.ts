@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../types/auth";
 import Cohort, { ICohort } from "../models/CohortModel";
 import Program from "../models/ProgramModel";
+import Student from "../models/StudentModel";
 import logger from "../utils/logger";
 
 // Update student progress after baseline assessment
@@ -750,5 +751,74 @@ export const getCohortTimeline = async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     logger.error("Error fetching cohort timeline:", error);
     res.status(500).json({ error: "Failed to load cohort timeline. Please try again." });
+  }
+};
+
+// Get tutor dashboard extra stats (inactive, proficient, progressing/not progressing)
+export const getTutorDashboardStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const tutorId = req.user?._id;
+    const { schoolId } = req.query;
+    const UserRole = require("../configs/roles").UserRole;
+
+    // Build cohort query - school level (all active cohorts)
+    const cohortQuery: any = { status: 'active' };
+    const userSchoolIdForCohorts = (req.user?.schoolId as any)?._id?.toString() || req.user?.schoolId?.toString() || schoolId;
+    if (userSchoolIdForCohorts) {
+      cohortQuery.schoolId = userSchoolIdForCohorts;
+    }
+
+    // Get cohorts with students populated
+    const cohorts = await Cohort.find(cohortQuery).populate('students');
+
+    // Collect unique student IDs from tutor's cohorts
+    const studentIds = new Set<string>();
+    cohorts.forEach((cohort: any) => {
+      cohort.students?.forEach((s: any) => {
+        studentIds.add(s._id.toString());
+      });
+    });
+
+    const studentIdArray = Array.from(studentIds);
+
+    // Get students with fln and isArchived data (cohort students for inactive)
+    const students = await Student.find(
+      { _id: { $in: studentIdArray } },
+      { isArchived: 1 }
+    );
+
+    const inactive = students.filter(s => s.isArchived === true).length;
+
+    // Get proficient count from ALL school students (level_test FLN only)
+    const userSchoolId = (req.user?.schoolId as any)?._id?.toString() || req.user?.schoolId?.toString() || schoolId;
+    const schoolQuery: any = {};
+    if (userSchoolId) {
+      schoolQuery.school = userSchoolId;
+    }
+    schoolQuery["fln.source"] = "level_test";
+    const proficient = await Student.countDocuments(schoolQuery);
+
+    // Calculate progressing/not progressing from cohorts
+    let progressing = 0;
+    let notProgressing = 0;
+    cohorts.forEach((cohort: any) => {
+      if (cohort.progress && cohort.progress.length > 0) {
+        cohort.progress.forEach((p: any) => {
+          if (p.status === 'green') {
+            progressing++;
+          } else {
+            notProgressing++;
+          }
+        });
+      } else {
+        // No progress data = all students are progressing (default green)
+        progressing += cohort.students?.length || 0;
+      }
+    });
+
+    res.json({ inactive, proficient, progressing, notProgressing });
+  } catch (error: any) {
+    logger.error("Error fetching tutor dashboard stats:", error);
+    res.status(500).json({ error: "Failed to load dashboard stats" });
   }
 };

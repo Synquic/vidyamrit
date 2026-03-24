@@ -64,6 +64,7 @@ export interface IKnowledgeLevel {
 export interface IFLN {
   program: mongoose.Types.ObjectId;
   subject: string;
+  source: "baseline" | "level_test";
   clearedAt: Date;
 }
 
@@ -145,6 +146,7 @@ const StudentSchema = new mongoose.Schema({
     {
       program: { type: mongoose.Schema.Types.ObjectId, ref: "Program", required: true },
       subject: { type: String, required: true, trim: true },
+      source: { type: String, enum: ["baseline", "level_test"], default: "baseline" },
       clearedAt: { type: Date, default: Date.now },
     },
   ],

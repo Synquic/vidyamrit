@@ -150,15 +150,6 @@ export function BaselineAssessmentModal({
     return programs[currentProgramIndex];
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shuffle = (arr: any[]) => {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  };
 
   const ensureShuffled = (programId: string, level: number) => {
     // ✅ If level exceeds program levels – return empty array and stop later
@@ -174,14 +165,16 @@ export function BaselineAssessmentModal({
       ? lvl.assessmentQuestions
       : [];
 
-    const shuffled = shuffle(questions);
+    // Manual mode: show all questions in original order (no shuffle)
+    // Auto mode: show all questions in original order (no shuffle, no limit)
+    const orderedQuestions = [...questions];
 
     setShuffledCache((prev) => ({
       ...prev,
-      [programId]: { ...(prev[programId] || {}), [level]: shuffled },
+      [programId]: { ...(prev[programId] || {}), [level]: orderedQuestions },
     }));
 
-    return shuffled;
+    return orderedQuestions;
   };
 
   const getCurrentQuestion = () => {
@@ -255,22 +248,18 @@ export function BaselineAssessmentModal({
       return;
     }
 
-    // AUTOMATIC MODE (existing logic)
-    // Termination condition: 3 wrong answers in current level → end test
-    if (wrong >= 3) {
-      await saveCurrentLevelReport(false);
-      await finalizeProgram();
-      return;
-    }
+    // AUTOMATIC MODE - 80% threshold logic
+    const activeForEval = getActiveProgram();
+    const levelQuestions = activeForEval ? ensureShuffled(activeForEval._id, currentLevel) : [];
+    const totalLevelQ = levelQuestions.length;
+    const passThreshold = Math.ceil(totalLevelQ * 0.8); // 80% of total questions
+    const maxWrongAllowed = totalLevelQ - passThreshold; // max wrong before 80% impossible
 
-    // Promotion condition: 8 correct answers → move to next level
-    if (correct >= 8) {
-      // Save current level as passed
+    // PASS: 80% correct reached → skip remaining, next level
+    if (correct >= passThreshold) {
       await saveCurrentLevelReport(true);
-      // Student passed current level, save it as last completed
       setLastCompletedLevel(currentLevel);
       setCurrentLevel((l) => l + 1);
-      // Reset counters for new level
       levelQuestionsAnswered.current = 0;
       levelCorrectAnswers.current = 0;
       levelWrongAnswers.current = 0;
@@ -278,23 +267,25 @@ export function BaselineAssessmentModal({
       return;
     }
 
-    // After 10 questions: if 8+ correct → promote, if <8 correct → end test
-    if (answered >= 10) {
-      if (correct >= 8) {
-        // Save current level as passed
+    // FAIL: too many wrong, 80% impossible now
+    if (wrong > maxWrongAllowed) {
+      await saveCurrentLevelReport(false);
+      await finalizeProgram();
+      return;
+    }
+
+    // All questions answered but didn't hit 80%
+    if (answered >= totalLevelQ) {
+      if (correct >= passThreshold) {
         await saveCurrentLevelReport(true);
-        // Student passed current level, save it as last completed
         setLastCompletedLevel(currentLevel);
-        // Promote to next level
         setCurrentLevel((l) => l + 1);
         levelQuestionsAnswered.current = 0;
         levelCorrectAnswers.current = 0;
         levelWrongAnswers.current = 0;
         setShowQuickComplete(false);
       } else {
-        // Save current level as failed
         await saveCurrentLevelReport(false);
-        // Stay at current level and end test
         await finalizeProgram();
       }
       return;
@@ -305,14 +296,20 @@ export function BaselineAssessmentModal({
     const active = getActiveProgram();
     if (!active) return;
 
-    // lastCompletedLevel is the index of the last level they passed
-    // If they passed level 1 (index 0), their knowledge level is 1
-    // If they didn't pass any level (lastCompletedLevel === -1), they're at level 0 (displayed as level 1)
-    // Example: Pass level 1 (index 0) → lastCompletedLevel = 0 → knowledge level = 1
-    //          Fail level 2 → lastCompletedLevel still 0 → knowledge level = 1
-    // overrideLevel: used in manual assign - teacher assigns current level directly
-    const effectiveLevel = overrideLevel !== undefined ? overrideLevel : lastCompletedLevel;
-    const knowledgeLevel = effectiveLevel >= 0 ? effectiveLevel + 1 : 1;
+    // overrideLevel: used in manual assign - teacher assigns current level directly (0-indexed)
+    // Manual: teacher assigns at currentLevel → knowledgeLevel = currentLevel + 1
+    // Auto: lastCompletedLevel is last passed level (0-indexed) → knowledgeLevel = lastCompletedLevel + 2
+    //   Example: Pass level 1 (index 0) → Fail level 2 → knowledgeLevel = 0 + 2 = 2 (Level 2)
+    //   No level passed: lastCompletedLevel = -1 → knowledgeLevel = 1 (Level 1)
+    const totalLevels = getActiveProgram()?.levels?.length || 1;
+    let knowledgeLevel: number;
+    if (overrideLevel !== undefined) {
+      // Manual assign: teacher chose this level
+      knowledgeLevel = overrideLevel + 1;
+    } else {
+      // Auto mode: assign next level after what they passed, capped at max
+      knowledgeLevel = lastCompletedLevel >= 0 ? Math.min(lastCompletedLevel + 2, totalLevels) : 1;
+    }
     const result: TestResult = {
       subject: active.subject,
       level: knowledgeLevel, // Already 1-indexed
@@ -384,27 +381,27 @@ export function BaselineAssessmentModal({
         return;
       }
 
-      // AUTOMATIC MODE (existing logic)
-      // Check termination: 3 wrong in current level → end test immediately
-      if (wrong >= 3) {
+      // AUTOMATIC MODE - 80% threshold logic
+      const activeForCheck = getActiveProgram();
+      const levelQs = activeForCheck ? ensureShuffled(activeForCheck._id, currentLevel) : [];
+      const totalQ = levelQs.length;
+      const passNeeded = Math.ceil(totalQ * 0.8);
+      const maxWrong = totalQ - passNeeded;
+
+      // PASS: 80% correct reached
+      if (correct >= passNeeded) {
         await evaluateLevel();
         return;
       }
 
-      // After first 5 questions: if all 5 correct → promote immediately
-      if (answered === 5 && correct === 5) {
+      // FAIL: too many wrong, 80% impossible
+      if (wrong > maxWrong) {
         await evaluateLevel();
         return;
       }
 
-      // Check promotion: 8 correct → promote immediately (can happen at any point)
-      if (correct >= 8) {
-        await evaluateLevel();
-        return;
-      }
-
-      // After 10 questions: evaluate final result (promote if 8+, end if <8)
-      if (answered === 10) {
+      // All questions done
+      if (answered >= totalQ) {
         await evaluateLevel();
         return;
       }
@@ -589,9 +586,7 @@ export function BaselineAssessmentModal({
                 <div className="flex gap-2">
                   <Badge variant="outline" className="text-xs px-3 py-1">
                     Q{levelQuestionsAnswered.current + 1}
-                    {testPromotionType === "manual"
-                      ? `/${active?.levels?.[currentLevel]?.assessmentQuestions?.length || "?"}`
-                      : levelQuestionsAnswered.current < 5 ? "/5" : "/10"}
+                    /{active?.levels?.[currentLevel]?.assessmentQuestions?.length || "?"}
                   </Badge>
                   <Badge variant="outline" className="text-xs px-3 py-1">
                     ✓ {levelCorrectAnswers.current} | ✗{" "}

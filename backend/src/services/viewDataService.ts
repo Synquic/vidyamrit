@@ -851,12 +851,45 @@ export async function aggregateProgressData(
         const students = await Student.find(studentQuery)
           .select("name knowledgeLevel fln")
           .lean();
+
+        // Fetch active cohorts to get progress status
+        const activeCohortQuery: mongoose.FilterQuery<any> = { status: "active" };
+        if (studentQuery.school) {
+          activeCohortQuery.schoolId = studentQuery.school;
+        }
+        const activeCohorts = await Cohort.find(activeCohortQuery)
+          .select("students progress")
+          .lean();
+
+        // Build student progress map from cohort data
+        const studentProgressMap: { [studentId: string]: string } = {};
+        for (const cohort of activeCohorts) {
+          // Students in cohort but no progress entry = default progressing (new students)
+          if (cohort.students && Array.isArray(cohort.students)) {
+            for (const s of cohort.students as any[]) {
+              const sid = s._id?.toString() || s.toString();
+              if (sid && !studentProgressMap[sid]) {
+                studentProgressMap[sid] = "progressing"; // default for cohort students
+              }
+            }
+          }
+          // Override with actual progress data
+          if (cohort.progress && Array.isArray(cohort.progress)) {
+            for (const p of cohort.progress as any[]) {
+              const sid = p.studentId?.toString();
+              if (sid && p.status) {
+                studentProgressMap[sid] = p.status === "green" ? "progressing" : "not_progressing";
+              }
+            }
+          }
+        }
+
         result.student = students.map((s: any) => {
           const latestLevel =
             s.knowledgeLevel && s.knowledgeLevel.length > 0
               ? s.knowledgeLevel[s.knowledgeLevel.length - 1].level
               : 0;
-          const status = latestLevel > 1 ? "progressing" : latestLevel === 1 ? "not_progressing" : "not_assessed";
+          const status = studentProgressMap[s._id.toString()] || (latestLevel > 0 ? "not_assessed" : "not_assessed");
           return {
             studentId: s._id,
             name: s.name,
@@ -865,6 +898,7 @@ export async function aggregateProgressData(
             fln: (s.fln || []).map((f: any) => ({
               program: f.program,
               subject: f.subject,
+              source: f.source || "baseline",
               clearedAt: f.clearedAt,
             })),
           };

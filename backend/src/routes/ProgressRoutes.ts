@@ -1,8 +1,9 @@
 import express from "express";
-import { 
+import {
   updateStudentProgress,
   getCohortProgress,
   getTutorProgressSummary,
+  getTutorDashboardStats,
   getStudentsReadyForAssessment,
   getStudentProgressHistory,
   recordAttendanceProgress,
@@ -47,6 +48,12 @@ router.get("/cohort/:cohortId/student/:studentId/history",
 router.post("/cohort/:cohortId/attendance",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   recordAttendanceProgress
+);
+
+// Get tutor dashboard extra stats
+router.get("/tutor/dashboard-stats",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  getTutorDashboardStats
 );
 
 // Get cohort timeline and progress bar data

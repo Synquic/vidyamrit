@@ -198,8 +198,9 @@ const ProgramLevelSchema = new Schema<IProgramLevel>(
     },
     timeframe: {
       type: Number,
-      required: true,
+      required: false,
       min: 1,
+      default: 2,
     },
     timeframeUnit: {
       type: String,
