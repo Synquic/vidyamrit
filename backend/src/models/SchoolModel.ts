@@ -14,6 +14,8 @@ export interface ISchool extends Document {
   phone: string;
   block?: string;
   testPromotionType: "automatic" | "manual";
+  groupFormat: "common" | "class_wise";
+  programs: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +42,15 @@ const SchoolSchema = new mongoose.Schema(
       enum: ["automatic", "manual"],
       default: "automatic",
     },
+    groupFormat: {
+      type: String,
+      enum: ["common", "class_wise"],
+      default: "common",
+    },
+    programs: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Program",
+    }],
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },

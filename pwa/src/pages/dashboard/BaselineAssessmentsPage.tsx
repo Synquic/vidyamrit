@@ -52,7 +52,6 @@ import {
 } from "@/components/ui/table";
 import {
   Plus,
-  Users,
   BookOpen,
   Loader2,
   XCircle,
@@ -100,9 +99,6 @@ export default function BaselineAssessmentsPage() {
   });
   const [isCreating, setIsCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [studentSelectSearch, setStudentSelectSearch] = useState("");
-  const [isStudentSelectOpen, setIsStudentSelectOpen] = useState(false);
-  console.log(allAssessments);
 
   useEffect(() => {
     fetchPrograms();
@@ -180,7 +176,7 @@ export default function BaselineAssessmentsPage() {
 
   const fetchPrograms = async () => {
     try {
-      const response = await programsService.getPrograms({ isActive: "true" });
+      const response = await programsService.getPrograms({ isActive: "true", schoolId: selectedSchool?._id });
       setPrograms(response.programs);
     } catch {
       setError("Failed to fetch programs");
@@ -509,9 +505,6 @@ export default function BaselineAssessmentsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Baseline Tests</h1>
-            <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-              Create students and conduct baseline tests
-            </p>
           </div>
           <Dialog open={createStudentOpen} onOpenChange={setCreateStudentOpen}>
             <DialogTrigger asChild>
@@ -775,185 +768,6 @@ export default function BaselineAssessmentsPage() {
           )}
 
           {/* Student Selection - Only show if school is selected */}
-          {selectedSchool?._id && (
-            <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="mr-2 h-5 w-5" />
-                    Select Student for Test
-                  </CardTitle>
-                  <CardDescription>
-                    Choose a student who hasn't been tested today
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {students.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <h3 className="mt-4 text-lg font-semibold">
-                        No students available
-                      </h3>
-                      <p className="text-muted-foreground mt-2">
-                        Create your first student to start tests
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label>
-                        All Students ({students.length}) - Green: Already
-                        tested today
-                      </Label>
-                      <Select
-                        value={selectedStudent?._id || ""}
-                        open={isStudentSelectOpen}
-                        onOpenChange={(open) => {
-                          setIsStudentSelectOpen(open);
-                          if (!open) {
-                            setStudentSelectSearch(""); // Clear search when dropdown closes
-                          }
-                        }}
-                        onValueChange={(value) => {
-                          const student = students.find((s) => s._id === value);
-                          setSelectedStudent(student || null);
-                          setIsStudentSelectOpen(false);
-                          if (student) setModalOpen(true);
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="-- Select a student to test --" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <div className="p-2 border-b sticky top-0 bg-background z-10">
-                            <div className="relative">
-                              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                placeholder="Search by name, roll..."
-                                value={studentSelectSearch}
-                                onChange={(e) => {
-                                  setStudentSelectSearch(e.target.value);
-                                }}
-                                className="pl-8 h-9"
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                          </div>
-                          <div className="max-h-[300px] overflow-y-auto">
-                            {(() => {
-                              // Filter students based on search query
-                              const filteredStudents = students.filter((student) => {
-                                if (!studentSelectSearch.trim()) return true;
-                                const query = studentSelectSearch.toLowerCase().trim();
-                                const name = student.name?.toLowerCase() || "";
-                                const rollNo = student.roll_no?.toLowerCase() || "";
-                                const className = student.class?.toLowerCase() || "";
-                                return (
-                                  name.includes(query) ||
-                                  rollNo.includes(query) ||
-                                  className.includes(query)
-                                );
-                              });
-
-                              if (filteredStudents.length === 0) {
-                                return (
-                                  <div className="p-4 text-center text-sm text-muted-foreground">
-                                    No students found matching "{studentSelectSearch}"
-                                  </div>
-                                );
-                              }
-
-                              return filteredStudents.map((student) => {
-                                return (
-                                  <SelectItem key={student._id} value={student._id}>
-                                    {student.name} (Roll: {student.roll_no})
-                                  </SelectItem>
-                                );
-                              });
-                            })()}
-                          </div>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {selectedStudent && (
-                    <Card className="mt-4">
-                      <CardHeader>
-                        <CardTitle className="text-lg">
-                          Selected Student
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div>
-                            <strong>{selectedStudent.name}</strong>
-                            <Badge variant="outline" className="ml-2">
-                              Roll: {selectedStudent.roll_no}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            School: {selectedStudent.schoolId.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Class: {selectedStudent.class} | Age:{" "}
-                            {selectedStudent.age}
-                          </p>
-
-                          {selectedStudent.knowledgeLevel &&
-                          selectedStudent.knowledgeLevel.length > 0 ? (
-                            <div className="mt-4">
-                              <Label className="text-sm font-medium">
-                                Test History
-                              </Label>
-                              <div className="mt-2 space-y-1">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span>Total Tests:</span>
-                                  <Badge>
-                                    {selectedStudent.knowledgeLevel.length}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span>Latest Level:</span>
-                                  <Badge variant="default">
-                                    Level{" "}
-                                    {
-                                      selectedStudent.knowledgeLevel[
-                                        selectedStudent.knowledgeLevel.length -
-                                          1
-                                      ].level
-                                    }
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span>Last Test:</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(
-                                      selectedStudent.knowledgeLevel[
-                                        selectedStudent.knowledgeLevel.length -
-                                          1
-                                      ].date
-                                    ).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="mt-4">
-                              <Badge variant="outline">
-                                No tests completed yet
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
           {/* Baseline Completion Table - Show all students with their program-wise baseline status */}
           {selectedSchool?._id &&
             students.length > 0 &&

@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       {!isViewUser && <AppSidebar />}
       <SidebarInset className={isViewUser ? "w-full" : ""}>
-        <header className="flex h-16 sm:h-16 shrink-0 items-center gap-2 sm:gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-3 sm:px-4 shadow-sm overflow-hidden">
+        <header className="flex h-16 sm:h-16 shrink-0 items-center gap-2 sm:gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-3 sm:px-4 shadow-sm overflow-visible">
           {!isViewUser && (
             <>
               {/* Desktop: icon only */}
@@ -84,7 +84,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Breadcrumb>
           <div className="flex-1 min-w-0" />
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <Notifications />
+            {!isViewUser && <Notifications />}
             <LanguageToggleButton className="h-12 sm:h-8 px-4 sm:px-2.5 text-base sm:text-xs [&_svg]:size-6 sm:[&_svg]:size-4" />
           </div>
         </header>

@@ -21,9 +21,19 @@ export const getPrograms = async (
       includeInactive = "false",
       page = "1",
       limit = "10",
+      schoolId,
     } = req.query;
 
     const filter: any = {};
+
+    // If schoolId provided, filter by school's assigned programs
+    if (schoolId) {
+      const School = require("../models/SchoolModel").default;
+      const school = await School.findById(schoolId).select("programs").lean();
+      if (school?.programs && school.programs.length > 0) {
+        filter._id = { $in: school.programs };
+      }
+    }
 
     if (subject) {
       filter.subject = subject;

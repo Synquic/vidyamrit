@@ -100,6 +100,7 @@ export interface ProgramFilters {
   includeInactive?: string;
   page?: number;
   limit?: number;
+  schoolId?: string;
 }
 
 export interface TimeLapseMatrixResponse {
@@ -169,6 +170,7 @@ class ProgramsService {
         params.append("includeInactive", filters.includeInactive);
       if (filters?.page) params.append("page", filters.page.toString());
       if (filters?.limit) params.append("limit", filters.limit.toString());
+      if (filters?.schoolId) params.append("schoolId", filters.schoolId);
 
       const queryString = params.toString();
       const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;

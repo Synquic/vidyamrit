@@ -284,3 +284,28 @@ export const markLevelComplete = async (
   });
   return response.data;
 };
+
+export const autoGenerateGroups = async (
+  schoolId: string,
+  preview: boolean = false
+): Promise<{
+  message: string;
+  preview: boolean;
+  created: { name: string; studentCount: number; students: { name: string; class: string }[] }[];
+  updated: { name: string; newStudentCount: number; students: { name: string; class: string }[] }[];
+  studentsAdded: number;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/auto-generate`, { schoolId, preview });
+  return response.data;
+};
+
+export const resetGroups = async (
+  schoolId: string
+): Promise<{
+  message: string;
+  groupsArchived: number;
+  studentsReset: number;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/reset-groups`, { schoolId });
+  return response.data;
+};
