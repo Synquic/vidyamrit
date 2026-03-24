@@ -130,6 +130,7 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
         student.fln.push({
           program: new mongoose.Types.ObjectId(programId),
           subject: programSubject,
+          source: "baseline",
           clearedAt: new Date(),
         });
         await student.save();

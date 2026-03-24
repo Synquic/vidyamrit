@@ -64,6 +64,7 @@ import {
   deleteStudent,
   Student,
 } from "@/services/students";
+import { getStudentTestReports, type TestReport } from "@/services/testReports";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
@@ -104,6 +105,13 @@ export default function IndividualStudentReport({
   } = useQuery({
     queryKey: ["student-comprehensive-report", student._id],
     queryFn: () => getStudentComprehensiveReport(student._id),
+    enabled: !!student._id,
+  });
+
+  // Fetch test reports from TestReport model
+  const { data: testReports = [] } = useQuery({
+    queryKey: ["student-test-reports", student._id],
+    queryFn: () => getStudentTestReports(student._id),
     enabled: !!student._id,
   });
 
@@ -622,22 +630,57 @@ export default function IndividualStudentReport({
               <CardHeader>
                 <CardTitle>Test History</CardTitle>
                 <CardDescription>
-                  Complete history of all tests (baseline and regular)
+                  Complete history of all tests (baseline and level tests)
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const allTests = [
+                  // Priority 1: TestReport model data (new tests with score/result)
+                  const testReportEntries = (testReports || []).map((tr: TestReport) => ({
+                    date: tr.date,
+                    subject: tr.subject,
+                    level: tr.level,
+                    type: tr.testType === "baseline" ? "Baseline" as const : "Level Test" as const,
+                    score: tr.score,
+                    passed: tr.passed,
+                    action: tr.action,
+                    totalQuestions: tr.totalQuestions,
+                    correctAnswers: tr.correctAnswers,
+                    mentor: tr.mentor,
+                    source: "testReport" as const,
+                  }));
+
+                  // Fallback: only use old data if NO TestReport entries exist
+                  const fallbackEntries = testReportEntries.length === 0 ? [
                     ...(report?.knowledgeLevelHistory || []).map((kl) => ({
-                      ...kl,
+                      date: kl.date,
+                      subject: kl.subject,
+                      level: kl.level,
                       type: "Baseline" as const,
-                      mentor: null,
+                      score: null as number | null,
+                      passed: null as boolean | null,
+                      action: null as string | null,
+                      totalQuestions: null as number | null,
+                      correctAnswers: null as number | null,
+                      mentor: null as any,
+                      source: "fallback" as const,
                     })),
                     ...(report?.assessments || []).map((a) => ({
-                      ...a,
-                      type: "Regular" as const,
+                      date: a.date,
+                      subject: a.subject,
+                      level: a.level,
+                      type: "Level Test" as const,
+                      score: null as number | null,
+                      passed: null as boolean | null,
+                      action: null as string | null,
+                      totalQuestions: null as number | null,
+                      correctAnswers: null as number | null,
+                      mentor: a.mentor,
+                      source: "fallback" as const,
                     })),
-                  ].sort(
+                  ] : [];
+
+                  const allTests = [...testReportEntries, ...fallbackEntries].sort(
                     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
                   );
 
@@ -653,28 +696,53 @@ export default function IndividualStudentReport({
                     <>
                       {/* Mobile: Card layout */}
                       <div className="sm:hidden space-y-3 max-h-[500px] overflow-y-auto">
-                        {allTests.map((assessment, idx) => (
-                          <div key={idx} className="border rounded-lg p-4 space-y-2">
+                        {allTests.map((test, idx) => (
+                          <div key={idx} className={`border rounded-lg p-4 space-y-2 ${
+                            test.passed === true ? "border-green-200 bg-green-50/50" :
+                            test.passed === false ? "border-red-200 bg-red-50/50" : ""
+                          }`}>
                             <div className="flex items-center justify-between">
-                              <span className="text-base font-medium capitalize">{assessment.subject}</span>
-                              <Badge variant="outline" className="text-sm">Level {assessment.level}</Badge>
+                              <span className="text-base font-medium capitalize">{test.subject}</span>
+                              <Badge variant="outline" className="text-sm">Level {test.level}</Badge>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-muted-foreground">
-                                {new Date(assessment.date).toLocaleDateString()}
+                                {new Date(test.date).toLocaleDateString()}
                               </span>
                               <Badge
-                                variant={assessment.type === "Baseline" ? "default" : "secondary"}
+                                variant={test.type === "Baseline" ? "default" : "secondary"}
                                 className="text-xs"
                               >
-                                {assessment.type}
+                                {test.type}
                               </Badge>
                             </div>
-                            {assessment.mentor &&
-                              typeof assessment.mentor === "object" &&
-                              assessment.mentor !== null && (
+                            {test.score !== null && (
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm">
+                                  Questions: {test.correctAnswers}/{test.totalQuestions}
+                                </span>
+                                <span className={`text-sm font-semibold ${test.score >= 80 ? "text-green-600" : "text-red-600"}`}>
+                                  {test.score.toFixed(1)}%
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              {test.passed !== null && (
+                                <Badge className={`text-xs ${test.passed ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                  {test.passed ? "Pass" : "Fail"}
+                                </Badge>
+                              )}
+                              {test.action && (
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {test.action}
+                                </Badge>
+                              )}
+                            </div>
+                            {test.mentor &&
+                              typeof test.mentor === "object" &&
+                              test.mentor !== null && (
                                 <p className="text-sm text-muted-foreground">
-                                  Mentor: {assessment.mentor.name || "Unknown"}
+                                  Mentor: {test.mentor.name || "Unknown"}
                                 </p>
                               )}
                           </div>
@@ -690,31 +758,61 @@ export default function IndividualStudentReport({
                               <TableHead>Subject</TableHead>
                               <TableHead>Level</TableHead>
                               <TableHead>Type</TableHead>
+                              <TableHead>Questions</TableHead>
+                              <TableHead>Score</TableHead>
+                              <TableHead>Result</TableHead>
+                              <TableHead>Action</TableHead>
                               <TableHead>Mentor</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {allTests.map((assessment, idx) => (
+                            {allTests.map((test, idx) => (
                               <TableRow key={idx}>
                                 <TableCell>
-                                  {new Date(assessment.date).toLocaleDateString()}
+                                  {new Date(test.date).toLocaleDateString()}
                                 </TableCell>
-                                <TableCell className="capitalize">{assessment.subject}</TableCell>
+                                <TableCell className="capitalize">{test.subject}</TableCell>
                                 <TableCell>
-                                  <Badge variant="outline">Level {assessment.level}</Badge>
+                                  <Badge variant="outline">Level {test.level}</Badge>
                                 </TableCell>
                                 <TableCell>
                                   <Badge
-                                    variant={assessment.type === "Baseline" ? "default" : "secondary"}
+                                    variant={test.type === "Baseline" ? "default" : "secondary"}
                                   >
-                                    {assessment.type}
+                                    {test.type}
                                   </Badge>
                                 </TableCell>
                                 <TableCell>
-                                  {assessment.mentor &&
-                                  typeof assessment.mentor === "object" &&
-                                  assessment.mentor !== null
-                                    ? assessment.mentor.name || "Unknown"
+                                  {test.totalQuestions !== null
+                                    ? `${test.correctAnswers}/${test.totalQuestions}`
+                                    : "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {test.score !== null ? (
+                                    <span className={`font-semibold ${test.score >= 80 ? "text-green-600" : "text-red-600"}`}>
+                                      {test.score.toFixed(1)}%
+                                    </span>
+                                  ) : "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {test.passed !== null ? (
+                                    <Badge className={`text-xs ${test.passed ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"}`}>
+                                      {test.passed ? "Pass" : "Fail"}
+                                    </Badge>
+                                  ) : "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {test.action ? (
+                                    <Badge variant="outline" className="text-xs capitalize">
+                                      {test.action}
+                                    </Badge>
+                                  ) : "-"}
+                                </TableCell>
+                                <TableCell>
+                                  {test.mentor &&
+                                  typeof test.mentor === "object" &&
+                                  test.mentor !== null
+                                    ? test.mentor.name || "Unknown"
                                     : "-"}
                                 </TableCell>
                               </TableRow>

@@ -55,6 +55,7 @@ import {
   startCohort,
 } from "@/services/cohorts";
 import { getStudents } from "@/services/students";
+import { programsService } from "@/services/programs";
 import {
   Select,
   SelectContent,
@@ -866,23 +867,6 @@ function CohortAttendanceDetail() {
     }));
   };
 
-  const markAllPresent = () => {
-    if (!cohortData) return;
-    const records: { [studentId: string]: AttendanceStatus } = {};
-    cohortData.cohort.students.forEach((student) => {
-      records[student._id] = "present";
-    });
-    setAttendanceRecords(records);
-  };
-
-  const markAllAbsent = () => {
-    if (!cohortData) return;
-    const records: { [studentId: string]: AttendanceStatus } = {};
-    cohortData.cohort.students.forEach((student) => {
-      records[student._id] = "absent";
-    });
-    setAttendanceRecords(records);
-  };
 
   const clearAll = () => {
     setAttendanceRecords({});
@@ -1098,28 +1082,6 @@ function CohortAttendanceDetail() {
             {/* Row 2: Quick Action Buttons */}
             <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={markAllPresent}
-                disabled={isHoliday}
-                className="h-11 sm:h-9 text-sm sm:flex-none"
-              >
-                <CheckCircle className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">All Present</span>
-                <span className="sm:hidden">All P</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={markAllAbsent}
-                disabled={isHoliday}
-                className="h-11 sm:h-9 text-sm sm:flex-none"
-              >
-                <XCircle className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">All Absent</span>
-                <span className="sm:hidden">All A</span>
-              </Button>
-              <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearAll}
@@ -1328,7 +1290,7 @@ function IndividualAttendance() {
     new Date().toISOString().split("T")[0]
   );
   const [selectedSubject, setSelectedSubject] = useState<string>("");
-  const [selectedClass, setSelectedClass] = useState<string>("all");
+  const [selectedClass, setSelectedClass] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceMap, setAttendanceMap] = useState<
     Map<string, AttendanceStatus>
@@ -1356,6 +1318,25 @@ function IndividualAttendance() {
 
   const schoolId =
     isSchoolContextActive && selectedSchool ? selectedSchool._id : undefined;
+
+  // Fetch programs to get dynamic subjects
+  const { data: programsData } = useQuery({
+    queryKey: ["programs-for-attendance"],
+    queryFn: () => programsService.getPrograms({ limit: 100, schoolId }),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Get unique subjects from programs
+  const availableSubjects = useMemo(() => {
+    const subjects = new Set<string>();
+    const programs = programsData?.programs || [];
+    programs.forEach((program: any) => {
+      if (program.subject) {
+        subjects.add(program.subject.toLowerCase());
+      }
+    });
+    return Array.from(subjects).sort();
+  }, [programsData]);
 
   // Fetch all students for this school
   const { data: students = [], isLoading: loadingStudents } = useQuery({
@@ -1448,17 +1429,6 @@ function IndividualAttendance() {
     setHasChanges(true);
   };
 
-  // Mark all students
-  const markAll = (status: AttendanceStatus) => {
-    setAttendanceMap((prev) => {
-      const next = new Map(prev);
-      filteredStudents.forEach((s) => {
-        if (s._id) next.set(s._id, status);
-      });
-      return next;
-    });
-    setHasChanges(true);
-  };
 
   // Get unique class list from students
   const availableClasses = useMemo(() => {
@@ -1477,7 +1447,7 @@ function IndividualAttendance() {
   // Filter students by class and search
   const filteredStudents = useMemo(() => {
     let filtered = students;
-    if (selectedClass !== "all") {
+    if (selectedClass) {
       filtered = filtered.filter((s) => s.class === selectedClass);
     }
     if (searchQuery) {
@@ -1500,13 +1470,82 @@ function IndividualAttendance() {
     (s) => s === "absent"
   ).length;
 
+  // Check if selected date is in the past and already has attendance
+  const isToday = selectedDate === new Date().toISOString().split("T")[0];
+  const isPastDate = !isToday && new Date(selectedDate) < new Date();
+  const pastDateHasAttendance = isPastDate && existingAttendance.length > 0;
+  const isPastDateLocked = pastDateHasAttendance;
+
+  // Get student count per class
+  const classStudentCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    students.forEach((s) => {
+      if (s.class) {
+        counts[s.class] = (counts[s.class] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [students]);
+
+  // If no class selected, show class cards
+  if (!selectedClass) {
+    return (
+      <div className="space-y-4">
+        <p className="text-base text-muted-foreground">Select a class to mark attendance</p>
+        {loadingStudents ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {availableClasses.map((cls) => (
+              <Card
+                key={cls}
+                className="cursor-pointer hover:border-blue-400 hover:shadow-md transition-all"
+                onClick={() => setSelectedClass(cls)}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-semibold">Class {cls}</p>
+                    <p className="text-sm text-muted-foreground">{classStudentCounts[cls] || 0} students</p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </CardContent>
+              </Card>
+            ))}
+            {availableClasses.length === 0 && (
+              <p className="text-center text-muted-foreground py-8">No classes found</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      {/* Back button + Class name */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={() => {
+          if (hasChanges) {
+            showConfirm("Unsaved Changes", "You have unsaved attendance changes. Going back will discard them. Continue?")
+              .then((confirmed) => { if (confirmed) { setSelectedClass(""); setHasChanges(false); } });
+          } else {
+            setSelectedClass("");
+          }
+        }}>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+        <span className="text-lg font-semibold">Class {selectedClass}</span>
+      </div>
+
       {/* Controls Row */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-3 sm:gap-4">
         {/* Subject Select */}
         <div className="flex-1 sm:max-w-[200px]">
-          <Label className="text-sm font-medium mb-1.5 block">Subject</Label>
+          <Label className="text-base sm:text-sm font-semibold mb-2 block">Subject</Label>
           <Select value={selectedSubject} onValueChange={async (value) => {
               if (hasChanges) {
                 const confirmed = await showConfirm(
@@ -1521,33 +1560,22 @@ function IndividualAttendance() {
               <SelectValue placeholder="Select Subject" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="hindi">Hindi</SelectItem>
-              <SelectItem value="math">Math</SelectItem>
-              <SelectItem value="english">English</SelectItem>
+              {availableSubjects.length > 0 ? (
+                availableSubjects.map((subject) => (
+                  <SelectItem key={subject} value={subject}>
+                    {subject.charAt(0).toUpperCase() + subject.slice(1)}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="none" disabled>No subjects available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
-
-        {/* Class Filter */}
-        <div className="flex-1 sm:max-w-[150px]">
-          <Label className="text-sm font-medium mb-1.5 block">Class</Label>
-          <Select value={selectedClass} onValueChange={setSelectedClass}>
-            <SelectTrigger>
-              <SelectValue placeholder="All Classes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Classes</SelectItem>
-              {availableClasses.map((cls) => (
-                <SelectItem key={cls} value={cls}>
-                  Class {cls}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Date Picker */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
           <input
             type="date"
@@ -1573,9 +1601,13 @@ function IndividualAttendance() {
             onFocus={(e) => {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              e.currentTarget.min = today.toISOString().split("T")[0];
+              const weekAgo = new Date(today);
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              e.currentTarget.min = weekAgo.toISOString().split("T")[0];
+              e.currentTarget.max = today.toISOString().split("T")[0];
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm w-full sm:w-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+            style={{ position: 'relative' }}
           />
           <span className="text-xs text-gray-500 hidden sm:inline">
             (Mon-Sat only)
@@ -1587,12 +1619,21 @@ function IndividualAttendance() {
       {!selectedSubject && (
         <Card>
           <CardContent className="py-12 text-center">
-            <BookOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-lg font-medium text-muted-foreground">
+            <BookOpen className="h-12 w-12 sm:h-10 sm:w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-xl sm:text-lg font-medium text-muted-foreground">
               Select a subject to mark attendance
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Past date locked warning */}
+      {isPastDateLocked && selectedSubject && (
+        <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-base sm:text-sm font-semibold text-amber-800">
+            Attendance already marked for this date. Past attendance cannot be edited.
+          </p>
+        </div>
       )}
 
       {/* Students List */}
@@ -1608,26 +1649,6 @@ function IndividualAttendance() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAll("present")}
-                className="text-green-700 border-green-300 hover:bg-green-50"
-              >
-                <CheckCircle className="h-4 w-4 mr-1" />
-                All Present
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAll("absent")}
-                className="text-red-700 border-red-300 hover:bg-red-50"
-              >
-                <XCircle className="h-4 w-4 mr-1" />
-                All Absent
-              </Button>
             </div>
           </div>
 
@@ -1687,6 +1708,7 @@ function IndividualAttendance() {
                               onClick={() =>
                                 toggleAttendance(student._id || "", "present")
                               }
+                              disabled={isPastDateLocked}
                               className={`flex-1 sm:flex-none ${
                                 status === "present"
                                   ? "bg-green-600 hover:bg-green-700"
@@ -1704,6 +1726,7 @@ function IndividualAttendance() {
                               onClick={() =>
                                 toggleAttendance(student._id || "", "absent")
                               }
+                              disabled={isPastDateLocked}
                               className="flex-1 sm:flex-none"
                             >
                               <XCircle className="h-4 w-4 mr-1" />
@@ -1735,7 +1758,7 @@ function IndividualAttendance() {
               <Button
                 onClick={() => saveMutation.mutate()}
                 disabled={
-                  !hasChanges || markedCount === 0 || saveMutation.isPending
+                  !hasChanges || markedCount === 0 || saveMutation.isPending || isPastDateLocked
                 }
               >
                 {saveMutation.isPending ? (
@@ -1794,9 +1817,6 @@ export default function AttendanceManagement() {
           <Users className="h-6 w-6 flex-shrink-0" />
           {t("attendance.title")}
         </h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">
-          {t("attendance.subtitle")}
-        </p>
         {activeTab === "group" && (
           <div className="mt-2 p-2.5 sm:p-2 bg-red-50 border border-red-200 rounded-lg">
             <span className="text-sm font-semibold text-red-700">
@@ -1812,18 +1832,18 @@ export default function AttendanceManagement() {
           variant={activeTab === "individual" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("individual")}
-          className="gap-2"
+          className="gap-2 h-10 sm:h-9 text-base sm:text-sm px-4"
         >
-          <User className="h-4 w-4" />
-          Individual
+          <User className="h-5 w-5 sm:h-4 sm:w-4" />
+          Class
         </Button>
         <Button
           variant={activeTab === "group" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("group")}
-          className="gap-2"
+          className="gap-2 h-10 sm:h-9 text-base sm:text-sm px-4"
         >
-          <Users className="h-4 w-4" />
+          <Users className="h-5 w-5 sm:h-4 sm:w-4" />
           Group
         </Button>
       </div>

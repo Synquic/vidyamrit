@@ -35,13 +35,6 @@ export const navigationItems: NavigationItem[] = [
     description: "Overview of your groups, attendance and progress",
   },
   {
-    title: "Reports",
-    url: DASHBOARD_ROUTE_PATHS.reports,
-    icon: BarChart3,
-    allowedRoles: [UserRole.SUPER_ADMIN],
-    description: "View and generate reports",
-  },
-  {
     title: "Student Management",
     url: DASHBOARD_ROUTE_PATHS.students,
     icon: GraduationCap,
@@ -117,6 +110,13 @@ export const navigationItems: NavigationItem[] = [
     icon: Eye,
     allowedRoles: [UserRole.SUPER_ADMIN],
     description: "Create and manage custom views for stakeholders",
+  },
+  {
+    title: "Reports",
+    url: DASHBOARD_ROUTE_PATHS.reports,
+    icon: BarChart3,
+    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+    description: "View school, class and student reports",
   },
 ];
 

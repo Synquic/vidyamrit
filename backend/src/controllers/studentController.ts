@@ -428,7 +428,7 @@ export const getStudentCohortStatus = async (
 
     // Check if user has permission to view this school's data
     if (req.user?.role === UserRole.TUTOR) {
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const requestedSchoolId = schoolId?.toString();
       
       if (userSchoolId !== requestedSchoolId) {

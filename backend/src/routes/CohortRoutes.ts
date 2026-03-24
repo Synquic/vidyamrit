@@ -16,6 +16,8 @@ import {
   markDayCompleted,
   unmarkDay,
   markLevelComplete,
+  autoGenerateGroups,
+  resetGroups,
 } from "../controllers/cohortController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
@@ -135,6 +137,20 @@ cohortRouter.post(
   "/:id/mark-level-complete",
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   markLevelComplete
+);
+
+// Auto-generate groups from baseline test levels
+cohortRouter.post(
+  "/auto-generate",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  autoGenerateGroups
+);
+
+// Reset all groups for a school
+cohortRouter.post(
+  "/reset-groups",
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  resetGroups
 );
 
 export default cohortRouter;

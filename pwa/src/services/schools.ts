@@ -17,6 +17,8 @@ export interface School {
   phone: string;
   block?: string;
   testPromotionType?: "automatic" | "manual";
+  groupFormat?: "common" | "class_wise";
+  programs?: string[];
   createdAt?: Date;
   updatedAt?: Date;
 }

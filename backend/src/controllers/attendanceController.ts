@@ -710,58 +710,60 @@ export const getCohortAttendance = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Get average attendance for tutor's cohorts over last N days
+// Get average attendance from Attendance model (all time or last N days)
 export const getTutorAvgAttendance = async (req: AuthRequest, res: Response) => {
   try {
-    const tutorId = req.user?._id;
     const { days = "7", schoolId } = req.query;
+
+    const parsedDays = parseInt(days as string);
+    const numDays = parsedDays === 0 ? 0 : Math.min(parsedDays || 7, 30);
+    const isAllTime = numDays === 0;
+
+    // Determine school ID
+    let targetSchoolId = schoolId as string;
     const UserRole = require("../configs/roles").UserRole;
-    const Cohort = require("../models/CohortModel").default;
-
-    const numDays = Math.min(parseInt(days as string) || 7, 30);
-
-    // Build query - only active cohorts
-    const query: any = { status: "active" };
-    if (req.user?.role === UserRole.TUTOR) {
-      query.tutorId = tutorId;
-    }
-    if (schoolId) {
-      query.schoolId = schoolId;
+    if (req.user?.role === UserRole.TUTOR && req.user?.schoolId) {
+      targetSchoolId = (req.user?.schoolId as any)?._id?.toString() || req.user?.schoolId?.toString();
     }
 
-    const cohorts = await Cohort.find(query);
-
-    // Calculate date range (last N days excluding today)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - numDays);
-
-    let totalPresent = 0;
-    let totalMarked = 0;
-
-    for (const cohort of cohorts) {
-      const relevantAttendance = cohort.attendance.filter((att: any) => {
-        const attDate = new Date(att.date);
-        attDate.setHours(0, 0, 0, 0);
-        return attDate >= startDate && attDate < today;
-      });
-
-      totalPresent += relevantAttendance.filter(
-        (att: any) => att.status === "present"
-      ).length;
-      totalMarked += relevantAttendance.length;
+    if (!targetSchoolId) {
+      return res.json({ avgAttendanceRate: 0, totalPresent: 0, totalMarked: 0, days: numDays });
     }
 
-    const avgRate =
-      totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
+    // Build attendance query
+    const matchQuery: any = {
+      school: new (require("mongoose").Types.ObjectId)(targetSchoolId),
+      status: { $in: ["present", "absent"] },
+    };
+
+    if (!isAllTime) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - numDays);
+      matchQuery.date = { $gte: startDate, $lt: today };
+    }
+
+    const stats = await Attendance.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    const totalMarked = stats.length > 0 ? stats[0].total : 0;
+    const totalPresent = stats.length > 0 ? stats[0].present : 0;
+    const avgRate = totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
 
     res.json({
       avgAttendanceRate: avgRate,
       totalPresent,
       totalMarked,
       days: numDays,
-      cohortCount: cohorts.length,
     });
   } catch (error: any) {
     logger.error("Error fetching tutor avg attendance:", error);

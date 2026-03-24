@@ -71,6 +71,7 @@ import {
   deleteSchool,
 } from "@/services/schools";
 import { INDIAN_STATES, STATE_CITIES } from "@/data/indianLocations";
+import { programsService } from "@/services/programs";
 
 function ManageSchools() {
   const queryClient = useQueryClient();
@@ -97,6 +98,8 @@ function ManageSchools() {
     phone: "",
     block: "",
     testPromotionType: "automatic" as "automatic" | "manual",
+    groupFormat: "common" as "common" | "class_wise",
+    programs: [] as string[],
     pointOfContacts: [{ name: "", phone: "" }],
   });
 
@@ -113,6 +116,13 @@ function ManageSchools() {
     queryKey: ["schools"],
     queryFn: getSchools,
   });
+
+  // Fetch programs for program selection
+  const { data: programsData } = useQuery({
+    queryKey: ["programs-for-school"],
+    queryFn: () => programsService.getPrograms({ limit: 100 }),
+  });
+  const allPrograms = programsData?.programs || [];
 
   // Get static cities for selected state
   const citiesForState = useMemo(() => {
@@ -185,6 +195,8 @@ function ManageSchools() {
       phone: school.phone || "",
       block: school.block || "",
       testPromotionType: school.testPromotionType || "automatic",
+      groupFormat: (school as any).groupFormat || "common",
+      programs: (school as any).programs?.map((p: any) => typeof p === 'object' ? p._id : p) || [],
       pointOfContacts:
         (school as any).pointOfContacts && (school as any).pointOfContacts.length
           ? (school as any).pointOfContacts
@@ -581,6 +593,64 @@ function ManageSchools() {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   Automatic: System promotes/ends test based on score. Manual: Teacher decides when to promote or assign level.
+                </p>
+              </div>
+
+              {/* Group Format */}
+              <div className="space-y-2">
+                <Label htmlFor="groupFormat">Group Format</Label>
+                <Select
+                  value={formData.groupFormat || "common"}
+                  onValueChange={(value: "common" | "class_wise") =>
+                    setFormData((prev) => ({ ...prev, groupFormat: value }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select group format" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="common">Common</SelectItem>
+                    <SelectItem value="class_wise">Class Wise</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Common: All classes together in one group. Class Wise: Separate groups per class.
+                </p>
+              </div>
+
+              {/* Programs */}
+              <div className="space-y-2">
+                <Label>Programs</Label>
+                <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+                  {allPrograms.length > 0 ? (
+                    allPrograms.map((program: any) => (
+                      <label
+                        key={program._id}
+                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.programs?.includes(program._id) || false}
+                          onChange={(e) => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              programs: e.target.checked
+                                ? [...(prev.programs || []), program._id]
+                                : (prev.programs || []).filter((id: string) => id !== program._id),
+                            }));
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm">{program.name}</span>
+                        <span className="text-xs text-muted-foreground">({program.subject})</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No programs available</p>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select programs that will be available in this school.
                 </p>
               </div>
 

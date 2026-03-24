@@ -4,6 +4,7 @@ import Cohort from "../models/CohortModel";
 import Student from "../models/StudentModel";
 import User from "../models/UserModel";
 import Program from "../models/ProgramModel";
+import School from "../models/SchoolModel";
 import { IProgram } from "../models/ProgramModel";
 import { AuthRequest } from "../types/auth";
 import { UserRole } from "../configs/roles";
@@ -18,7 +19,7 @@ export const getCohorts = async (req: AuthRequest, res: Response) => {
     // Super admin can see all cohorts or filter by school
     if (req.user?.role === UserRole.SUPER_ADMIN) {
       const filter: any = {};
-      
+
       // If schoolId is provided, filter by that school
       if (schoolId) {
         filter.schoolId = schoolId;
@@ -27,6 +28,7 @@ export const getCohorts = async (req: AuthRequest, res: Response) => {
       cohorts = await Cohort.find(filter)
         .populate("schoolId", "name")
         .populate("tutorId", "name email")
+        .populate("programId", "name subject")
         .sort({ createdAt: -1 });
     }
     // Tutors can only see cohorts they're assigned to or from their school
@@ -34,10 +36,11 @@ export const getCohorts = async (req: AuthRequest, res: Response) => {
       const filter: any = {};
 
       // Filter by tutor ID or school ID
-      if (req.user.schoolId) {
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
+      if (userSchoolId) {
         filter.$or = [
           { tutorId: req.user._id },
-          { schoolId: req.user.schoolId },
+          { schoolId: userSchoolId },
         ];
       } else {
         filter.tutorId = req.user._id;
@@ -46,6 +49,7 @@ export const getCohorts = async (req: AuthRequest, res: Response) => {
       cohorts = await Cohort.find(filter)
         .populate("schoolId", "name")
         .populate("tutorId", "name email")
+        .populate("programId", "name subject")
         .sort({ createdAt: -1 });
     } else {
       return res.status(403).json({ error: "Unauthorized" });
@@ -112,7 +116,7 @@ export const createCohort = async (req: AuthRequest, res: Response) => {
 
     // Check if tutor has permission to create cohorts for this school
     if (req.user?.role === UserRole.TUTOR) {
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const requestedSchoolId = schoolId?.toString();
 
       if (userSchoolId !== requestedSchoolId) {
@@ -205,8 +209,8 @@ export const updateCohort = async (req: AuthRequest, res: Response) => {
     // Check if tutor has permission to update this cohort
     if (req.user?.role === UserRole.TUTOR) {
       const cohortSchoolId = cohort.schoolId?.toString();
-      const userSchoolId = req.user.schoolId?.toString();
-      
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
+
       if (cohortSchoolId !== userSchoolId) {
         return res.status(403).json({
           error: "You can only update cohorts from your assigned school",
@@ -460,7 +464,7 @@ export const extendLevelDuration = async (req: AuthRequest, res: Response) => {
     // Check permissions
     if (req.user?.role === UserRole.TUTOR) {
       const cohortSchoolId = cohort.schoolId?.toString();
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const userId = (req.user._id as any)?.toString();
       if (cohort.tutorId?.toString() !== userId && 
           cohortSchoolId !== userSchoolId) {
@@ -537,7 +541,7 @@ export const markDayCompleted = async (req: AuthRequest, res: Response) => {
     // Check permissions
     if (req.user?.role === UserRole.TUTOR) {
       const cohortSchoolId = cohort.schoolId?.toString();
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const userId = (req.user._id as any)?.toString();
       if (cohort.tutorId?.toString() !== userId && 
           cohortSchoolId !== userSchoolId) {
@@ -642,7 +646,7 @@ export const unmarkDay = async (req: AuthRequest, res: Response) => {
     // Check permissions
     if (req.user?.role === UserRole.TUTOR) {
       const cohortSchoolId = cohort.schoolId?.toString();
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const userId = (req.user._id as any)?.toString();
       if (cohort.tutorId?.toString() !== userId && 
           cohortSchoolId !== userSchoolId) {
@@ -716,7 +720,7 @@ export const markLevelComplete = async (req: AuthRequest, res: Response) => {
     // Check permissions
     if (req.user?.role === UserRole.TUTOR) {
       const cohortSchoolId = cohort.schoolId?.toString();
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const userId = (req.user._id as any)?.toString();
       if (cohort.tutorId?.toString() !== userId && 
           cohortSchoolId !== userSchoolId) {
@@ -852,7 +856,7 @@ export const deleteCohort = async (req: AuthRequest, res: Response) => {
     // Check if tutor has permission to delete this cohort
     if (req.user?.role === UserRole.TUTOR) {
       const cohortSchoolId = cohort.schoolId?.toString();
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       
       if (cohortSchoolId !== userSchoolId) {
         return res.status(403).json({
@@ -921,10 +925,10 @@ export const deleteCohort = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Now delete the cohort
-    await Cohort.findByIdAndDelete(req.params.id);
-    
-    res.json({ message: "Cohort deleted successfully" });
+    // Archive the cohort instead of deleting
+    await Cohort.findByIdAndUpdate(req.params.id, { status: "archived" });
+
+    res.json({ message: "Cohort archived successfully" });
   } catch (error) {
     console.error("Error deleting cohort:", error);
     res.status(500).json({ error: "Error deleting cohort" });
@@ -1030,7 +1034,7 @@ export const previewOptimalCohorts = async (
 
     // Check if user has permission
     if (req.user?.role === UserRole.TUTOR) {
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const requestedSchoolId = schoolId?.toString();
       
       if (userSchoolId !== requestedSchoolId) {
@@ -1302,7 +1306,7 @@ export const generateOptimalCohorts = async (
 
     // Check if user has permission to generate cohorts for this school
     if (req.user?.role === UserRole.TUTOR) {
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const requestedSchoolId = schoolId?.toString();
       
       if (userSchoolId !== requestedSchoolId) {
@@ -1692,7 +1696,7 @@ export const createCohortsFromPlan = async (
 
     // Check if user has permission
     if (req.user?.role === UserRole.TUTOR) {
-      const userSchoolId = req.user.schoolId?.toString();
+      const userSchoolId = (req.user.schoolId as any)?._id?.toString() || req.user.schoolId?.toString();
       const requestedSchoolId = schoolId?.toString();
       
       if (userSchoolId !== requestedSchoolId) {
@@ -1805,6 +1809,224 @@ export const createCohortsFromPlan = async (
     res.status(500).json({ 
       error: "Error creating cohorts from plan",
       details: error.message || "Unknown error"
+    });
+  }
+};
+
+// Auto-generate groups based on students' baseline test levels
+export const autoGenerateGroups = async (req: AuthRequest, res: Response) => {
+  try {
+    const { schoolId, preview } = req.body;
+    const isPreview = preview === true;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: "School ID is required" });
+    }
+
+    // Get school with programs
+    const school = await School.findById(schoolId).lean();
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    // Get school's programs
+    const schoolPrograms = school.programs && school.programs.length > 0
+      ? await Program.find({ _id: { $in: school.programs }, isActive: true }).lean()
+      : await Program.find({ isActive: true }).lean();
+
+    // Get all active students in this school with knowledgeLevel
+    const students = await Student.find({
+      school: schoolId,
+      isArchived: { $ne: true },
+    }).lean();
+
+    const currentYear = new Date().getFullYear();
+    const created: { name: string; studentCount: number; students: { name: string; class: string }[] }[] = [];
+    const updated: { name: string; newStudentCount: number; students: { name: string; class: string }[] }[] = [];
+    let studentsAdded = 0;
+
+    for (const program of schoolPrograms) {
+      // Get students who have baseline test for this program (skip FLN/proficient students)
+      const studentsWithLevel = students.filter((s: any) => {
+        const hasLevel = s.knowledgeLevel?.some((kl: any) =>
+          kl.program?.toString() === program._id.toString()
+        );
+        if (!hasLevel) return false;
+        // Skip students who are already proficient in this program
+        const isProficient = s.fln?.some((f: any) =>
+          f.program?.toString() === program._id.toString()
+        );
+        return !isProficient;
+      });
+
+      // Group students by level (and optionally by class)
+      const isClassWise = (school as any).groupFormat === "class_wise";
+      const groupKey = (level: number, studentClass?: string) =>
+        isClassWise ? `${level}_${studentClass || "unknown"}` : `${level}`;
+
+      const groupedStudents: { [key: string]: { level: number; studentClass?: string; students: any[] } } = {};
+      for (const student of studentsWithLevel) {
+        const klEntries = (student as any).knowledgeLevel
+          .filter((k: any) => k.program?.toString() === program._id.toString())
+          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const kl = klEntries[0];
+        if (!kl) continue;
+        const level = kl.level;
+        const key = groupKey(level, (student as any).class);
+        if (!groupedStudents[key]) {
+          groupedStudents[key] = { level, studentClass: (student as any).class, students: [] };
+        }
+        groupedStudents[key].students.push(student);
+      }
+
+      // For each group, create or update cohort
+      for (const [, groupData] of Object.entries(groupedStudents)) {
+        const level = groupData.level;
+        const levelStudents = groupData.students;
+        const groupName = isClassWise
+          ? `${program.subject} Class ${groupData.studentClass} Level ${level} ${currentYear}`
+          : `${program.subject} Level ${level} ${currentYear}`;
+
+        // Check if student is already in an active group for same program at same level
+        // Find existing group with same name
+        let existingGroup = await Cohort.findOne({
+          schoolId,
+          name: groupName,
+          status: { $in: ["active", "pending"] },
+        });
+
+        if (existingGroup) {
+          // Find students not already in this group
+          const existingStudentIds = existingGroup.students.map((s: any) => s._id?.toString() || s.toString());
+          const newStudents = levelStudents.filter(
+            (s: any) => !existingStudentIds.includes(s._id.toString())
+          );
+
+          if (newStudents.length > 0) {
+            if (!isPreview) {
+              for (const student of newStudents) {
+                const studentId = student._id.toString();
+                const oldGroup = await Cohort.findOne({
+                  schoolId,
+                  programId: program._id,
+                  status: { $in: ["active", "pending"] },
+                  "students._id": studentId,
+                  _id: { $ne: existingGroup._id },
+                });
+                if (oldGroup) {
+                  oldGroup.students = oldGroup.students.filter(
+                    (s: any) => (s._id?.toString() || s.toString()) !== studentId
+                  );
+                  await oldGroup.save();
+                }
+                existingGroup.students.push({ _id: studentId } as any);
+              }
+              await existingGroup.save();
+            }
+            updated.push({
+              name: groupName,
+              newStudentCount: newStudents.length,
+              students: newStudents.map((s: any) => ({ name: s.name, class: s.class || "" })),
+            });
+            studentsAdded += newStudents.length;
+          }
+        } else {
+          if (!isPreview) {
+            for (const student of levelStudents) {
+              const studentId = student._id.toString();
+              const oldGroup = await Cohort.findOne({
+                schoolId,
+                programId: program._id,
+                status: { $in: ["active", "pending"] },
+                "students._id": studentId,
+              });
+              if (oldGroup) {
+                oldGroup.students = oldGroup.students.filter(
+                  (s: any) => (s._id?.toString() || s.toString()) !== studentId
+                );
+                await oldGroup.save();
+              }
+            }
+
+            const timeframeDays = program.levels?.[0]?.timeframe
+              ? program.levels[0].timeframe * 6
+              : 12;
+
+            const newCohort = new Cohort({
+              name: groupName,
+              schoolId,
+              programId: program._id,
+              currentLevel: level,
+              status: "pending",
+              students: levelStudents.map((s: any) => ({ _id: s._id })),
+              startDate: new Date(),
+              timeTracking: {
+                cohortStartDate: new Date(),
+                currentLevelStartDate: new Date(),
+                attendanceDays: 0,
+                expectedDaysForCurrentLevel: timeframeDays,
+                totalExpectedDays: timeframeDays,
+              },
+            });
+            await newCohort.save();
+          }
+          created.push({
+            name: groupName,
+            studentCount: levelStudents.length,
+            students: levelStudents.map((s: any) => ({ name: s.name, class: s.class || "" })),
+          });
+          studentsAdded += levelStudents.length;
+        }
+      }
+    }
+
+    res.json({
+      message: isPreview ? "Preview generated" : "Auto-generation complete",
+      preview: isPreview,
+      created,
+      updated,
+      studentsAdded,
+    });
+  } catch (error: any) {
+    console.error("Error auto-generating groups:", error);
+    res.status(500).json({
+      error: "Error auto-generating groups",
+      details: error.message || "Unknown error",
+    });
+  }
+};
+
+// Reset all groups for a school (archive groups + clear student knowledgeLevel)
+export const resetGroups = async (req: AuthRequest, res: Response) => {
+  try {
+    const { schoolId } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: "School ID is required" });
+    }
+
+    // Archive all active/pending groups for this school
+    const archiveResult = await Cohort.updateMany(
+      { schoolId, status: { $in: ["active", "pending"] } },
+      { $set: { status: "archived" } }
+    );
+
+    // Reset knowledgeLevel for all students in this school
+    const studentResult = await Student.updateMany(
+      { school: schoolId },
+      { $set: { knowledgeLevel: [] } }
+    );
+
+    res.json({
+      message: "Groups reset successfully",
+      groupsArchived: archiveResult.modifiedCount,
+      studentsReset: studentResult.modifiedCount,
+    });
+  } catch (error: any) {
+    console.error("Error resetting groups:", error);
+    res.status(500).json({
+      error: "Error resetting groups",
+      details: error.message || "Unknown error",
     });
   }
 };
