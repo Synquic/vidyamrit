@@ -98,7 +98,7 @@ function ManageSchools() {
     phone: "",
     block: "",
     testPromotionType: "automatic" as "automatic" | "manual",
-    groupFormat: "common" as "common" | "class_wise",
+    groupFormat: undefined as "common" | "class_wise" | undefined,
     programs: [] as string[],
     pointOfContacts: [{ name: "", phone: "" }],
   });
@@ -123,6 +123,17 @@ function ManageSchools() {
     queryFn: () => programsService.getPrograms({ limit: 100 }),
   });
   const allPrograms = programsData?.programs || [];
+
+  // Filter programs based on group format
+  const filteredPrograms = useMemo(() => {
+    if (formData.groupFormat === "common") {
+      // Common: only show Remedial programs
+      return allPrograms.filter((p: any) => p.name.toLowerCase().includes("remedial"));
+    } else {
+      // Class wise: show non-Remedial programs
+      return allPrograms.filter((p: any) => !p.name.toLowerCase().includes("remedial"));
+    }
+  }, [allPrograms, formData.groupFormat]);
 
   // Get static cities for selected state
   const citiesForState = useMemo(() => {
@@ -195,7 +206,7 @@ function ManageSchools() {
       phone: school.phone || "",
       block: school.block || "",
       testPromotionType: school.testPromotionType || "automatic",
-      groupFormat: (school as any).groupFormat || "common",
+      groupFormat: (school as any).groupFormat || undefined,
       programs: (school as any).programs?.map((p: any) => typeof p === 'object' ? p._id : p) || [],
       pointOfContacts:
         (school as any).pointOfContacts && (school as any).pointOfContacts.length
@@ -600,21 +611,21 @@ function ManageSchools() {
               <div className="space-y-2">
                 <Label htmlFor="groupFormat">Group Format</Label>
                 <Select
-                  value={formData.groupFormat || "common"}
+                  value={formData.groupFormat || ""}
                   onValueChange={(value: "common" | "class_wise") =>
-                    setFormData((prev) => ({ ...prev, groupFormat: value }))
+                    setFormData((prev) => ({ ...prev, groupFormat: value, programs: [] }))
                   }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select group format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="common">Common</SelectItem>
-                    <SelectItem value="class_wise">Class Wise</SelectItem>
+                    <SelectItem value="common">Intervention</SelectItem>
+                    <SelectItem value="class_wise">Support</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Common: All classes together in one group. Class Wise: Separate groups per class.
+                  Intervention: All classes together in one group. Support: Separate groups per class.
                 </p>
               </div>
 
@@ -622,8 +633,10 @@ function ManageSchools() {
               <div className="space-y-2">
                 <Label>Programs</Label>
                 <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
-                  {allPrograms.length > 0 ? (
-                    allPrograms.map((program: any) => (
+                  {!formData.groupFormat ? (
+                    <p className="text-sm text-muted-foreground">Select a group format first</p>
+                  ) : filteredPrograms.length > 0 ? (
+                    filteredPrograms.map((program: any) => (
                       <label
                         key={program._id}
                         className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"

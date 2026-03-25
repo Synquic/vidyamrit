@@ -56,6 +56,7 @@ export default function LevelAssessmentPage() {
   const [testResult, setTestResult] = useState<LevelAssessmentResult | null>(null);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testedStudents, setTestedStudents] = useState<Set<string>>(new Set());
 
   // Fetch cohort progress data
   const { data: cohortData, isLoading: loadingCohort } = useQuery({
@@ -135,6 +136,12 @@ export default function LevelAssessmentPage() {
         });
 
         setTestResult(result);
+        console.log("[LevelTest] Adding to tested:", testState.studentId);
+        setTestedStudents((prev) => {
+          const next = new Set([...prev, testState.studentId]);
+          console.log("[LevelTest] testedStudents:", Array.from(next));
+          return next;
+        });
         setTestState((prev) => prev ? {
           ...prev,
           responses: newResponses,
@@ -510,11 +517,38 @@ export default function LevelAssessmentPage() {
                         </div>
                         {/* Button on mobile */}
                         <div className="mt-2 sm:hidden">
+                          {testedStudents.has(student._id) ? (
+                            <Badge className="bg-green-600 text-white w-full justify-center py-1.5">
+                              ✓ Test Completed
+                            </Badge>
+                          ) : (
+                            <Button
+                              onClick={() => handleStartTest(student._id, student.name)}
+                              size="sm"
+                              disabled={isLoadingQuestions}
+                              className="w-full flex items-center justify-center gap-2"
+                            >
+                              {isLoadingQuestions ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                              Start Test
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {/* Button on desktop */}
+                      <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                        {testedStudents.has(student._id) ? (
+                          <Badge className="bg-green-600 text-white py-1.5 px-3">
+                            ✓ Test Completed
+                          </Badge>
+                        ) : (
                           <Button
                             onClick={() => handleStartTest(student._id, student.name)}
-                            size="sm"
                             disabled={isLoadingQuestions}
-                            className="w-full flex items-center justify-center gap-2"
+                            className="flex items-center gap-2"
                           >
                             {isLoadingQuestions ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -523,22 +557,7 @@ export default function LevelAssessmentPage() {
                             )}
                             Start Test
                           </Button>
-                        </div>
-                      </div>
-                      {/* Button on desktop */}
-                      <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                        <Button
-                          onClick={() => handleStartTest(student._id, student.name)}
-                          disabled={isLoadingQuestions}
-                          className="flex items-center gap-2"
-                        >
-                          {isLoadingQuestions ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
-                          Start Test
-                        </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>

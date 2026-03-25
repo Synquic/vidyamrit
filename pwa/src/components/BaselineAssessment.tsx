@@ -258,6 +258,13 @@ export function BaselineAssessmentModal({
     // PASS: 80% correct reached → skip remaining, next level
     if (correct >= passThreshold) {
       await saveCurrentLevelReport(true);
+      const totalLevels = activeForEval?.levels?.length || 1;
+      // Check if this is the last level - if so, finalize with FLN
+      if (currentLevel + 1 >= totalLevels) {
+        setLastCompletedLevel(currentLevel);
+        await finalizeProgram(currentLevel, true); // clearedLastLevel = true
+        return;
+      }
       setLastCompletedLevel(currentLevel);
       setCurrentLevel((l) => l + 1);
       levelQuestionsAnswered.current = 0;
@@ -274,16 +281,22 @@ export function BaselineAssessmentModal({
       return;
     }
 
-    // All questions answered but didn't hit 80%
+    // All questions answered
     if (answered >= totalLevelQ) {
       if (correct >= passThreshold) {
         await saveCurrentLevelReport(true);
-        setLastCompletedLevel(currentLevel);
-        setCurrentLevel((l) => l + 1);
-        levelQuestionsAnswered.current = 0;
-        levelCorrectAnswers.current = 0;
-        levelWrongAnswers.current = 0;
-        setShowQuickComplete(false);
+        const totalLevelsAll = activeForEval?.levels?.length || 1;
+        if (currentLevel + 1 >= totalLevelsAll) {
+          setLastCompletedLevel(currentLevel);
+          await finalizeProgram(currentLevel, true); // clearedLastLevel = true
+        } else {
+          setLastCompletedLevel(currentLevel);
+          setCurrentLevel((l) => l + 1);
+          levelQuestionsAnswered.current = 0;
+          levelCorrectAnswers.current = 0;
+          levelWrongAnswers.current = 0;
+          setShowQuickComplete(false);
+        }
       } else {
         await saveCurrentLevelReport(false);
         await finalizeProgram();
@@ -292,7 +305,7 @@ export function BaselineAssessmentModal({
     }
   };
 
-  const finalizeProgram = async (overrideLevel?: number) => {
+  const finalizeProgram = async (overrideLevel?: number, clearedLastLevel?: boolean) => {
     const active = getActiveProgram();
     if (!active) return;
 
@@ -327,6 +340,7 @@ export function BaselineAssessmentModal({
         program: active._id,
         totalQuestions: result.totalQuestions,
         correctAnswers: result.correctAnswers,
+        clearedLastLevel: clearedLastLevel || false,
       });
       toast.success(`${active.name}: Level ${result.level} saved`);
     } catch {
@@ -440,6 +454,12 @@ export function BaselineAssessmentModal({
     await saveCurrentLevelReport(true, "assigned");
     // Teacher clicked "Assign Level X" on currentLevel → that level is the assigned level
     await finalizeProgram(currentLevel);
+  };
+
+  // Manual mode: Pass & Complete - student cleared last level, set FLN
+  const handlePassAndComplete = async () => {
+    await saveCurrentLevelReport(true, "assigned");
+    await finalizeProgram(currentLevel, true); // true = clearedLastLevel
   };
 
   // Manual mode: Jump to next level
@@ -649,6 +669,15 @@ export function BaselineAssessmentModal({
                         >
                           Assign Level {currentLevel + 1}
                         </Button>
+                        {/* Pass & Complete - only on last level */}
+                        {currentLevel + 1 >= (active?.levels?.length || 0) && (
+                          <Button
+                            className="w-full h-16 text-lg bg-blue-600 hover:bg-blue-700"
+                            onClick={handlePassAndComplete}
+                          >
+                            ✅ Pass & Complete (Proficient)
+                          </Button>
+                        )}
                         {currentLevel + 1 < (active?.levels?.length || 0) && (
                           <Button
                             className="w-full h-16 text-lg"
@@ -777,6 +806,15 @@ export function BaselineAssessmentModal({
                               >
                                 Assign Level {currentLevel + 1}
                               </Button>
+                              {/* Pass & Complete - only on last level */}
+                              {currentLevel + 1 >= (active?.levels?.length || 0) && (
+                                <Button
+                                  className="w-full h-14 text-base bg-blue-600 hover:bg-blue-700"
+                                  onClick={handlePassAndComplete}
+                                >
+                                  ✅ Pass & Complete (Proficient)
+                                </Button>
+                              )}
                               {currentLevel + 1 < (active?.levels?.length || 0) && (
                                 <Button
                                   className="w-full h-14 text-base"

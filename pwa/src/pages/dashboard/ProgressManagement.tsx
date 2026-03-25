@@ -573,7 +573,7 @@ function CohortProgressDetail() {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Group not found</p>
-        <Button onClick={() => navigate("/progress/tutor")} className="mt-4">
+        <Button onClick={() => navigate("/cohorts")} className="mt-4">
           Go Back
         </Button>
       </div>
@@ -604,7 +604,7 @@ function CohortProgressDetail() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/progress/tutor")}
+          onClick={() => navigate("/cohorts")}
           className="p-2 self-start sm:self-auto -ml-2 sm:ml-0"
         >
           <ArrowLeft className="h-4 w-4" />
