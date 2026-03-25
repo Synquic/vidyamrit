@@ -22,6 +22,7 @@ export interface CreateAssessmentDTO {
     date?: string;
     totalQuestions?: number;
     correctAnswers?: number;
+    clearedLastLevel?: boolean;
 }
 
 export const getAssessments = async (): Promise<Assessment[]> => {

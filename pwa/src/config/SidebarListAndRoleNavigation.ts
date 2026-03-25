@@ -8,7 +8,6 @@ import {
   GraduationCap,
   ClipboardList,
   Calendar,
-  TrendingUp,
   Eye,
   BarChart3,
   LayoutDashboard,
@@ -82,13 +81,6 @@ export const navigationItems: NavigationItem[] = [
     icon: Calendar,
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
     description: "Track daily student attendance",
-  },
-  {
-    title: "Progress Monitoring",
-    url: DASHBOARD_ROUTE_PATHS.tutorProgress,
-    icon: TrendingUp,
-    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
-    description: "Monitor student learning progress",
   },
   {
     title: "Test Reports",

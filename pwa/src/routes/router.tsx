@@ -209,16 +209,6 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: DASHBOARD_ROUTE_PATHS.tutorProgress,
-        element: (
-          <ProtectedRoute
-            requiredRole={routePermissions[DASHBOARD_ROUTE_PATHS.tutorProgress]}
-          >
-            <ProgressManagement />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: DASHBOARD_ROUTE_PATHS.views,
         element: (
           <ProtectedRoute
