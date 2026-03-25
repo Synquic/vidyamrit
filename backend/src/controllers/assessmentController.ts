@@ -52,7 +52,7 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
     console.log("Request headers auth:", req.headers.authorization);
     console.log("===================================");
 
-    const { student: studentId, school: schoolId, subject, level, program: programId, totalQuestions, correctAnswers } = req.body;
+    const { student: studentId, school: schoolId, subject, level, program: programId, totalQuestions, correctAnswers, clearedLastLevel } = req.body;
     let { mentor: mentorId } = req.body;
 
     // If mentor is not provided, use the authenticated user's MongoDB _id
@@ -120,8 +120,8 @@ export const createAssessment = async (req: AuthRequest, res: Response) => {
     await student.save();
     console.log("Updated student knowledge level:", studentId, "Program:", programId, "Level:", level);
 
-    // Check FLN: if assigned level = total levels in program → student cleared all levels
-    if (program && program.levels && level >= program.levels.length) {
+    // Check FLN: only set when student actually CLEARED the last level (not just assigned)
+    if (clearedLastLevel === true && program && programId) {
       const alreadyFLN = student.fln?.some(
         (f) => f.program.toString() === programId.toString()
       );

@@ -1326,16 +1326,13 @@ function IndividualAttendance() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Get unique subjects from programs
-  const availableSubjects = useMemo(() => {
-    const subjects = new Set<string>();
+  // Get all programs with their names
+  const availablePrograms = useMemo(() => {
     const programs = programsData?.programs || [];
-    programs.forEach((program: any) => {
-      if (program.subject) {
-        subjects.add(program.subject.toLowerCase());
-      }
-    });
-    return Array.from(subjects).sort();
+    return programs
+      .filter((p: any) => p.subject)
+      .map((p: any) => ({ id: p._id, name: p.name, subject: p.subject.toLowerCase() }))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name));
   }, [programsData]);
 
   // Fetch all students for this school
@@ -1560,10 +1557,10 @@ function IndividualAttendance() {
               <SelectValue placeholder="Select Subject" />
             </SelectTrigger>
             <SelectContent>
-              {availableSubjects.length > 0 ? (
-                availableSubjects.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject.charAt(0).toUpperCase() + subject.slice(1)}
+              {availablePrograms.length > 0 ? (
+                availablePrograms.map((program: any) => (
+                  <SelectItem key={program.id} value={program.subject}>
+                    {program.name} ({program.subject.charAt(0).toUpperCase() + program.subject.slice(1)})
                   </SelectItem>
                 ))
               ) : (

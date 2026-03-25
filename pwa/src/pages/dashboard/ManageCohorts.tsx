@@ -88,6 +88,7 @@ function ManageCohorts() {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
+  const [classFilter, setClassFilter] = useState<string>("all");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isAutoPreviewOpen, setIsAutoPreviewOpen] = useState(false);
   const [autoPreviewData, setAutoPreviewData] = useState<any>(null);
@@ -183,7 +184,43 @@ function ManageCohorts() {
 
   const filteredCohorts = allSchoolCohorts.filter((c) => c.status !== "archived");
   const archivedCohorts = allSchoolCohorts.filter((c) => c.status === "archived");
-  const displayedCohorts = activeTab === "active" ? filteredCohorts : archivedCohorts;
+
+  // Extract available classes from cohort names (for class_wise format)
+  console.log("[ManageCohorts] selectedSchool groupFormat:", (selectedSchool as any)?.groupFormat, "school:", selectedSchool?.name);
+  const isClassWise = (selectedSchool as any)?.groupFormat === "class_wise";
+  // Extract student class from group name - match "Class X" right before "Level"
+  const extractClass = (name: string) => {
+    const match = name?.match(/Class\s+(\S+)\s+Level/i);
+    return match ? match[1] : null;
+  };
+
+  const availableClasses = useMemo(() => {
+    if (!isClassWise) return [];
+    const classes = new Set<string>();
+    filteredCohorts.forEach((c: any) => {
+      const cls = extractClass(c.name);
+      if (cls) classes.add(cls);
+    });
+    return Array.from(classes).sort((a, b) => {
+      const numA = parseInt(a);
+      const numB = parseInt(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [filteredCohorts, isClassWise]);
+
+  // Apply class filter
+  const classFilteredCohorts = useMemo(() => {
+    if (!isClassWise || classFilter === "all") return filteredCohorts;
+    return filteredCohorts.filter((c: any) => extractClass(c.name) === classFilter);
+  }, [filteredCohorts, classFilter, isClassWise]);
+
+  const classFilteredArchived = useMemo(() => {
+    if (!isClassWise || classFilter === "all") return archivedCohorts;
+    return archivedCohorts.filter((c: any) => extractClass(c.name) === classFilter);
+  }, [archivedCohorts, classFilter, isClassWise]);
+
+  const displayedCohorts = activeTab === "active" ? classFilteredCohorts : classFilteredArchived;
 
   // Create cohort mutation
   const createMutation = useMutation({
@@ -277,7 +314,15 @@ function ManageCohorts() {
   };
 
   // Handle start cohort
+  const [isTutorWarningOpen, setIsTutorWarningOpen] = useState(false);
+  const [tutorWarningCohort, setTutorWarningCohort] = useState<Cohort | null>(null);
+
   const handleStartCohort = (cohort: Cohort) => {
+    if (!cohort.tutorId) {
+      setTutorWarningCohort(cohort);
+      setIsTutorWarningOpen(true);
+      return;
+    }
     setStartingCohort(cohort);
     setCustomStartDate(new Date().toISOString().split("T")[0]);
     setIsStartDialogOpen(true);
@@ -403,7 +448,7 @@ function ManageCohorts() {
       schoolId: schoolIdValue,
       tutorId: tutorIdValue,
       students: cohort.students,
-      programId: cohort.programId || undefined,
+      programId: typeof cohort.programId === "object" ? (cohort.programId as any)?._id : cohort.programId || undefined,
     });
     setIsOpen(true);
   };
@@ -642,9 +687,14 @@ function ManageCohorts() {
     );
   };
 
-  const getProgramName = (programId: string | undefined) => {
+  const getProgramName = (programId: any) => {
     if (!programId) return "No Program";
-    const program = programs.find((p) => p._id === programId);
+    // Handle populated object or string ID
+    if (typeof programId === "object" && programId.name) {
+      return `${programId.name} (${programId.subject || ""})`;
+    }
+    const id = typeof programId === "object" ? programId._id?.toString() : programId;
+    const program = programs.find((p) => p._id === id);
     return program ? `${program.name} (${program.subject})` : "Unknown Program";
   };
 
@@ -1063,6 +1113,29 @@ function ManageCohorts() {
           </Card>
         )}
 
+      {/* Class Filter - only for class_wise format */}
+      {isClassWise && availableClasses.length > 0 && (
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <Button
+            variant={classFilter === "all" ? "default" : "outline"}
+            onClick={() => setClassFilter("all")}
+            size="sm"
+          >
+            All Classes
+          </Button>
+          {availableClasses.map((cls) => (
+            <Button
+              key={cls}
+              variant={classFilter === cls ? "default" : "outline"}
+              onClick={() => setClassFilter(cls)}
+              size="sm"
+            >
+              Class {cls}
+            </Button>
+          ))}
+        </div>
+      )}
+
       {/* Active/Inactive Tabs */}
       <div className="flex gap-2 mb-4">
         <Button
@@ -1070,14 +1143,14 @@ function ManageCohorts() {
           onClick={() => setActiveTab("active")}
           size="sm"
         >
-          Active Groups ({filteredCohorts.length})
+          Active Groups ({classFilteredCohorts.length})
         </Button>
         <Button
           variant={activeTab === "inactive" ? "default" : "outline"}
           onClick={() => setActiveTab("inactive")}
           size="sm"
         >
-          Inactive ({archivedCohorts.length})
+          Inactive ({classFilteredArchived.length})
         </Button>
       </div>
 
@@ -1505,6 +1578,32 @@ function ManageCohorts() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Tutor Warning Dialog */}
+      <AlertDialog
+        open={isTutorWarningOpen}
+        onOpenChange={setIsTutorWarningOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tutor Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please assign a tutor to "{tutorWarningCohort?.name}" before starting. A tutor is needed to mark attendance and conduct level tests.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setIsTutorWarningOpen(false);
+              if (tutorWarningCohort) {
+                handleEdit(tutorWarningCohort);
+              }
+            }}>
+              Assign Tutor
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

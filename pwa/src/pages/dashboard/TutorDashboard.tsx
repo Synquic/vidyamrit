@@ -21,9 +21,9 @@ export default function TutorDashboard() {
   const { user } = useAuth();
   const { selectedSchool, isSchoolContextActive } = useSchoolContext();
 
-  const [progressData, setProgressData] = useState<TutorProgressSummary[]>([]);
+  const [_progressData, setProgressData] = useState<TutorProgressSummary[]>([]);
   const [avgAttendance, setAvgAttendance] = useState<number>(0);
-  const [dashboardStats, setDashboardStats] = useState({ inactive: 0, proficient: 0, progressing: 0, notProgressing: 0 });
+  const [dashboardStats, setDashboardStats] = useState({ inactive: 0, proficient: 0, progressing: 0, notProgressing: 0, totalStudents: 0, activeGroups: 0 });
   const [loadingProgress, setLoadingProgress] = useState(true);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
 
@@ -53,7 +53,7 @@ export default function TutorDashboard() {
   const fetchDashboardStats = async (schoolId?: string) => {
     try {
       const data = await getTutorDashboardStats(schoolId);
-      setDashboardStats(data);
+      setDashboardStats({ ...dashboardStats, ...data });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
     }
@@ -71,16 +71,13 @@ export default function TutorDashboard() {
     }
   };
 
-  // Computed stats
+  // Computed stats - from dashboardStats (school level)
   const stats = useMemo(() => {
-    const totalStudents = progressData.reduce(
-      (sum, s) => sum + s.summary.totalStudents,
-      0
-    );
-    const activeGroups = progressData.length;
-
-    return { totalStudents, activeGroups };
-  }, [progressData]);
+    return {
+      totalStudents: dashboardStats.totalStudents,
+      activeGroups: dashboardStats.activeGroups,
+    };
+  }, [dashboardStats]);
 
   const isLoading = loadingProgress || loadingAttendance;
 
@@ -253,21 +250,6 @@ export default function TutorDashboard() {
         </Card>
       </div>
 
-      {/* Empty state when no data at all */}
-      {progressData.length === 0 && (
-        <Card className="rounded-2xl shadow-sm">
-          <CardContent className="text-center py-12">
-            <LayoutDashboard className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No Data Yet
-            </h3>
-            <p className="text-gray-500 text-base max-w-md mx-auto">
-              Once you have groups assigned and students enrolled, your
-              dashboard will show attendance, progress, and test alerts here.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

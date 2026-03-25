@@ -241,12 +241,17 @@ export const getTutorProgressSummary = async (req: AuthRequest, res: Response) =
 
     // Build query - only active cohorts
     const query: any = { status: 'active' };
-    
-    // For tutors, only show their cohorts. For super admins, show all (or filtered by schoolId)
+
+    // For tutors, show all cohorts from their school (school level)
     if (req.user?.role === UserRole.TUTOR) {
-      query.tutorId = tutorId;
+      const userSchoolId = (req.user?.schoolId as any)?._id?.toString() || req.user?.schoolId?.toString();
+      if (userSchoolId) {
+        query.schoolId = userSchoolId;
+      } else {
+        query.tutorId = tutorId;
+      }
     }
-    
+
     // If schoolId is provided, filter by school
     if (schoolId) {
       query.schoolId = schoolId;
@@ -816,7 +821,16 @@ export const getTutorDashboardStats = async (req: AuthRequest, res: Response) =>
       }
     });
 
-    res.json({ inactive, proficient, progressing, notProgressing });
+    // Get total students and inactive from school level (not cohort level)
+    const schoolStudentQuery: any = {};
+    if (userSchoolId) {
+      schoolStudentQuery.school = userSchoolId;
+    }
+    const totalStudents = await Student.countDocuments({ ...schoolStudentQuery, isArchived: { $ne: true } });
+    const totalInactive = await Student.countDocuments({ ...schoolStudentQuery, isArchived: true });
+    const activeGroups = cohorts.length;
+
+    res.json({ inactive: totalInactive, proficient, progressing, notProgressing, totalStudents, activeGroups });
   } catch (error: any) {
     logger.error("Error fetching tutor dashboard stats:", error);
     res.status(500).json({ error: "Failed to load dashboard stats" });
