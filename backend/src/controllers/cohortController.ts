@@ -925,10 +925,14 @@ export const deleteCohort = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Archive the cohort instead of deleting
-    await Cohort.findByIdAndUpdate(req.params.id, { status: "archived" });
-
-    res.json({ message: "Cohort archived successfully" });
+    // If already archived, permanently delete. Otherwise archive.
+    if (cohort.status === "archived") {
+      await Cohort.findByIdAndDelete(req.params.id);
+      res.json({ message: "Cohort permanently deleted" });
+    } else {
+      await Cohort.findByIdAndUpdate(req.params.id, { status: "archived" });
+      res.json({ message: "Cohort archived successfully" });
+    }
   } catch (error) {
     console.error("Error deleting cohort:", error);
     res.status(500).json({ error: "Error deleting cohort" });
@@ -1919,7 +1923,7 @@ export const autoGenerateGroups = async (req: AuthRequest, res: Response) => {
                   );
                   await oldGroup.save();
                 }
-                existingGroup.students.push({ _id: studentId } as any);
+                existingGroup.students.push(studentId as any);
               }
               await existingGroup.save();
             }
@@ -1958,11 +1962,8 @@ export const autoGenerateGroups = async (req: AuthRequest, res: Response) => {
               programId: program._id,
               currentLevel: level,
               status: "pending",
-              students: levelStudents.map((s: any) => ({ _id: s._id })),
-              startDate: new Date(),
+              students: levelStudents.map((s: any) => s._id),
               timeTracking: {
-                cohortStartDate: new Date(),
-                currentLevelStartDate: new Date(),
                 attendanceDays: 0,
                 expectedDaysForCurrentLevel: timeframeDays,
                 totalExpectedDays: timeframeDays,

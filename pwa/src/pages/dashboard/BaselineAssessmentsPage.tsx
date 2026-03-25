@@ -817,7 +817,7 @@ export default function BaselineAssessmentsPage() {
                                 className="text-center font-semibold text-foreground text-sm sm:text-base py-3 sm:py-4 min-w-[100px]"
                               >
                                 <span className="capitalize">
-                                  {program.subject}
+                                  {program.name}
                                 </span>
                               </TableHead>
                             ))}
@@ -928,15 +928,18 @@ export default function BaselineAssessmentsPage() {
                                             Test
                                           </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-48">
+                                        <DropdownMenuContent align="end" className="w-56">
                                           {pendingPrograms.map(({ program }) => (
                                             <DropdownMenuItem
                                               key={program._id}
                                               onClick={() => handleAssessNow(student, program._id)}
                                               className="cursor-pointer py-2.5 text-sm"
                                             >
-                                              <Play className="h-4 w-4 mr-2 text-orange-600" />
-                                              <span className="capitalize font-medium">{program.subject}</span>
+                                              <Play className="h-4 w-4 mr-2 text-orange-600 flex-shrink-0" />
+                                              <div className="flex flex-col">
+                                                <span className="font-medium">{program.name}</span>
+                                                <span className="text-xs text-muted-foreground">{program.subject}</span>
+                                              </div>
                                             </DropdownMenuItem>
                                           ))}
                                         </DropdownMenuContent>

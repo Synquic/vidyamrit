@@ -93,6 +93,7 @@ export function LevelDurationTracker({
 
   const isAdjusted = progress.adjustedDaysRequired > progress.originalDaysRequired;
   const daysDifference = progress.adjustedDaysRequired - progress.originalDaysRequired;
+  const [loadingDay, setLoadingDay] = useState<string | null>(null);
 
   const handleExtendLevel = async () => {
     const days = parseInt(additionalDays);
@@ -119,30 +120,39 @@ export function LevelDurationTracker({
   };
 
   const handleMarkDay = async (date: Date) => {
+    const dayKey = date.toISOString();
+    setLoadingDay(dayKey);
     try {
-      await markDayCompleted(cohortId, date.toISOString(), currentLevel);
+      await markDayCompleted(cohortId, dayKey, currentLevel);
       toast.success("Day marked as completed");
       queryClient.invalidateQueries({ queryKey: ["cohort-progress", cohortId] });
       queryClient.invalidateQueries({ queryKey: ["assessment-readiness", cohortId] });
       onMarkDay?.();
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Failed to mark day");
+    } finally {
+      setLoadingDay(null);
     }
   };
 
   const handleUnmarkDay = async (date: Date) => {
+    const dayKey = date.toISOString();
+    setLoadingDay(dayKey);
     try {
-      await unmarkDay(cohortId, date.toISOString(), currentLevel);
+      await unmarkDay(cohortId, dayKey, currentLevel);
       toast.success("Day unmarked");
       queryClient.invalidateQueries({ queryKey: ["cohort-progress", cohortId] });
       queryClient.invalidateQueries({ queryKey: ["assessment-readiness", cohortId] });
       onMarkDay?.();
     } catch (error: any) {
       toast.error(error?.response?.data?.error || "Failed to unmark day");
+    } finally {
+      setLoadingDay(null);
     }
   };
 
-  const handleMarkComplete = async () => {
+  // @ts-ignore - kept for future use, button hidden
+  const _handleMarkComplete = async () => {
     if (progress.completedDays < progress.adjustedDaysRequired) {
       toast.error(
         `Cannot mark complete. Only ${progress.completedDays} of ${progress.adjustedDaysRequired} days completed.`
@@ -260,18 +270,7 @@ export function LevelDurationTracker({
               <Plus className="h-4 w-4 mr-2" />
               Extend Level
             </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleMarkComplete}
-              disabled={
-                isMarking || progress.completedDays < progress.adjustedDaysRequired
-              }
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Mark Level Complete
-            </Button>
+            {/* Mark Level Complete hidden - students auto-move on level test pass */}
           </div>
         )}
 
@@ -286,10 +285,12 @@ export function LevelDurationTracker({
               const isToday =
                 day.toISOString().split("T")[0] === new Date().toISOString().split("T")[0];
 
+              const isDayLoading = loadingDay === day.toISOString();
               return (
                 <button
                   key={index}
                   onClick={() => {
+                    if (isDayLoading) return;
                     if (isCompleted) {
                       handleUnmarkDay(day);
                     } else {
@@ -305,13 +306,15 @@ export function LevelDurationTracker({
                       ? "bg-gray-50 border-gray-200 text-gray-600"
                       : "bg-white border-gray-200 text-gray-400"
                   }`}
-                  disabled={isMarking}
+                  disabled={isMarking || isDayLoading}
                 >
                   <div className="font-medium">
                     {format(day, "MMM d")}
                   </div>
                   <div className="text-xs mt-1">
-                    {isCompleted ? (
+                    {isDayLoading ? (
+                      <div className="h-3 w-3 mx-auto border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    ) : isCompleted ? (
                       <CheckCircle2 className="h-3 w-3 mx-auto text-green-600" />
                     ) : (
                       <Clock className="h-3 w-3 mx-auto text-gray-400" />

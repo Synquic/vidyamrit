@@ -45,20 +45,48 @@ export const SchoolProvider: React.FC<SchoolProviderProps> = ({ children }) => {
       user.schoolId &&
       typeof user.schoolId === "object"
     ) {
-      setSelectedSchool({
-        _id: user.schoolId._id || "",
-        name: user.schoolId.name || "",
-        type: "private", // Default type since it's not available in user.schoolId
-        udise_code: "",
-        address: "",
-        level: "primary",
-        city: "",
-        state: "",
-        establishedYear: new Date().getFullYear(),
-        pinCode: "",
-        pointOfContact: "",
-        phone: ""
-      });
+      // Fetch full school data to get groupFormat and other fields
+      const fetchSchool = async () => {
+        try {
+          const { getSchools } = await import("@/services/schools");
+          const schools = await getSchools();
+          const fullSchool = schools.find((s: School) => s._id === (user.schoolId as any)?._id);
+          if (fullSchool) {
+            setSelectedSchool(fullSchool);
+          } else {
+            setSelectedSchool({
+              _id: user.schoolId._id || "",
+              name: user.schoolId.name || "",
+              type: "private",
+              udise_code: "",
+              address: "",
+              level: "primary",
+              city: "",
+              state: "",
+              establishedYear: new Date().getFullYear(),
+              pinCode: "",
+              pointOfContact: "",
+              phone: ""
+            });
+          }
+        } catch {
+          setSelectedSchool({
+            _id: user.schoolId._id || "",
+            name: user.schoolId.name || "",
+            type: "private",
+            udise_code: "",
+            address: "",
+            level: "primary",
+            city: "",
+            state: "",
+            establishedYear: new Date().getFullYear(),
+            pinCode: "",
+            pointOfContact: "",
+            phone: ""
+          });
+        }
+      };
+      fetchSchool();
     }
   }, [user]);
 

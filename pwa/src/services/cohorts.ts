@@ -112,7 +112,8 @@ export const updateCohort = async (id: string, data: UpdateCohortDTO): Promise<C
 
 export const startCohort = async (id: string, startDate?: string): Promise<Cohort> => {
   const startDateToUse = startDate ? new Date(startDate) : new Date();
-  const updateData: UpdateCohortDTO = {
+  const updateData: any = {
+    status: "active",
     startDate: startDateToUse.toISOString(),
     timeTracking: {
       cohortStartDate: startDateToUse.toISOString(),
