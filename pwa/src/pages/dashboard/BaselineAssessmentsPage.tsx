@@ -781,10 +781,6 @@ export default function BaselineAssessmentsPage() {
                           <BookOpen className="mr-2 h-5 w-5" />
                           Baseline Test Status
                         </CardTitle>
-                        <CardDescription>
-                          Complete overview of all students and their baseline
-                          test completion by program
-                        </CardDescription>
                       </div>
                       <div className="relative w-full sm:w-64">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />

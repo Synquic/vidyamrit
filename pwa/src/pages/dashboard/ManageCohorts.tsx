@@ -182,7 +182,7 @@ function ManageCohorts() {
       return cohortSchoolId === selectedSchool?._id;
     }) || [];
 
-  const filteredCohorts = allSchoolCohorts.filter((c) => c.status !== "archived");
+  const filteredCohorts = allSchoolCohorts.filter((c) => c.status !== "archived" && (c.status as string) !== "hidden");
   const archivedCohorts = allSchoolCohorts.filter((c) => c.status === "archived");
 
   // Extract available classes from cohort names (for class_wise format)
@@ -1293,33 +1293,6 @@ function ManageCohorts() {
                       >
                         Not Started
                       </Badge>
-                    </div>
-                  )}
-
-                  {/* Student List Preview */}
-                  {studentCount > 0 && (
-                    <div className="pt-2 border-t">
-                      <div className="text-xs text-muted-foreground mb-2">
-                        Students ({studentCount}):
-                      </div>
-                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {Array.isArray(cohort.students) &&
-                          cohort.students.slice(0, 5).map((sid) => (
-                            <Badge
-                              key={sid}
-                              variant="secondary"
-                              className="text-xs cursor-pointer hover:bg-secondary/80"
-                              onClick={() => navigate(`/reports/student/${sid}`)}
-                            >
-                              {getStudentName(sid)}
-                            </Badge>
-                          ))}
-                        {studentCount > 5 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{studentCount - 5} more
-                          </Badge>
-                        )}
-                      </div>
                     </div>
                   )}
 
