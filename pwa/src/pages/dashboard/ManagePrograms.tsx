@@ -982,6 +982,8 @@ function ViewProgramDetails({ program }: ViewProgramDetailsProps) {
     fetchTimeLapseMatrix();
   }, [fetchTimeLapseMatrix]);
 
+  if (!program) return <p className="text-muted-foreground text-center py-4">No program data available</p>;
+
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -1016,7 +1018,7 @@ function ViewProgramDetails({ program }: ViewProgramDetailsProps) {
           <div>
             <Label>Created By</Label>
             <p className="text-sm text-muted-foreground">
-              {program.createdBy.name}
+              {program.createdBy?.name || "Unknown"}
             </p>
           </div>
           <div>
