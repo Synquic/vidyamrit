@@ -264,6 +264,7 @@ function ManageCohorts() {
       queryClient.invalidateQueries({
         queryKey: ["cohorts", selectedSchool?._id],
       });
+      queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
       setIsDeleteDialogOpen(false);
       toast.success("Group deleted successfully");
     },

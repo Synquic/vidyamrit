@@ -641,7 +641,8 @@ export const getCohortAttendance = async (req: AuthRequest, res: Response) => {
     }
 
     // Verify tutor has access to this cohort
-    if (cohort.tutorId._id.toString() !== tutorId?.toString() && req.user?.role !== 'super_admin') {
+    const cohortTutorId = cohort.tutorId?._id?.toString() || cohort.tutorId?.toString();
+    if (cohortTutorId && cohortTutorId !== tutorId?.toString() && req.user?.role !== 'super_admin') {
       return res.status(403).json({ error: "You are not authorized to view attendance for this cohort" });
     }
 
@@ -836,7 +837,7 @@ export const getTutorAttendanceSummary = async (req: AuthRequest, res: Response)
           presentCount,
           absentCount,
           markedCount,
-          unmarkedCount: totalStudents - markedCount,
+          unmarkedCount: Math.max(0, totalStudents - markedCount),
           attendanceRate: markedCount > 0 ? (presentCount / markedCount) * 100 : 0
         }
       });
