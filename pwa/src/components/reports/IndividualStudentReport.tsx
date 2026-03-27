@@ -31,16 +31,12 @@ import {
   ArrowLeft,
   Loader2,
   User,
-  School,
   GraduationCap,
   TrendingUp,
   TrendingDown,
   Minus,
-  CheckCircle,
-  XCircle,
   AlertCircle,
   Award,
-  Phone,
   FileText,
   Trash2,
 } from "lucide-react";
@@ -49,9 +45,6 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -81,12 +74,6 @@ const COLORS = {
   needs_attention: "#ec4899",
 };
 
-const STATUS_COLORS = {
-  green: "#10b981",
-  yellow: "#f59e0b",
-  orange: "#f97316",
-  red: "#ef4444",
-};
 
 export default function IndividualStudentReport({
   student,
@@ -189,30 +176,6 @@ export default function IndividualStudentReport({
     );
   }, [report]);
 
-  // Prepare attendance pie chart data
-  const attendancePieData = useMemo(() => {
-    if (!report || !report.attendance || !report.attendance.stats) return [];
-    return [
-      { name: "Present", value: report.attendance.stats.present || 0, color: "#10b981" },
-      { name: "Absent", value: report.attendance.stats.absent || 0, color: "#ef4444" },
-      { name: "Exam", value: report.attendance.stats.exam || 0, color: "#3b82f6" },
-    ].filter((item) => item.value > 0);
-  }, [report]);
-
-  // Prepare attendance by month data
-  const attendanceByMonthData = useMemo(() => {
-    if (!report || !report.attendance || !report.attendance.byMonth) return [];
-    return report.attendance.byMonth.map((month) => ({
-      month: new Date(month.month + "-01").toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      }),
-      Present: month.present || 0,
-      Absent: month.absent || 0,
-      Exam: month.exam || 0,
-    }));
-  }, [report]);
-
   // Prepare subject level comparison data
   const subjectLevelData = useMemo(() => {
     if (!report || !report.currentLevels) return [];
@@ -310,7 +273,7 @@ export default function IndividualStudentReport({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col md:flex-row justify-between gap-6">
               <div className="space-y-3">
                 <h3 className="font-semibold text-base text-muted-foreground">Basic Information</h3>
                 <div className="space-y-2">
@@ -318,12 +281,6 @@ export default function IndividualStudentReport({
                     <span className="text-base font-medium">Name:</span>
                     <span className="text-base">{report?.student?.name || "Unknown"}</span>
                   </div>
-                  {report?.student?.roll_no && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-medium">Roll No:</span>
-                      <Badge variant="outline" className="text-sm">{report.student.roll_no}</Badge>
-                    </div>
-                  )}
                   <div className="flex items-center gap-2">
                     <span className="text-base font-medium">Age:</span>
                     <span className="text-base">{report?.student?.age || 0} years</span>
@@ -346,64 +303,12 @@ export default function IndividualStudentReport({
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h3 className="font-semibold text-base text-muted-foreground">School & Contact</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <School className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <span className="text-base font-medium">School:</span>
-                    <span className="text-base">
-                      {report?.student?.school &&
-                      typeof report.student.school === "object" &&
-                      report.student.school !== null
-                        ? (report.student.school as any)?.name || "Unknown"
-                        : "Unknown"}
-                    </span>
-                  </div>
-                  {report?.student?.mobileNumber && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      <span className="text-base">{report.student.mobileNumber}</span>
-                    </div>
-                  )}
-                  {report?.student?.aadharNumber && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      <span className="text-base">Aadhar: {report.student.aadharNumber}</span>
-                    </div>
-                  )}
-                  {report?.student?.apaarId && (
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      <span className="text-base">APAAR ID: {report.student.apaarId}</span>
-                    </div>
-                  )}
-                  {report?.student?.contactInfo && report.student.contactInfo.length > 0 && (
-                    <div className="mt-3">
-                      <span className="text-base font-medium">Guardian:</span>
-                      <div className="mt-1.5 space-y-1.5">
-                        {report.student.contactInfo.map((contact, idx) => (
-                          <div key={idx} className="text-base">
-                            {contact?.name || "Unknown"} ({contact?.relation || "Unknown"})
-                            {contact?.phone_no && ` - ${contact.phone_no}`}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
+              <div className="space-y-3 min-w-[250px]">
                 <h3 className="font-semibold text-base text-muted-foreground">Key Metrics</h3>
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span className="text-base">Total Tests</span>
                     <Badge variant="default" className="text-sm px-3 py-1">{report?.summary?.totalAssessments || 0}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-base">Average Level</span>
-                    <Badge variant="secondary" className="text-sm px-3 py-1">{report?.summary?.averageLevel || 0}</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span className="text-base">Highest Level</span>
@@ -432,12 +337,11 @@ export default function IndividualStudentReport({
 
         {/* Tabs for different sections */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex w-full overflow-x-auto no-scrollbar sm:grid sm:grid-cols-6 h-auto p-1">
+          <TabsList className="flex w-full overflow-x-auto no-scrollbar sm:grid sm:grid-cols-5 h-auto p-1">
             <TabsTrigger value="overview" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Overview</TabsTrigger>
             <TabsTrigger value="levels" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Levels</TabsTrigger>
             <TabsTrigger value="assessments" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Tests</TabsTrigger>
             <TabsTrigger value="attendance" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Attendance</TabsTrigger>
-            <TabsTrigger value="cohorts" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Groups</TabsTrigger>
             <TabsTrigger value="progress" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Progress</TabsTrigger>
           </TabsList>
 
@@ -830,44 +734,7 @@ export default function IndividualStudentReport({
           {/* Attendance Tab */}
           <TabsContent value="attendance" className="space-y-4">
             {/* Attendance Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendance Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {attendancePieData.length > 0 ? (
-                    <div className="h-[220px] sm:h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={attendancePieData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) =>
-                            `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
-                          }
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {attendancePieData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">
-                      No attendance data available
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
+            <div className="max-w-md">
               <Card>
                 <CardHeader>
                   <CardTitle>Attendance Statistics</CardTitle>
@@ -877,22 +744,6 @@ export default function IndividualStudentReport({
                     <div className="flex items-center justify-between p-3 bg-muted rounded">
                       <span>Total Days</span>
                       <Badge variant="outline">{report?.attendance?.stats?.totalDays || 0}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded">
-                      <span>Present</span>
-                      <Badge variant="default" className="bg-green-600">
-                        {report?.attendance?.stats?.present || 0}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded">
-                      <span>Absent</span>
-                      <Badge variant="destructive">{report?.attendance?.stats?.absent || 0}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded">
-                      <span>Exam</span>
-                      <Badge variant="default" className="bg-blue-600">
-                        {report?.attendance?.stats?.exam || 0}
-                      </Badge>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted rounded">
                       <span>Attendance Percentage</span>
@@ -913,300 +764,8 @@ export default function IndividualStudentReport({
               </Card>
             </div>
 
-            {/* Attendance by Month */}
-            {attendanceByMonthData.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendance Trends by Month</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[220px] sm:h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={attendanceByMonthData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="Present" fill="#10b981" />
-                      <Bar dataKey="Absent" fill="#ef4444" />
-                      <Bar dataKey="Exam" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Subject-wise Attendance */}
-            {Object.keys(report.attendance.bySubject).length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendance by Subject</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {Object.entries(report.attendance.bySubject).map(([subject, stats]) => (
-                      <div key={subject} className="border rounded-lg p-4">
-                        <h3 className="font-semibold capitalize mb-3">{subject}</h3>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Present:</span>
-                            <Badge variant="default" className="bg-green-600">
-                              {stats.present}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Absent:</span>
-                            <Badge variant="destructive">{stats.absent}</Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Exam:</span>
-                            <Badge variant="default" className="bg-blue-600">
-                              {stats.exam}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
-          {/* Groups Tab */}
-          <TabsContent value="cohorts" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Group Memberships</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {(report?.cohorts || []).length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8 text-base">
-                    No group memberships found
-                  </p>
-                ) : (
-                  <>
-                    {/* Mobile: Card layout */}
-                    <div className="sm:hidden space-y-3">
-                      {(report?.cohorts || []).map((cohort) => (
-                        <div key={cohort.cohortId} className="border rounded-lg p-4 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-base font-medium">{cohort.cohortName || "Unknown"}</span>
-                            <Badge variant={cohort.isActive ? "default" : "secondary"}>
-                              {cohort.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p>School: {cohort.school && typeof cohort.school === "object" && cohort.school !== null
-                              ? (cohort.school as any)?.name || "Unknown" : "-"}</p>
-                            <p>Tutor: {cohort.tutor && typeof cohort.tutor === "object" && cohort.tutor !== null
-                              ? (cohort.tutor as any)?.name || "Unknown" : "-"}</p>
-                            <p>Joined: {new Date(cohort.dateJoined).toLocaleDateString()}</p>
-                            {cohort.dateLeaved && (
-                              <p>Left: {new Date(cohort.dateLeaved).toLocaleDateString()}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Desktop: Table layout */}
-                    <Table className="hidden sm:table">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Group Name</TableHead>
-                          <TableHead>School</TableHead>
-                          <TableHead>Tutor</TableHead>
-                          <TableHead>Date Joined</TableHead>
-                          <TableHead>Date Left</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {(report?.cohorts || []).map((cohort) => (
-                          <TableRow key={cohort.cohortId}>
-                            <TableCell className="font-medium">{cohort.cohortName || "Unknown"}</TableCell>
-                            <TableCell>
-                              {cohort.school &&
-                              typeof cohort.school === "object" &&
-                              cohort.school !== null
-                                ? (cohort.school as any)?.name || "Unknown"
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {cohort.tutor &&
-                              typeof cohort.tutor === "object" &&
-                              cohort.tutor !== null
-                                ? (cohort.tutor as any)?.name || "Unknown"
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {new Date(cohort.dateJoined).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              {cohort.dateLeaved
-                                ? new Date(cohort.dateLeaved).toLocaleDateString()
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={cohort.isActive ? "default" : "secondary"}>
-                                {cohort.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Group Progress */}
-            {report?.cohortProgress && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Group Progress</CardTitle>
-                  <CardDescription>
-                    Current progress in {report.cohortProgress.cohortName || "Unknown Group"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-3 bg-muted rounded">
-                        <span className="text-sm text-muted-foreground">Current Level</span>
-                        <p className="text-2xl font-bold">{report.cohortProgress.currentLevel || 0}</p>
-                      </div>
-                      <div className="p-3 bg-muted rounded">
-                        <span className="text-sm text-muted-foreground">Status</span>
-                        <p className="text-2xl font-bold">
-                          <Badge
-                            variant="outline"
-                            style={{
-                              color:
-                                STATUS_COLORS[
-                                  (report.cohortProgress.status as keyof typeof STATUS_COLORS) || "green"
-                                ],
-                              borderColor:
-                                STATUS_COLORS[
-                                  (report.cohortProgress.status as keyof typeof STATUS_COLORS) || "green"
-                                ],
-                            }}
-                          >
-                            {report.cohortProgress.status || "Unknown"}
-                          </Badge>
-                        </p>
-                      </div>
-                      <div className="p-3 bg-muted rounded">
-                        <span className="text-sm text-muted-foreground">Failure Count</span>
-                        <p className="text-2xl font-bold">{report.cohortProgress.failureCount || 0}</p>
-                      </div>
-                      <div className="p-3 bg-muted rounded">
-                        <span className="text-sm text-muted-foreground">Last Test</span>
-                        <p className="text-sm font-medium">
-                          {report.cohortProgress.lastAssessmentDate
-                            ? new Date(
-                                report.cohortProgress.lastAssessmentDate
-                              ).toLocaleDateString()
-                            : "Never"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {(report.cohortProgress.assessmentHistory || []).length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-3 text-base">Test History in Group</h3>
-
-                        {/* Mobile: Card layout */}
-                        <div className="sm:hidden space-y-3 max-h-[400px] overflow-y-auto">
-                          {(report.cohortProgress.assessmentHistory || []).map((ah, idx) => (
-                            <div key={idx} className="border rounded-lg p-4 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Badge variant="outline" className="text-sm">Level {ah.level}</Badge>
-                                <div className="flex items-center gap-2">
-                                  {ah.passed ? (
-                                    <CheckCircle className="h-5 w-5 text-green-600" />
-                                  ) : (
-                                    <XCircle className="h-5 w-5 text-red-600" />
-                                  )}
-                                  <Badge
-                                    variant="outline"
-                                    style={{
-                                      color: STATUS_COLORS[ah.status as keyof typeof STATUS_COLORS],
-                                      borderColor: STATUS_COLORS[ah.status as keyof typeof STATUS_COLORS],
-                                    }}
-                                  >
-                                    {ah.status}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <span>{new Date(ah.date).toLocaleDateString()}</span>
-                                <span>{ah.score !== null ? `Score: ${ah.score}%` : ""}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Desktop: Table layout */}
-                        <ScrollArea className="h-[300px] hidden sm:block">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Level</TableHead>
-                                <TableHead>Passed</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Score</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {(report.cohortProgress.assessmentHistory || []).map((ah, idx) => (
-                                <TableRow key={idx}>
-                                  <TableCell>
-                                    {new Date(ah.date).toLocaleDateString()}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">Level {ah.level}</Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {ah.passed ? (
-                                      <CheckCircle className="h-5 w-5 text-green-600" />
-                                    ) : (
-                                      <XCircle className="h-5 w-5 text-red-600" />
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant="outline"
-                                      style={{
-                                        color:
-                                          STATUS_COLORS[ah.status as keyof typeof STATUS_COLORS],
-                                        borderColor:
-                                          STATUS_COLORS[ah.status as keyof typeof STATUS_COLORS],
-                                      }}
-                                    >
-                                      {ah.status}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {ah.score !== null ? `${ah.score}%` : "-"}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </ScrollArea>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
 
           {/* Progress Tab */}
           <TabsContent value="progress" className="space-y-4">
