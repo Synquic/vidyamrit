@@ -112,7 +112,7 @@ function AttendanceOverview() {
       .slice(0, 5); // Show top 5 upcoming
   }, [progressSummary]);
 
-  const { data: attendanceSummary = [], isLoading: loading } = useQuery({
+  const { data: attendanceSummary = [], isLoading: loading, isFetching } = useQuery({
     queryKey: ["tutor-attendance-summary", selectedDate, schoolId],
     queryFn: async () => {
       const data = await getTutorAttendanceSummary(selectedDate, schoolId);
@@ -130,7 +130,9 @@ function AttendanceOverview() {
 
       return validSummaries;
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always fetch fresh
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Fetch cohorts to check start status
@@ -138,7 +140,7 @@ function AttendanceOverview() {
     queryKey: ["cohorts-for-attendance", schoolId],
     queryFn: () => getCohorts(schoolId),
     enabled: !!schoolId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0, // Always fetch fresh data
   });
 
   // Start cohort mutation
@@ -223,7 +225,7 @@ function AttendanceOverview() {
     });
   };
 
-  if (loading) {
+  if (loading || isFetching) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -975,7 +977,7 @@ function CohortAttendanceDetail() {
             </div>
             <div className="bg-orange-50 rounded-xl p-4 sm:p-5">
               <div className="text-2xl sm:text-3xl font-bold text-orange-600">
-                {totalStudents - totalMarked}
+                {Math.max(0, totalStudents - totalMarked)}
               </div>
               <div className="text-sm text-orange-700 font-medium mt-1">Unmarked</div>
             </div>
