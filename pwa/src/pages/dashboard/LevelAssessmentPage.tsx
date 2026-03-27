@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,9 +48,11 @@ interface TestState {
 
 export default function LevelAssessmentPage() {
   const { cohortId } = useParams<{ cohortId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const autoStarted = useRef(false);
   const [testPhase, setTestPhase] = useState<TestPhase>("list");
   const [testState, setTestState] = useState<TestState | null>(null);
   const [testResult, setTestResult] = useState<LevelAssessmentResult | null>(null);
@@ -67,6 +69,16 @@ export default function LevelAssessmentPage() {
     },
     enabled: !!cohortId,
   });
+
+  // Auto-start test if studentId is in URL params
+  useEffect(() => {
+    const studentId = searchParams.get("studentId");
+    const studentName = searchParams.get("studentName");
+    if (studentId && studentName && cohortData && !autoStarted.current) {
+      autoStarted.current = true;
+      handleStartTest(studentId, decodeURIComponent(studentName));
+    }
+  }, [cohortData, searchParams]);
 
   // Filter students based on search
   const filteredStudents = (cohortData?.studentsProgress || []).filter((item) => {
@@ -191,7 +203,20 @@ export default function LevelAssessmentPage() {
       <div className="min-h-screen bg-background p-2 sm:p-4">
         <div className="max-w-6xl mx-auto text-center py-12">
           <p className="text-muted-foreground mb-4">Group not found</p>
-          <Button onClick={() => navigate("/progress/tutor")}>Go Back</Button>
+          <Button onClick={() => navigate(`/progress/cohort/${cohortId}`)}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading when auto-starting test from URL params
+  const autoStartStudentId = searchParams.get("studentId");
+  if (autoStartStudentId && testPhase === "list") {
+    return (
+      <div className="min-h-screen bg-background p-2 sm:p-4">
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center py-20">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-muted-foreground">Starting test...</p>
         </div>
       </div>
     );
@@ -273,15 +298,10 @@ export default function LevelAssessmentPage() {
               {/* Actions */}
               <div className="flex flex-col gap-2 sm:gap-3">
                 <Button
-                  onClick={handleBackToList}
-                  size="lg"
-                  className="w-full text-base"
-                >
-                  Test Another Student
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/progress/cohort/${cohortId}`)}
+                  onClick={() => {
+                    queryClient.invalidateQueries({ queryKey: ["cohort-progress", cohortId] });
+                    navigate(`/progress/cohort/${cohortId}`);
+                  }}
                   size="lg"
                   className="w-full text-base"
                 >

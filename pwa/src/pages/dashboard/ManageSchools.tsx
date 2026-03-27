@@ -422,19 +422,19 @@ function ManageSchools() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] w-[95vw] flex flex-col overflow-hidden p-4 sm:p-6">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {editingSchool ? "Edit School" : "Add New School"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="hidden sm:block">
               {editingSchool
                 ? "Update the school information below"
                 : "Fill in the details to add a new school"}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 my-4">
-            <div className="grid gap-3 py-4">
+          <div className="flex-1 overflow-y-auto px-2 sm:px-6 my-2 sm:my-4">
+            <div className="grid gap-3 py-2 sm:py-4">
               {/* School Type & Name */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
                 <div className="space-y-2 col-span-1">

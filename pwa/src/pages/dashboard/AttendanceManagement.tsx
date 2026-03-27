@@ -11,12 +11,10 @@ import {
   BookOpen,
   ArrowLeft,
   Save,
-  RotateCcw,
   PartyPopper,
   TrendingUp,
   AlertCircle,
   ChevronRight,
-  AlertTriangle,
   Play,
   Search,
   User,
@@ -50,19 +48,11 @@ import {
   CohortAttendanceRecord,
 } from "@/services/attendance";
 import {
-  toggleCohortHoliday,
   getCohorts,
   startCohort,
 } from "@/services/cohorts";
 import { getStudents } from "@/services/students";
 import { programsService } from "@/services/programs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,9 +72,10 @@ import { getApiErrorMessage } from "@/services";
 function AttendanceOverview() {
   const { t } = useTranslation();
   const { selectedSchool, isSchoolContextActive } = useSchoolContext();
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false);
   const [startingCohort, setStartingCohort] = useState<any>(null);
   const [customStartDate, setCustomStartDate] = useState<string>("");
@@ -232,12 +223,6 @@ function AttendanceOverview() {
     });
   };
 
-  const getAttendanceRateBadgeVariant = (rate: number) => {
-    if (rate >= 90) return "default";
-    if (rate >= 75) return "secondary";
-    return "destructive";
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -311,9 +296,6 @@ function AttendanceOverview() {
             }}
             className="flex-1 sm:flex-none px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
           />
-          <span className="text-xs text-gray-500 hidden sm:inline">
-            (Mon-Sat only)
-          </span>
         </div>
       </div>
 
@@ -451,16 +433,6 @@ function AttendanceOverview() {
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-500" />
                       <span>Unmarked: {summary.attendance.unmarkedCount}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={getAttendanceRateBadgeVariant(
-                          summary.attendance.attendanceRate
-                        )}
-                        className="text-xs"
-                      >
-                        {summary.attendance.attendanceRate.toFixed(1)}%
-                      </Badge>
                     </div>
                   </div>
 
@@ -707,10 +679,10 @@ function CohortAttendanceDetail() {
   const navigate = useNavigate();
 
   const [saving, setSaving] = useState(false);
-  const [markingHoliday, setMarkingHoliday] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [attendanceRecords, setAttendanceRecords] = useState<{
     [studentId: string]: AttendanceStatus;
   }>({});
@@ -718,7 +690,7 @@ function CohortAttendanceDetail() {
   const queryClient = useQueryClient();
 
   // Fetch cohort progress for indicator
-  const { data: progressData } = useQuery({
+  const { data: _progressData } = useQuery({
     queryKey: ["cohort-progress-indicator", cohortId],
     queryFn: async () => {
       try {
@@ -732,68 +704,6 @@ function CohortAttendanceDetail() {
     enabled: !!cohortId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-
-  // Calculate days until assessment
-  const daysUntilAssessment = useMemo(() => {
-    if (!progressData?.timeTracking) return null;
-    return progressData.timeTracking.daysUntilNextAssessment;
-  }, [progressData]);
-
-  // Get inline style for smooth gradient color based on days
-  const getGradientStyle = (days: number | null) => {
-    if (days === null) return {};
-
-    // Clamp days between -7 and 21 for color calculation
-    const clampedDays = Math.max(-7, Math.min(21, days));
-
-    // Calculate hue: red (0) -> orange (30) -> yellow (60) -> green (120)
-    // -7 days = 0 (red), 0 days = 15 (red-orange), 7 days = 45 (orange), 14 days = 90 (yellow-green), 21+ days = 120 (green)
-    let hue: number;
-    if (clampedDays < 0) {
-      // Overdue: deeper red
-      hue = 0;
-    } else if (clampedDays <= 7) {
-      // 0-7 days: red to orange (0 to 30)
-      hue = (clampedDays / 7) * 30;
-    } else if (clampedDays <= 14) {
-      // 7-14 days: orange to yellow-green (30 to 80)
-      hue = 30 + ((clampedDays - 7) / 7) * 50;
-    } else {
-      // 14+ days: yellow-green to green (80 to 120)
-      hue = 80 + ((clampedDays - 14) / 7) * 40;
-    }
-
-    return {
-      backgroundColor: `hsl(${hue}, 85%, 95%)`,
-      borderColor: `hsl(${hue}, 70%, 70%)`,
-      color: `hsl(${hue}, 80%, 35%)`,
-    };
-  };
-
-  // Get assessment message based on days
-  const getAssessmentMessage = (days: number | null): string => {
-    if (days === null) return "No data";
-
-    if (days < 0) {
-      // Overdue
-      const overdueDays = Math.abs(days);
-      if (overdueDays === 1) {
-        return "Test pending (1 day overdue)";
-      }
-      return `Test pending (${overdueDays} days overdue)`;
-    } else if (days === 0) {
-      return "Test today";
-    } else if (days === 1) {
-      return "Test in 1 day";
-    } else {
-      return `Test in ${days} days`;
-    }
-  };
-
-  // Handle progress indicator click
-  const handleProgressClick = () => {
-    navigate(`/progress/cohort/${cohortId}`);
-  };
 
   const { data: cohortData, isLoading: loading } = useQuery({
     queryKey: ["cohort-attendance", cohortId, selectedDate],
@@ -860,6 +770,13 @@ function CohortAttendanceDetail() {
     }
   }, [selectedDate, cohortData]);
 
+  // Check if past date is locked (attendance already marked)
+  // Only lock PAST dates (not today) that have existing attendance
+  const todayLocal = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; })();
+  const isStrictlyPastDate = selectedDate < todayLocal;
+  const existingRecords = cohortData?.attendance[selectedDate] || [];
+  const isPastDateLocked = isStrictlyPastDate && existingRecords.length > 0;
+
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
     setAttendanceRecords((prev) => ({
       ...prev,
@@ -867,38 +784,6 @@ function CohortAttendanceDetail() {
     }));
   };
 
-
-  const clearAll = () => {
-    setAttendanceRecords({});
-  };
-
-  const handleMarkHoliday = async () => {
-    if (!cohortId) return;
-
-    try {
-      setMarkingHoliday(true);
-      const result = await toggleCohortHoliday(cohortId, selectedDate);
-
-      setIsHoliday(result.isHoliday);
-      toast.success(result.message);
-
-      // Clear attendance records if marking as holiday
-      if (result.isHoliday) {
-        setAttendanceRecords({});
-      }
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({
-        queryKey: ["cohort-attendance", cohortId, selectedDate],
-      });
-      queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
-    } catch (error: any) {
-      console.error("Error toggling holiday:", error);
-      toast.error(getApiErrorMessage(error, "Failed to mark holiday"));
-    } finally {
-      setMarkingHoliday(false);
-    }
-  };
 
   const saveAttendance = async () => {
     if (!cohortData || !cohortId) return;
@@ -1012,10 +897,6 @@ function CohortAttendanceDetail() {
             <Users className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
             <span className="truncate">{cohortData.cohort.name}</span>
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 truncate">
-            {cohortData.cohort.school?.name || "School not assigned"} •{" "}
-            {totalStudents} students
-          </p>
         </div>
       </div>
 
@@ -1050,62 +931,20 @@ function CohortAttendanceDetail() {
                     setSelectedDate(e.target.value);
                   }}
                   onFocus={(e) => {
-                    // Set min date to prevent selecting past Sundays
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    e.currentTarget.min = today.toISOString().split("T")[0];
+                    // Allow past 1 week for marking missed attendance
+                    const now = new Date();
+                    const toLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                    const minDate = new Date(now);
+                    minDate.setDate(minDate.getDate() - 7);
+                    e.currentTarget.min = toLocal(minDate);
+                    e.currentTarget.max = toLocal(now);
                   }}
                   className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm w-full sm:w-auto"
                 />
-                <span className="text-xs text-gray-500 hidden sm:inline">
-                  (Mon-Sat only)
-                </span>
               </div>
 
-              {/* Progress Indicator - Days until assessment with gradient color */}
-              <button
-                onClick={handleProgressClick}
-                style={getGradientStyle(daysUntilAssessment)}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md hover:scale-105 active:scale-100 w-full sm:w-auto"
-              >
-                {daysUntilAssessment !== null && daysUntilAssessment < 0 && (
-                  <AlertTriangle className="h-4 w-4 animate-pulse" />
-                )}
-                <TrendingUp className="h-4 w-4" />
-                <div className="flex items-center gap-1 text-sm font-semibold">
-                  {getAssessmentMessage(daysUntilAssessment)}
-                </div>
-                <ChevronRight className="h-4 w-4 opacity-60" />
-              </button>
             </div>
 
-            {/* Row 2: Quick Action Buttons */}
-            <div className="grid grid-cols-3 sm:flex sm:flex-wrap gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAll}
-                disabled={isHoliday}
-                className="h-11 sm:h-9 text-sm sm:flex-none"
-              >
-                <RotateCcw className="h-4 w-4 mr-1.5" />
-                Clear
-              </Button>
-            </div>
-
-            {/* Row 3: Holiday Button (full width) */}
-            <Button
-              variant={isHoliday ? "default" : "outline"}
-              size="sm"
-              onClick={handleMarkHoliday}
-              disabled={markingHoliday}
-              className={`w-full h-11 sm:h-9 text-sm ${
-                isHoliday ? "bg-purple-600 hover:bg-purple-700 text-white" : ""
-              }`}
-            >
-              <PartyPopper className="h-4 w-4 mr-2" />
-              {isHoliday ? "Unmark Holiday" : "Mark Holiday"}
-            </Button>
           </div>
         </CardHeader>
 
@@ -1121,39 +960,37 @@ function CohortAttendanceDetail() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
-            <div className="bg-green-50 rounded-xl p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl font-bold text-green-600">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
+            <div className="bg-green-50 rounded-xl p-4 sm:p-5">
+              <div className="text-2xl sm:text-3xl font-bold text-green-600">
                 {presentCount}
               </div>
-              <div className="text-xs sm:text-sm text-green-700 font-medium mt-0.5">Present</div>
+              <div className="text-sm text-green-700 font-medium mt-1">Present</div>
             </div>
-            <div className="bg-red-50 rounded-xl p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl font-bold text-red-600">
+            <div className="bg-red-50 rounded-xl p-4 sm:p-5">
+              <div className="text-2xl sm:text-3xl font-bold text-red-600">
                 {absentCount}
               </div>
-              <div className="text-xs sm:text-sm text-red-700 font-medium mt-0.5">Absent</div>
+              <div className="text-sm text-red-700 font-medium mt-1">Absent</div>
             </div>
-            <div className="bg-orange-50 rounded-xl p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl font-bold text-orange-600">
+            <div className="bg-orange-50 rounded-xl p-4 sm:p-5">
+              <div className="text-2xl sm:text-3xl font-bold text-orange-600">
                 {totalStudents - totalMarked}
               </div>
-              <div className="text-xs sm:text-sm text-orange-700 font-medium mt-0.5">Unmarked</div>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-3 sm:p-4">
-              <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                {totalMarked > 0
-                  ? ((presentCount / totalMarked) * 100).toFixed(1)
-                  : 0}
-                %
-              </div>
-              <div className="text-xs sm:text-sm text-blue-700 font-medium mt-0.5">
-                Rate
-              </div>
+              <div className="text-sm text-orange-700 font-medium mt-1">Unmarked</div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Past date locked warning */}
+      {isPastDateLocked && (
+        <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-base sm:text-sm font-semibold text-amber-800">
+            Attendance already marked for this date. Past attendance cannot be edited.
+          </p>
+        </div>
+      )}
 
       {/* Student List */}
       <div className="space-y-3">
@@ -1210,6 +1047,7 @@ function CohortAttendanceDetail() {
                           currentStatus === "present" ? "default" : "outline"
                         }
                         size="sm"
+                        disabled={isPastDateLocked || isHoliday}
                         onClick={() =>
                           handleStatusChange(student._id, "present")
                         }
@@ -1227,6 +1065,7 @@ function CohortAttendanceDetail() {
                           currentStatus === "absent" ? "destructive" : "outline"
                         }
                         size="sm"
+                        disabled={isPastDateLocked || isHoliday}
                         onClick={() =>
                           handleStatusChange(student._id, "absent")
                         }
@@ -1254,7 +1093,7 @@ function CohortAttendanceDetail() {
               </div>
               <Button
                 onClick={saveAttendance}
-                disabled={saving || totalMarked === 0 || isHoliday}
+                disabled={saving || totalMarked === 0 || isHoliday || isPastDateLocked}
                 className="w-full sm:w-auto px-6 sm:px-8"
               >
                 {saving ? (
@@ -1286,10 +1125,12 @@ function IndividualAttendance() {
   const { selectedSchool, isSchoolContextActive } = useSchoolContext();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [attendanceMap, setAttendanceMap] = useState<
@@ -1321,8 +1162,9 @@ function IndividualAttendance() {
 
   // Fetch programs to get dynamic subjects
   const { data: programsData } = useQuery({
-    queryKey: ["programs-for-attendance"],
+    queryKey: ["programs-for-attendance", schoolId],
     queryFn: () => programsService.getPrograms({ limit: 100, schoolId }),
+    enabled: !!schoolId,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -1468,9 +1310,10 @@ function IndividualAttendance() {
   ).length;
 
   // Check if selected date is in the past and already has attendance
-  const isToday = selectedDate === new Date().toISOString().split("T")[0];
-  const isPastDate = !isToday && new Date(selectedDate) < new Date();
-  const pastDateHasAttendance = isPastDate && existingAttendance.length > 0;
+  const todayLocalClass = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; })();
+  const isToday = selectedDate === todayLocalClass;
+  const isPastDateClass = !isToday && selectedDate < todayLocalClass;
+  const pastDateHasAttendance = isPastDateClass && existingAttendance.length > 0;
   const isPastDateLocked = pastDateHasAttendance;
 
   // Get student count per class
@@ -1539,36 +1382,32 @@ function IndividualAttendance() {
 
       {/* Controls Row */}
       <div className="flex flex-col gap-4">
-        <div className="flex gap-3 sm:gap-4">
-        {/* Subject Select */}
-        <div className="flex-1 sm:max-w-[200px]">
-          <Label className="text-base sm:text-sm font-semibold mb-2 block">Subject</Label>
-          <Select value={selectedSubject} onValueChange={async (value) => {
-              if (hasChanges) {
-                const confirmed = await showConfirm(
-                  "Unsaved Changes",
-                  "You have unsaved attendance changes. Switching subject will discard them. Continue?"
-                );
-                if (!confirmed) return;
-              }
-              setSelectedSubject(value);
-            }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select Subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {availablePrograms.length > 0 ? (
-                availablePrograms.map((program: any) => (
-                  <SelectItem key={program.id} value={program.subject}>
-                    {program.name} ({program.subject.charAt(0).toUpperCase() + program.subject.slice(1)})
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>No subjects available</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Subject Tabs */}
+        <div className="flex gap-2 flex-wrap">
+          {availablePrograms.length > 0 ? (
+            availablePrograms.map((program: any) => (
+              <Button
+                key={program.id}
+                variant={selectedProgramId === program.id ? "default" : "outline"}
+                size="sm"
+                onClick={async () => {
+                  if (hasChanges) {
+                    const confirmed = await showConfirm(
+                      "Unsaved Changes",
+                      "You have unsaved attendance changes. Switching subject will discard them. Continue?"
+                    );
+                    if (!confirmed) return;
+                  }
+                  setSelectedProgramId(program.id);
+                  setSelectedSubject(program.subject);
+                }}
+              >
+                {program.name} ({program.subject.charAt(0).toUpperCase() + program.subject.slice(1)})
+              </Button>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No subjects available</p>
+          )}
         </div>
 
         {/* Date Picker */}
@@ -1596,19 +1435,16 @@ function IndividualAttendance() {
               setSelectedDate(newDate);
             }}
             onFocus={(e) => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const weekAgo = new Date(today);
+              const now = new Date();
+              const toLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              const weekAgo = new Date(now);
               weekAgo.setDate(weekAgo.getDate() - 7);
-              e.currentTarget.min = weekAgo.toISOString().split("T")[0];
-              e.currentTarget.max = today.toISOString().split("T")[0];
+              e.currentTarget.min = toLocal(weekAgo);
+              e.currentTarget.max = toLocal(now);
             }}
             className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm w-full sm:w-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             style={{ position: 'relative' }}
           />
-          <span className="text-xs text-gray-500 hidden sm:inline">
-            (Mon-Sat only)
-          </span>
         </div>
       </div>
 

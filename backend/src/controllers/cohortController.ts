@@ -925,10 +925,10 @@ export const deleteCohort = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // If already archived, permanently delete. Otherwise archive.
+    // If already archived, hide it (don't permanently delete). Otherwise archive.
     if (cohort.status === "archived") {
-      await Cohort.findByIdAndDelete(req.params.id);
-      res.json({ message: "Cohort permanently deleted" });
+      await Cohort.findByIdAndUpdate(req.params.id, { status: "hidden" });
+      res.json({ message: "Cohort deleted successfully" });
     } else {
       await Cohort.findByIdAndUpdate(req.params.id, { status: "archived" });
       res.json({ message: "Cohort archived successfully" });

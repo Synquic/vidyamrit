@@ -229,24 +229,32 @@ export async function calculateLevelProgress(cohort: any): Promise<{
     };
   }
 
-  // Get original days required from program
+  // Always use fresh duration from program
   const originalDaysRequired = convertToDays(levelInfo.timeframe, levelInfo.timeframeUnit);
+  const adjustedDaysRequired = originalDaysRequired;
   
-  // Get adjusted days if level has been extended
-  const levelProgressData = cohort.levelProgress?.get?.(currentLevel.toString()) || 
-                            (cohort.levelProgress && cohort.levelProgress[currentLevel]);
-  const adjustedDaysRequired = levelProgressData?.adjustedDaysRequired || originalDaysRequired;
-  
-  // Get completed days from levelProgress (supplemented by attendance)
-  const completedDays = levelProgressData?.completedDays || 0;
-  
-  // Also get attendance-based calculation for comparison
-  const attendanceDates = getCurrentLevelAttendanceDates(cohort);
-  const attendanceDays = attendanceDates.length;
-  
-  // Use the maximum of completedDays (from levelProgress) and attendanceDays
-  // This allows manual marking to supplement attendance
-  const effectiveCompletedDays = Math.max(completedDays, attendanceDays);
+  // Auto-calculate teaching days from start date (Mon-Sat, Sunday off)
+  // Use startDate (set when "Start Group" clicked) as primary source
+  const levelStartDate = cohort.startDate ||
+                          cohort.timeTracking?.cohortStartDate ||
+                          cohort.timeTracking?.currentLevelStartDate;
+  let autoCompletedDays = 0;
+  if (levelStartDate) {
+    const start = new Date(levelStartDate);
+    start.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const current = new Date(start);
+    while (current <= today) {
+      // Skip Sundays (0 = Sunday)
+      if (current.getDay() !== 0) {
+        autoCompletedDays++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  const effectiveCompletedDays = autoCompletedDays;
 
   // Convert to weeks for display
   const weeksRequired = adjustedDaysRequired / 6; // 6 teaching days per week

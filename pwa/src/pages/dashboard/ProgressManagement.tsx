@@ -27,18 +27,13 @@ import {
 import {
   getTutorProgressSummary,
   getCohortProgress,
-  getProgressStatusDescription,
   ProgressStatus,
 } from "@/services/progress";
-import { TimelineProgress } from "@/components/progress/TimelineProgress";
-import { LevelDurationTracker } from "@/components/progress/LevelDurationTracker";
 import { toast } from "sonner";
 import { Link } from "react-router";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { getApiErrorMessage } from "@/services";
 import { checkAssessmentReadiness, getCohorts } from "@/services/cohorts";
-import { CheckCircle2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Overview Component (TutorProgress functionality)
 function ProgressOverview() {
@@ -507,45 +502,6 @@ function CohortProgressDetail() {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
-  // Handle start level assessment - navigate to level assessment page
-  const handleStartLevelAssessment = () => {
-    if (!cohortId) {
-      toast.error("Group ID not available");
-      return;
-    }
-    navigate(`/progress/cohort/${cohortId}/level-assessment`);
-  };
-
-  const getStatusIcon = (status: ProgressStatus) => {
-    switch (status) {
-      case "green":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "yellow":
-        return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-      case "orange":
-        return <AlertTriangle className="h-4 w-4 text-orange-600" />;
-      case "red":
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
-      default:
-        return <CheckCircle className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const getStatusBadgeVariant = (status: ProgressStatus) => {
-    switch (status) {
-      case "green":
-        return "default";
-      case "yellow":
-        return "secondary";
-      case "orange":
-        return "outline";
-      case "red":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -588,15 +544,6 @@ function CohortProgressDetail() {
     { green: 0, yellow: 0, orange: 0, red: 0 } as Record<ProgressStatus, number>
   );
 
-  const levelDistribution = cohortData.studentsProgress.reduce(
-    (acc, student) => {
-      const level = student.progress.currentLevel;
-      acc[level] = (acc[level] || 0) + 1;
-      return acc;
-    },
-    {} as Record<number, number>
-  );
-
   return (
     <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
       {/* Header */}
@@ -614,25 +561,6 @@ function CohortProgressDetail() {
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 flex-shrink-0" />
             <span className="truncate">{cohortData.cohort.name} Progress</span>
           </h1>
-          <div className="space-y-1 mt-1">
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 truncate">
-              {cohortData.cohort.school?.name || "School not assigned"} •{" "}
-              {cohortData.studentsProgress.length} students
-            </p>
-            {cohortData.cohort.program && (
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <Badge variant="default" className="text-xs">
-                  {cohortData.cohort.program.subject} Program
-                </Badge>
-                <span className="text-xs sm:text-sm text-gray-500 truncate">
-                  {cohortData.cohort.program.name}
-                </span>
-                <span className="text-xs text-gray-400">
-                  ({cohortData.cohort.program.totalLevels} levels)
-                </span>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -671,261 +599,97 @@ function CohortProgressDetail() {
         </Card>
       </div>
 
-      {/* Level Progress and Test Readiness */}
-      {assessmentReadiness && cohortData.cohort.program && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3 sm:pb-6">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
-              <span className="truncate">
-                Level {assessmentReadiness.currentLevel} Progress
+
+
+      {/* Auto Progress - Simple days counter */}
+      {assessmentReadiness && (
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-sm sm:text-base">Level {assessmentReadiness.currentLevel} Progress</h3>
+              <span className="text-sm text-muted-foreground">
+                {assessmentReadiness.completionPercentage.toFixed(0)}%
               </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs sm:text-sm">
-                <span className="text-gray-700 font-medium truncate">
-                  {assessmentReadiness.levelTitle}
-                </span>
-                <Badge variant="outline" className="self-start sm:self-auto">
-                  {assessmentReadiness.weeksCompleted.toFixed(1)} /{" "}
-                  {assessmentReadiness.weeksRequired} weeks
-                </Badge>
-              </div>
-              <Progress
-                value={assessmentReadiness.completionPercentage}
-                className="h-4"
-              />
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>
-                  {assessmentReadiness.completionPercentage.toFixed(0)}%
-                  Complete
-                </span>
-                {!assessmentReadiness.isReadyForAssessment &&
-                  assessmentReadiness.daysRemaining && (
-                    <span>
-                      {assessmentReadiness.daysRemaining} teaching days
-                      remaining
-                    </span>
-                  )}
-              </div>
             </div>
-
-            {assessmentReadiness.isReadyForAssessment ? (
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                <AlertTitle className="text-green-800 text-sm sm:text-base">
-                  Ready for Level Test
-                </AlertTitle>
-                <AlertDescription className="text-green-700 text-xs sm:text-sm">
-                  This group has completed Level{" "}
-                  {assessmentReadiness.currentLevel}. Conduct a level-specific
-                  test to verify student mastery.
-                  {assessmentReadiness.nextLevel && (
-                    <span className="block mt-1">
-                      Next:{" "}
-                      <strong>{assessmentReadiness.nextLevel.title}</strong>
-                    </span>
-                  )}
-                </AlertDescription>
-                <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-                    onClick={handleStartLevelAssessment}
-                  >
-                    Start Level Test
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-green-300 text-green-700 hover:bg-green-100 w-full sm:w-auto"
-                    onClick={() => {
-                      // Show assessment details
-                      toast.info(
-                        "Test will cover only Level " +
-                          assessmentReadiness.currentLevel
-                      );
-                    }}
-                  >
-                    View Details
-                  </Button>
-                </div>
-              </Alert>
-            ) : assessmentReadiness.completionPercentage >= 80 ? (
-              <Alert className="border-orange-200 bg-orange-50">
-                <Clock className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                <AlertTitle className="text-orange-800 text-sm sm:text-base">
-                  Test Approaching
-                </AlertTitle>
-                <AlertDescription className="text-orange-700 text-xs sm:text-sm">
-                  This group is{" "}
-                  {assessmentReadiness.completionPercentage.toFixed(0)}% through
-                  Level {assessmentReadiness.currentLevel}. Test will be
-                  due soon.
-                </AlertDescription>
-              </Alert>
-            ) : null}
+            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+              <div
+                className={`h-3 rounded-full transition-all ${
+                  assessmentReadiness.isReadyForAssessment ? "bg-green-500" : "bg-blue-500"
+                }`}
+                style={{ width: `${Math.min(100, assessmentReadiness.completionPercentage)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{assessmentReadiness.weeksCompleted} weeks completed</span>
+              <span>{assessmentReadiness.weeksRequired} weeks required</span>
+            </div>
+            {assessmentReadiness.daysRemaining && (
+              <p className="text-sm text-muted-foreground mt-2">
+                {assessmentReadiness.daysRemaining} teaching days remaining
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Level Duration Management */}
-      {assessmentReadiness && cohortData.cohort.program && cohortId && (
-        <LevelDurationTracker
-          cohortId={cohortId}
-          currentLevel={assessmentReadiness.currentLevel}
-          levelInfo={{
-            levelNumber: assessmentReadiness.currentLevel,
-            title: assessmentReadiness.levelTitle,
-            timeframe: cohortData.cohort.program.levels.find(
-              (l: any) => l.levelNumber === assessmentReadiness.currentLevel
-            )?.timeframe || 2,
-            timeframeUnit: cohortData.cohort.program.levels.find(
-              (l: any) => l.levelNumber === assessmentReadiness.currentLevel
-            )?.timeframeUnit || "weeks",
-          }}
-          levelProgress={
-            cohortData.cohort.levelProgress?.[assessmentReadiness.currentLevel.toString()] ||
-            cohortData.cohort.levelProgress?.[assessmentReadiness.currentLevel]
-          }
-          levelStartDate={cohortData.timeTracking?.currentLevelStartDate || cohortData.timeTracking?.cohortStartDate}
-        />
-      )}
-
-      {/* Enhanced Program Timeline & Time Tracking */}
-      {cohortData.timeTracking ? (
-        <TimelineProgress
-          timeTracking={cohortData.timeTracking}
-          programName={cohortData.cohort.program?.name}
-        />
-      ) : cohortData.cohort.program ? (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="text-center py-8">
-            <Clock className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-            <p className="text-yellow-700 text-lg font-medium">
-              Enhanced Time Tracking Available
-            </p>
-            <p className="text-yellow-600 text-sm mt-2">
-              Backend implementation required for program timeline and
-              test scheduling features.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-gray-200 bg-gray-50">
-          <CardContent className="text-center py-8">
-            <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-700 text-lg font-medium">
-              No Program Assigned
-            </p>
-            <p className="text-gray-600 text-sm mt-2">
-              Assign a program to this group to enable time-based progress
-              tracking.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Level Distribution */}
+      {/* Student Progress Table */}
       <Card>
-        <CardHeader className="pb-3 sm:pb-6">
-          <CardTitle className="text-base sm:text-lg">
-            Level Distribution
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(levelDistribution).map(([level, count]) => (
-              <Badge
-                key={level}
-                variant="secondary"
-                className="px-2 sm:px-3 py-1 text-xs sm:text-sm"
-              >
-                Level {level}: {count} students
-              </Badge>
-            ))}
+        <CardContent className="p-0 sm:p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left p-3 sm:p-4 text-sm font-semibold">Name</th>
+                  <th className="text-center p-3 sm:p-4 text-sm font-semibold">Status</th>
+                  <th className="text-center p-3 sm:p-4 text-sm font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cohortData.studentsProgress.map((studentData) => {
+                  const { student, progress } = studentData;
+                  const isReady = assessmentReadiness?.isReadyForAssessment;
+
+                  return (
+                    <tr key={student._id} className="border-b last:border-0 hover:bg-gray-50">
+                      <td className="p-3 sm:p-4">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/reports/student/${student._id}`)}
+                          className="font-medium text-sm text-primary hover:underline cursor-pointer text-left"
+                        >
+                          {student.name}
+                        </button>
+                      </td>
+                      <td className="p-3 sm:p-4 text-center">
+                        <Badge
+                          variant={progress.status === "green" ? "default" : "destructive"}
+                          className="text-xs"
+                        >
+                          {progress.status === "green" ? "Progressing" : "Not Progressing"}
+                        </Badge>
+                      </td>
+                      <td className="p-3 sm:p-4 text-center">
+                        <Button
+                          size="sm"
+                          disabled={!isReady}
+                          className={isReady ? "bg-green-600 hover:bg-green-700" : ""}
+                          onClick={() => {
+                            if (isReady) {
+                              navigate(`/progress/cohort/${cohortId}/level-assessment?studentId=${student._id}&studentName=${encodeURIComponent(student.name)}`);
+                            }
+                          }}
+                        >
+                          {isReady ? "Start Test" : "Not Ready"}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
-
-      {/* Student Progress List */}
-      <div className="space-y-2 sm:space-y-3">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 px-1">
-          Student Progress
-        </h2>
-        {cohortData.studentsProgress.map((studentData) => {
-          const { student, progress } = studentData;
-
-          return (
-            <Card
-              key={student._id}
-              className={`transition-colors ${
-                progress.status === "green"
-                  ? "border-green-200"
-                  : "border-red-200"
-              }`}
-            >
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                    <div className="flex-shrink-0">
-                      {getStatusIcon(progress.status)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/reports/student/${student._id}`)}
-                        className="font-medium text-sm sm:text-base text-primary hover:underline truncate cursor-pointer text-left"
-                      >
-                        {student.name}
-                      </button>
-                      <p className="text-xs text-gray-600 truncate">
-                        Roll No: {student.roll_no} • Class: {student.class}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 flex-shrink-0">
-                    <div className="text-left sm:text-right">
-                      <p className="text-xs sm:text-sm font-medium">
-                        Level {progress.currentLevel}
-                      </p>
-                      {progress.failureCount > 0 && (
-                        <p className="text-xs text-gray-500">
-                          {progress.failureCount} failure
-                          {progress.failureCount > 1 ? "s" : ""}
-                        </p>
-                      )}
-                    </div>
-
-                    <Badge
-                      variant={getStatusBadgeVariant(progress.status)}
-                      className="text-xs"
-                    >
-                      {progress.status === "green" ? "PROGRESSING" : "NOT PROGRESSING"}
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Status Description */}
-                <div className="mt-2 sm:mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                  {getProgressStatusDescription(progress.status)}
-                </div>
-
-                {/* Last Update */}
-                {progress.lastUpdated && (
-                  <div className="mt-1.5 sm:mt-2 text-xs text-gray-500">
-                    Last updated:{" "}
-                    {new Date(progress.lastUpdated).toLocaleDateString()}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
     </div>
   );
 }
