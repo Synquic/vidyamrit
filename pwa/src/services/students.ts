@@ -40,6 +40,18 @@ export interface Student {
     dateJoined: string;
     dateLeaved?: string;
   }>;
+  baselineHistory?: Array<{
+    program: string;
+    programName: string;
+    subject: string;
+    level: number;
+    score: number;
+    totalQuestions: number;
+    correctAnswers: number;
+    passed: boolean | null;
+    date: string;
+    mentorId?: string;
+  }>;
 }
 
 export interface StudentLevel {
@@ -174,6 +186,18 @@ export interface StudentComprehensiveReport {
     createdAt: string;
     updatedAt: string;
     lastAssessmentDate?: string;
+    baselineHistory?: Array<{
+      program: string;
+      programName: string;
+      subject: string;
+      level: number;
+      score: number;
+      totalQuestions: number;
+      correctAnswers: number;
+      passed: boolean | null;
+      date: string;
+      mentorId?: string;
+    }>;
   };
   currentLevels: { [subject: string]: number };
   knowledgeLevelHistory: Array<{
@@ -288,4 +312,24 @@ export const getStudentComprehensiveReport = async (
     `${baseUrl}/${studentId}/comprehensive-report`
   );
   return response.data;
+};
+
+export interface StudentBaselineHistoryEntry {
+  program: string;
+  programName: string;
+  subject: string;
+  level: number;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  passed: boolean | null;
+  date?: string;
+}
+
+export const saveStudentBaselineHistory = async (
+  studentId: string,
+  entry: StudentBaselineHistoryEntry
+): Promise<Student> => {
+  const response = await authAxios.post(`${baseUrl}/${studentId}/baseline-history`, entry);
+  return response.data.student;
 };

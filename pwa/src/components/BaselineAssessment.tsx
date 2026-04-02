@@ -14,9 +14,11 @@ import {
   X,
   Brain,
   CheckIcon,
+  Loader2,
 } from "lucide-react";
 import { createAssessment } from "@/services/assessments";
 import { createTestReport } from "@/services/testReports";
+import { saveStudentBaselineHistory } from "@/services/students";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Student } from "@/services/students";
@@ -94,6 +96,7 @@ export function BaselineAssessmentModal({
   const [correctAnswersForProgram, setCorrectAnswersForProgram] = useState(0);
   const [showQuickComplete, setShowQuickComplete] = useState(false);
   const [showManualDecision, setShowManualDecision] = useState(false); // Manual mode: show Assign/Jump buttons after 10 questions
+  const [isClosing, setIsClosing] = useState(false); // Track if modal is closing
 
   // algorithm refs - new 5-question batch system
   const levelQuestionsAnswered = useRef(0); // 0-10 questions per level
@@ -444,6 +447,21 @@ export function BaselineAssessmentModal({
         totalQuestions: levelTotalQuestions,
         correctAnswers: correct,
       });
+
+      const existingBaselineHistory = Array.isArray(student.baselineHistory) ? student.baselineHistory : [];
+      const alreadyStored = existingBaselineHistory.some((entry) => entry.program === active._id);
+      if (!alreadyStored) {
+        await saveStudentBaselineHistory(student._id, {
+          program: active._id,
+          programName: active.name,
+          subject: active.subject,
+          level: currentLevel + 1,
+          score,
+          totalQuestions: levelTotalQuestions,
+          correctAnswers: correct,
+          passed,
+        });
+      }
     } catch {
       // Don't block flow if save fails
     }
@@ -491,6 +509,7 @@ export function BaselineAssessmentModal({
   if (!isOpen) return null;
 
   const closeAll = async () => {
+    setIsClosing(true);
     if (modalState === "testing") await finalizeProgram();
     // Wait for assessment complete callback to finish refreshing data
     if (onAssessmentComplete) {
@@ -522,9 +541,14 @@ export function BaselineAssessmentModal({
           variant="ghost"
           size="sm"
           onClick={closeAll}
+          disabled={isClosing}
           className="flex-shrink-0"
         >
-          <X className="w-5 h-5" />
+          {isClosing ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <X className="w-5 h-5" />
+          )}
         </Button>
       </div>
 
@@ -635,7 +659,7 @@ export function BaselineAssessmentModal({
                       hasMultipleLines
                         ? "text-xl md:text-2xl leading-[1.75]"
                         : "text-3xl md:text-4xl lg:text-5xl leading-tight"
-                    } min-h-[180px] md:min-h-[240px] max-h-[320px] md:max-h-[420px] overflow-y-auto flex items-center justify-center`}
+                    } min-h-[180px] md:min-h-[240px] flex items-center justify-center`}
                   >
                     <div className="space-y-2 md:space-y-3 whitespace-pre-wrap break-words w-full">
                       {questionLines.map((line, i) => (
