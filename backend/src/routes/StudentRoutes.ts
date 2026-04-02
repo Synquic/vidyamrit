@@ -13,6 +13,7 @@ import {
   getArchivedStudents,
   restoreStudent,
   getStudentComprehensiveReport,
+  addStudentBaselineHistory,
 } from "../controllers/studentController";
 
 const studentRouter = Router();
@@ -48,6 +49,12 @@ studentRouter.get(
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
   getStudentComprehensiveReport
 ); // Get comprehensive report for a student
+studentRouter.post(
+  "/:id/baseline-history",
+  authMiddleware,
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR, UserRole.VOLUNTEER),
+  addStudentBaselineHistory
+); // Save one baseline snapshot per program
 studentRouter.get(
   "/cohort-status/:schoolId",
   authMiddleware,

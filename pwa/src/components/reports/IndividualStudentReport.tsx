@@ -178,6 +178,25 @@ export default function IndividualStudentReport({
     return Math.max(...levels);
   }, [report?.currentLevels]);
 
+  const baselineHistory = report?.student?.baselineHistory || [];
+
+  const earliestBaselineMetric = useMemo(() => {
+    if (!baselineHistory.length) return null;
+
+    return baselineHistory
+      .slice()
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  }, [baselineHistory]);
+
+  const baselineLevelMetric = Number(earliestBaselineMetric?.level) || null;
+  const baselineDateMetric = earliestBaselineMetric?.date
+    ? new Date(earliestBaselineMetric.date).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      })
+    : "N/A";
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-4 md:p-6">
@@ -295,6 +314,19 @@ export default function IndividualStudentReport({
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span className="text-base">Current Level</span>
                     <Badge variant="default" className="text-sm px-3 py-1">{currentLevelMetric}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-base">Baseline</span>
+                    {baselineLevelMetric ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <Badge variant="default" className="text-sm px-3 py-1">
+                          {baselineLevelMetric}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground mt-1">{baselineDateMetric}</span>
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="text-sm px-3 py-1">N/A</Badge>
+                    )}
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span className="text-base">Attendance</span>
