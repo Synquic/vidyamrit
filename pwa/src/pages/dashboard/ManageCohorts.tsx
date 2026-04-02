@@ -13,15 +13,18 @@ import {
   createCohortsFromPlan,
   autoGenerateGroups,
   resetGroups,
+  startAllGroups,
   type Cohort,
   type CreateCohortDTO,
   type UpdateCohortDTO,
   type PreviewCohort,
 } from "@/services/cohorts";
 import { getTutors } from "@/services/tutors";
-import { getStudents, getStudentCohortStatus } from "@/services/students";
+import { getStudents } from "@/services/students";
 import { programsService } from "@/services/programs";
+import { getTutorProgressSummary } from "@/services/progress";
 import { useSchoolContext } from "@/contexts/SchoolContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -76,6 +79,7 @@ import {
 
 function ManageCohorts() {
   const { selectedSchool } = useSchoolContext();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -87,6 +91,7 @@ function ManageCohorts() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isStartingAll, setIsStartingAll] = useState(false);
   const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -142,15 +147,6 @@ function ManageCohorts() {
     queryFn: () => getStudents(),
   });
 
-  // Fetch student cohort status for the selected school
-  const { data: cohortStatus } = useQuery({
-    queryKey: ["student-cohort-status", selectedSchool?._id],
-    queryFn: () =>
-      selectedSchool?._id
-        ? getStudentCohortStatus(selectedSchool._id)
-        : Promise.resolve(undefined),
-    enabled: !!selectedSchool?._id,
-  });
 
   // Fetch programs for cohort generation
   const { data: programsResponse } = useQuery({
@@ -158,10 +154,25 @@ function ManageCohorts() {
     queryFn: () => programsService.getPrograms({ isActive: "true", schoolId: selectedSchool?._id }),
   });
 
+  // Fetch progress readiness so we can show a card-level test indicator
+  const { data: progressSummaries = [] } = useQuery({
+    queryKey: ["tutor-progress-summary", selectedSchool?._id],
+    queryFn: () => getTutorProgressSummary(selectedSchool?._id),
+    enabled: !!selectedSchool?._id,
+  });
+
   const programs = useMemo(
     () => programsResponse?.programs || [],
     [programsResponse?.programs]
   );
+
+  const readyForTestCohortIds = useMemo(() => {
+    return new Set(
+      progressSummaries
+        .filter((summary) => summary.levelProgress?.isReadyForAssessment)
+        .map((summary) => summary.cohort._id)
+    );
+  }, [progressSummaries]);
 
   // Filter students and tutors based on selected school
   const filteredTutors = allTutors.filter(
@@ -907,6 +918,7 @@ function ManageCohorts() {
             )}
             {isAutoGenerating ? "Loading..." : "Auto Generate"}
           </Button>
+          {user?.role === "super_admin" && (
           <Button
             variant="outline"
             size="sm"
@@ -921,6 +933,35 @@ function ManageCohorts() {
             )}
             {isResetting ? "Resetting..." : "Reset"}
           </Button>
+          )}
+          {user?.role === "super_admin" && (
+          <Button
+            size="sm"
+            className="bg-green-600 hover:bg-green-700"
+            disabled={isStartingAll || !selectedSchool?._id}
+            onClick={async () => {
+              if (!selectedSchool?._id) return;
+              setIsStartingAll(true);
+              try {
+                const result = await startAllGroups(selectedSchool._id);
+                toast.success(`${result.groupsStarted} groups started${result.skipped > 0 ? `. ${result.skipped} skipped (no tutor assigned)` : ""}`);
+                queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+                queryClient.invalidateQueries({ queryKey: ["tutor-attendance-summary"] });
+              } catch (error: any) {
+                toast.error(getApiErrorMessage(error, "Failed to start groups"));
+              } finally {
+                setIsStartingAll(false);
+              }
+            }}
+          >
+            {isStartingAll ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="mr-2 h-4 w-4" />
+            )}
+            {isStartingAll ? "Starting..." : "Start All"}
+          </Button>
+          )}
           <Button
             size="sm"
             onClick={() => {
@@ -937,50 +978,6 @@ function ManageCohorts() {
         </div>
       </div>
 
-      {/* Cohort Status Indicator */}
-      {selectedSchool && cohortStatus && (
-        <div className="mb-6 p-4 border rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {cohortStatus.studentsAwaitingAssignment > 0 ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span className="font-medium text-yellow-700">
-                    {cohortStatus.studentsAwaitingAssignment} students awaiting
-                    group assignment
-                  </span>
-                </div>
-              ) : cohortStatus.studentsWithAssessments > 0 ? (
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-700">
-                    All students are assigned to groups
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-gray-500" />
-                  <span className="font-medium text-gray-600">
-                    No students with tests found
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {cohortStatus.studentsInCohorts}/
-              {cohortStatus.studentsWithAssessments} assigned
-            </div>
-          </div>
-
-          {cohortStatus.studentsAwaitingAssignment > 0 && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-sm text-blue-800">
-                <strong>💡 Recommendation:</strong> Use "Auto Generate" to automatically create groups based on students' baseline test levels. Groups are organized by subject and level for easy management.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Success Message After Generation */}
       {(generateCohortsMutation.isSuccess ||
@@ -1203,6 +1200,7 @@ function ManageCohorts() {
                       <CardTitle className="text-lg mb-2">
                         {cohort.name}
                       </CardTitle>
+                      {user?.role === "super_admin" && (
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge
                           variant="outline"
@@ -1216,6 +1214,17 @@ function ManageCohorts() {
                           </Badge>
                         )}
                       </div>
+                      )}
+                      {isCohortStarted(cohort) && readyForTestCohortIds.has(cohort._id) && (
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <Badge
+                            variant="outline"
+                            className="border-green-200 bg-green-50 text-green-700"
+                          >
+                            Ready for Test
+                          </Badge>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-1">
                       <Button
@@ -1297,9 +1306,16 @@ function ManageCohorts() {
                     </div>
                   )}
 
+                  {/* Tutor not assigned warning - super admin only */}
+                  {!isCohortStarted(cohort) && !cohort.tutorId && user?.role === "super_admin" && (
+                    <div className="p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800 font-medium">
+                      Please assign a tutor to this group first
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div className="flex gap-2 pt-2 border-t">
-                    {!isCohortStarted(cohort) ? (
+                    {!isCohortStarted(cohort) && user?.role === "super_admin" ? (
                       <Button
                         variant="default"
                         size="sm"
@@ -1309,7 +1325,7 @@ function ManageCohorts() {
                         <Play className="mr-2 h-4 w-4" />
                         Start Group
                       </Button>
-                    ) : (
+                    ) : isCohortStarted(cohort) ? (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1319,9 +1335,9 @@ function ManageCohorts() {
                         }
                       >
                         <TrendingUp className="mr-2 h-4 w-4" />
-                        View Progress
+                        View Details
                       </Button>
-                    )}
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>

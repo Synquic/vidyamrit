@@ -211,6 +211,7 @@ export const getAssessmentQuestions = async (req: AuthRequest, res: Response) =>
       _id: question._id,
       questionText: question.questionText,
       questionType: question.questionType,
+      questionCategory: question.questionCategory,
       options: question.options, // For multiple choice
       points: question.points,
       isRequired: question.isRequired,

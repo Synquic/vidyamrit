@@ -11,7 +11,6 @@ import {
   Eye,
   BarChart3,
   LayoutDashboard,
-  FileText,
   // Settings   // Temporarily hidden - School Admin Management
 } from "lucide-react";
 
@@ -82,13 +81,13 @@ export const navigationItems: NavigationItem[] = [
     allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
     description: "Track daily student attendance",
   },
-  {
-    title: "Test Reports",
-    url: DASHBOARD_ROUTE_PATHS.testReports,
-    icon: FileText,
-    allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
-    description: "View student test scores and results",
-  },
+  // {
+  //   title: "Test Reports",
+  //   url: DASHBOARD_ROUTE_PATHS.testReports,
+  //   icon: FileText,
+  //   allowedRoles: [UserRole.SUPER_ADMIN, UserRole.TUTOR],
+  //   description: "View student test scores and results",
+  // },
   {
     title: "School Management",
     url: DASHBOARD_ROUTE_PATHS.schools,
@@ -114,5 +113,9 @@ export const navigationItems: NavigationItem[] = [
 
 // Helper function to get navigation items for a specific role
 export const getNavigationForRole = (userRole: UserRole): NavigationItem[] => {
-  return navigationItems.filter((item) => item.allowedRoles.includes(userRole));
+  return navigationItems.filter(
+    (item) =>
+      item.allowedRoles.includes(userRole) &&
+      item.url !== DASHBOARD_ROUTE_PATHS.testReports
+  );
 };

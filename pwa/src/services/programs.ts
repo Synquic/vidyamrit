@@ -14,11 +14,19 @@ export enum QuestionType {
   VERBAL_EVALUATION = "verbal_evaluation",
 }
 
+export enum QuestionCategory {
+  LETTER = "letter",
+  WORD = "word",
+  SENTENCE = "sentence",
+  MATRA = "matra",
+}
+
 // Interface for assessment questions
 export interface IAssessmentQuestion {
   _id?: string;
   questionText: string;
   questionType: QuestionType;
+  questionCategory?: QuestionCategory;
 
   // For multiple choice questions
   options?: string[]; // Array of 4 options
@@ -403,6 +411,7 @@ class ProgramsService {
     const baseQuestion: IAssessmentQuestion = {
       questionText: "",
       questionType,
+      questionCategory: QuestionCategory.LETTER,
       points: 1,
       isRequired: true,
     };
@@ -624,6 +633,10 @@ class ProgramsService {
 
   validateQuestion(question: IAssessmentQuestion): string[] {
     const errors: string[] = [];
+
+    if (!question.questionCategory) {
+      errors.push("Question category is required");
+    }
 
     if (!question.questionText?.trim() && !question.questionImage) {
       errors.push("Question text or image is required");

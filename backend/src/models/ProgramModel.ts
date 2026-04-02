@@ -13,11 +13,19 @@ export enum QuestionType {
   VERBAL_EVALUATION = "verbal_evaluation",
 }
 
+export enum QuestionCategory {
+  LETTER = "letter",
+  WORD = "word",
+  SENTENCE = "sentence",
+  MATRA = "matra",
+}
+
 // Interface for assessment questions
 export interface IAssessmentQuestion {
   _id?: string;
   questionText: string;
   questionType: QuestionType;
+  questionCategory?: QuestionCategory;
 
   // For multiple choice questions
   options?: string[]; // Array of 4 options
@@ -104,6 +112,11 @@ const AssessmentQuestionSchema = new Schema<IAssessmentQuestion>(
       type: String,
       enum: Object.values(QuestionType),
       required: true,
+    },
+    questionCategory: {
+      type: String,
+      enum: Object.values(QuestionCategory),
+      default: QuestionCategory.LETTER,
     },
     // For multiple choice questions
     options: [
