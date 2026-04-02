@@ -101,12 +101,9 @@ export default function BaselineAssessmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    fetchPrograms();
-  }, []);
-
-  useEffect(() => {
     // Only fetch students if we have a selected school from context
     if (selectedSchool && selectedSchool._id) {
+      fetchPrograms(selectedSchool._id);
       fetchStudents();
       fetchTodaysAssessments();
       if (selectedSchool._id) {
@@ -122,9 +119,12 @@ export default function BaselineAssessmentsPage() {
           setTestPromotionType("automatic");
         });
       }
+    } else if (user && !isSuperAdmin(user)) {
+      // Avoid showing all programs during initial refresh while school context is still loading.
+      setPrograms([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSchool]);
+  }, [selectedSchool, user]);
 
   // Function to check if a student was assessed today
   const isStudentAssessedToday = (student: Student) => {
@@ -174,9 +174,18 @@ export default function BaselineAssessmentsPage() {
     return false;
   };
 
-  const fetchPrograms = async () => {
+  const fetchPrograms = async (schoolId?: string) => {
+    // For non-super-admin users, do not fetch without an explicit school.
+    if (user && !isSuperAdmin(user) && !schoolId) {
+      setPrograms([]);
+      return;
+    }
+
     try {
-      const response = await programsService.getPrograms({ isActive: "true", schoolId: selectedSchool?._id });
+      const response = await programsService.getPrograms({
+        isActive: "true",
+        schoolId,
+      });
       setPrograms(response.programs);
     } catch {
       setError("Failed to fetch programs");
