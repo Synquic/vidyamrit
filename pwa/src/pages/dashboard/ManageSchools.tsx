@@ -422,30 +422,30 @@ function ManageSchools() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] w-[95vw] flex flex-col overflow-hidden p-4 sm:p-6">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>
+        <DialogContent className="sm:max-w-[600px] max-h-[95vh] w-[95vw] flex flex-col overflow-hidden p-3 sm:p-6 pb-16 sm:pb-6">
+          <DialogHeader className="flex-shrink-0 px-1 sm:px-0">
+            <DialogTitle className="text-lg sm:text-2xl">
               {editingSchool ? "Edit School" : "Add New School"}
             </DialogTitle>
-            <DialogDescription className="hidden sm:block">
+            <DialogDescription className="hidden sm:block text-xs sm:text-sm">
               {editingSchool
                 ? "Update the school information below"
                 : "Fill in the details to add a new school"}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-2 sm:px-6 my-2 sm:my-4">
-            <div className="grid gap-3 py-2 sm:py-4">
+          <div className="flex-1 overflow-y-auto px-1 sm:px-6 my-2 sm:my-4">
+            <div className="grid gap-2 sm:gap-3 py-2 sm:py-4">
               {/* School Type & Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-                <div className="space-y-2 col-span-1">
-                  <Label htmlFor="type">School Type</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 items-end">
+                <div className="space-y-1 sm:space-y-2 col-span-1">
+                  <Label htmlFor="type" className="text-xs sm:text-sm">School Type</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value: "government" | "private") =>
                       setFormData((prev) => ({ ...prev, type: value }))
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -454,15 +454,15 @@ function ManageSchools() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2 col-span-1">
-                  <Label htmlFor="level">Level</Label>
+                <div className="space-y-1 sm:space-y-2 col-span-1">
+                  <Label htmlFor="level" className="text-xs sm:text-sm">Level</Label>
                   <Select
                     value={formData.level}
                     onValueChange={(value: "primary" | "middle") =>
                       setFormData((prev) => ({ ...prev, level: value }))
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
                       <SelectValue placeholder="Select level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -471,8 +471,8 @@ function ManageSchools() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="udise_code">UDISE Code</Label>
+                <div className="space-y-1 sm:space-y-2 col-span-2">
+                  <Label htmlFor="udise_code" className="text-xs sm:text-sm">UDISE Code</Label>
                   <Input
                     id="udise_code"
                     value={formData.udise_code}
@@ -482,32 +482,33 @@ function ManageSchools() {
                         udise_code: e.target.value,
                       }))
                     }
+                    className="text-xs sm:text-sm h-8 sm:h-10"
                   />
                 </div>
               </div>
 
               {/* School Name & Block */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
-                <div className="space-y-2 col-span-1 sm:col-span-3">
-                  <Label htmlFor="name">School Name</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 items-end">
+                <div className="space-y-1 sm:space-y-2 col-span-1 sm:col-span-3">
+                  <Label htmlFor="name" className="text-xs sm:text-sm">School Name</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    className="w-full"
+                    className="w-full text-xs sm:text-sm h-8 sm:h-10"
                   />
                 </div>
-                <div className="space-y-2 col-span-1">
-                  <Label>Block</Label>
+                <div className="space-y-1 sm:space-y-2 col-span-1">
+                  <Label className="text-xs sm:text-sm">Block</Label>
                   <Popover open={blockOpen} onOpenChange={setBlockOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={blockOpen}
-                        className="w-full justify-between font-normal"
+                        className="w-full justify-between font-normal text-xs sm:text-sm h-8 sm:h-10"
                       >
                         {formData.block || "Select block..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -528,15 +529,16 @@ function ManageSchools() {
                           placeholder="Search block..."
                           value={blockSearch}
                           onValueChange={setBlockSearch}
+                          className="text-xs sm:text-sm h-8 sm:h-10"
                         />
                         <CommandList
-                          className="max-h-[200px] overflow-y-auto"
+                          className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                           onWheel={(e) => {
                             e.stopPropagation();
                             e.currentTarget.scrollTop += e.deltaY;
                           }}
                         >
-                          <CommandEmpty className="py-2 px-3 text-sm">
+                          <CommandEmpty className="py-2 px-3 text-xs sm:text-sm">
                             No block found.
                           </CommandEmpty>
                           <CommandGroup>
@@ -552,7 +554,7 @@ function ManageSchools() {
                                     setBlockOpen(false);
                                   }}
                                 >
-                                  <Plus className="mr-2 h-4 w-4" />
+                                  <Plus className="mr-2 h-3 sm:h-4 w-3 sm:w-4" />
                                   Add "{blockSearch.trim()}"
                                 </CommandItem>
                               )}
@@ -589,15 +591,15 @@ function ManageSchools() {
 
 
               {/* Test Promotion Type */}
-              <div className="space-y-2">
-                <Label htmlFor="testPromotionType">Test Mode</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="testPromotionType" className="text-xs sm:text-sm">Test Mode</Label>
                 <Select
                   value={formData.testPromotionType || "automatic"}
                   onValueChange={(value: "automatic" | "manual") =>
                     setFormData((prev) => ({ ...prev, testPromotionType: value }))
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
                     <SelectValue placeholder="Select promotion type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -605,21 +607,21 @@ function ManageSchools() {
                     <SelectItem value="manual">Manual</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   Automatic: System promotes/ends test based on score. Manual: Teacher decides when to promote or assign level.
                 </p>
               </div>
 
               {/* Group Format */}
-              <div className="space-y-2">
-                <Label htmlFor="groupFormat">Group Format</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="groupFormat" className="text-xs sm:text-sm">Group Format</Label>
                 <Select
                   value={formData.groupFormat || ""}
                   onValueChange={(value: "common" | "class_wise") =>
                     setFormData((prev) => ({ ...prev, groupFormat: value, programs: [] }))
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
                     <SelectValue placeholder="Select group format" />
                   </SelectTrigger>
                   <SelectContent>
@@ -627,17 +629,17 @@ function ManageSchools() {
                     <SelectItem value="class_wise">Support</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   Intervention: All classes together in one group. Support: Separate groups per class.
                 </p>
               </div>
 
               {/* Programs */}
-              <div className="space-y-2">
-                <Label>Programs</Label>
-                <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="text-xs sm:text-sm">Programs</Label>
+                <div className="border rounded-md p-2 sm:p-3 space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
                   {!formData.groupFormat ? (
-                    <p className="text-sm text-muted-foreground">Select a group format first</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground">Select a group format first</p>
                   ) : filteredPrograms.length > 0 ? (
                     filteredPrograms.map((program: any) => (
                       <label
@@ -655,24 +657,24 @@ function ManageSchools() {
                                 : (prev.programs || []).filter((id: string) => id !== program._id),
                             }));
                           }}
-                          className="rounded border-gray-300"
+                          className="rounded border-gray-300 w-4 h-4"
                         />
-                        <span className="text-sm">{program.name}</span>
-                        <span className="text-xs text-muted-foreground">({program.subject})</span>
+                        <span className="text-[10px] sm:text-sm">{program.name}</span>
+                        <span className="text-[8px] sm:text-xs text-muted-foreground">({program.subject})</span>
                       </label>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">No programs available</p>
+                    <p className="text-[10px] sm:text-sm text-muted-foreground">No programs available</p>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
                   Select programs that will be available in this school.
                 </p>
               </div>
 
               {/* Address */}
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="address" className="text-xs sm:text-sm">Address</Label>
                 <Input
                   id="address"
                   value={formData.address}
@@ -682,20 +684,21 @@ function ManageSchools() {
                       address: e.target.value,
                     }))
                   }
+                  className="text-xs sm:text-sm h-8 sm:h-10"
                 />
               </div>
 
               {/* State & City */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>State</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm">State</Label>
                   <Select
                     value={formData.state}
                     onValueChange={(value) =>
                       setFormData((prev) => ({ ...prev, state: value, city: "" }))
                     }
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
                       <SelectValue placeholder="Select state" />
                     </SelectTrigger>
                     <SelectContent>
@@ -707,15 +710,15 @@ function ManageSchools() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>City</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label className="text-xs sm:text-sm">City</Label>
                   <Popover open={cityOpen} onOpenChange={setCityOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={cityOpen}
-                        className="w-full justify-between font-normal"
+                        className="w-full justify-between font-normal text-xs sm:text-sm h-8 sm:h-10"
                         disabled={!formData.state}
                       >
                         {formData.city || "Select city..."}
@@ -734,11 +737,16 @@ function ManageSchools() {
                           placeholder="Search city..."
                           value={citySearch}
                           onValueChange={setCitySearch}
+                          className="text-xs sm:text-sm h-8 sm:h-10"
                         />
                         <CommandList
                           className="max-h-[50vh] overflow-y-auto touch-pan-y overscroll-contain"
+                          onWheel={(e) => {
+                            e.stopPropagation();
+                            e.currentTarget.scrollTop += e.deltaY;
+                          }}
                         >
-                          <CommandEmpty className="py-2 px-3 text-sm">
+                          <CommandEmpty className="py-2 px-3 text-xs sm:text-sm">
                             No city found.
                           </CommandEmpty>
                           <CommandGroup>
@@ -793,9 +801,9 @@ function ManageSchools() {
               </div>
 
               {/* Year & PIN */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="establishedYear">Year Established</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="establishedYear" className="text-xs sm:text-sm">Year Established</Label>
                   <Input
                     id="establishedYear"
                     type="number"
@@ -807,10 +815,11 @@ function ManageSchools() {
                           parseInt(e.target.value) || new Date().getFullYear(),
                       }))
                     }
+                    className="text-xs sm:text-sm h-8 sm:h-10"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pinCode">PIN Code</Label>
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="pinCode" className="text-xs sm:text-sm">PIN Code</Label>
                   <Input
                     id="pinCode"
                     value={formData.pinCode}
@@ -820,18 +829,19 @@ function ManageSchools() {
                         pinCode: e.target.value,
                       }))
                     }
+                    className="text-xs sm:text-sm h-8 sm:h-10"
                   />
                 </div>
               </div>
 
-              {/* Points of Contact (multiple) */}
-              <div className="space-y-2">
-                <Label>Points of Contact</Label>
+              {/* Points of Contact */}
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="text-xs sm:text-sm">Points of Contact</Label>
                 <div className="space-y-2">
                   {(formData.pointOfContacts || []).map((poc, idx) => (
-                    <div key={idx} className="grid grid-cols-12 gap-2 items-end">
+                    <div key={idx} className="grid grid-cols-12 gap-1 sm:gap-2 items-end">
                       <div className="col-span-5">
-                        <Label className="text-xs">Name</Label>
+                        <Label className="text-[10px] sm:text-xs">Name</Label>
                         <Input
                           value={poc.name}
                           onChange={(e) =>
@@ -845,10 +855,11 @@ function ManageSchools() {
                               return next;
                             })
                           }
+                          className="text-xs sm:text-sm h-7 sm:h-9"
                         />
                       </div>
                       <div className="col-span-5">
-                        <Label className="text-xs">Phone</Label>
+                        <Label className="text-[10px] sm:text-xs">Phone</Label>
                         <Input
                           value={poc.phone}
                           onChange={(e) =>
@@ -862,11 +873,13 @@ function ManageSchools() {
                               return next;
                             })
                           }
+                          className="text-xs sm:text-sm h-7 sm:h-9"
                         />
                       </div>
                       <div className="col-span-2 text-right">
                         <Button
                           variant="ghost"
+                          size="sm"
                           onClick={() =>
                             setFormData((prev) => {
                               const next = { ...(prev as any) };
@@ -877,7 +890,7 @@ function ManageSchools() {
                             })
                           }
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 sm:h-4 w-3 sm:w-4" />
                         </Button>
                       </div>
                     </div>
@@ -896,8 +909,9 @@ function ManageSchools() {
                           ],
                         }))
                       }
+                      className="text-xs sm:text-sm h-7 sm:h-9"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="mr-2 h-3 sm:h-4 w-3 sm:w-4" />
                       Add contact
                     </Button>
                   </div>
@@ -905,8 +919,8 @@ function ManageSchools() {
               </div>
             </div>
           </div>
-            <DialogFooter className="flex-shrink-0">
-            <Button variant="outline" onClick={handleCloseDialog}>
+          <DialogFooter className="flex-shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:gap-4 px-1 sm:px-0 pt-2 sm:pt-4 border-t">
+            <Button variant="outline" onClick={handleCloseDialog} className="text-xs sm:text-sm h-9 sm:h-10 w-full sm:w-auto">
               Cancel
             </Button>
             <Button
@@ -924,9 +938,10 @@ function ManageSchools() {
                 }
               }}
               disabled={createMutation.isPending || updateMutation.isPending}
+              className="text-xs sm:text-sm h-9 sm:h-10 w-full sm:w-auto"
             >
               {createMutation.isPending || updateMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3 sm:h-4 w-3 sm:w-4 animate-spin" />
               ) : null}
               {editingSchool ? "Update" : "Create"} School
             </Button>
