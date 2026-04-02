@@ -170,20 +170,36 @@ function ReportContent({
               {data.students.map((student, index) => (
                 <div
                   key={student._id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground w-6">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <p className="font-medium text-sm sm:text-base">
-                        {student.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Class {student.class}
-                      </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-sm text-muted-foreground w-6 flex-shrink-0">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm sm:text-base truncate">
+                          {student.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Class {student.class}
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        navigate(`/reports/student/${student._id}`)
+                      }
+                      className="flex-shrink-0"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Report
+                    </Button>
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap gap-1 sm:hidden">
                     {student.fln && student.fln.length > 0 && student.fln.map((f, fi) => (
                       <Badge
                         key={fi}
@@ -202,17 +218,26 @@ function ReportContent({
                       </Badge>
                     )}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      navigate(`/reports/student/${student._id}`)
-                    }
-                    className="flex-shrink-0"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Report
-                  </Button>
+
+                  <div className="hidden sm:flex sm:flex-wrap sm:gap-1 sm:mt-2">
+                    {student.fln && student.fln.length > 0 && student.fln.map((f, fi) => (
+                      <Badge
+                        key={fi}
+                        variant="outline"
+                        className={`text-xs ${f.source === "level_test" ? "bg-green-50 text-green-700 border-green-300" : "bg-blue-50 text-blue-700 border-blue-300"}`}
+                      >
+                        Proficient {f.source === "level_test" ? "Level" : "Baseline"}
+                      </Badge>
+                    ))}
+                    {student.isArchived && (
+                      <Badge
+                        variant="outline"
+                        className="bg-red-50 text-red-700 border-red-300 text-xs"
+                      >
+                        Inactive
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

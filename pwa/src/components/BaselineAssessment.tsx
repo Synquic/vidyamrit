@@ -601,7 +601,7 @@ export function BaselineAssessmentModal({
               {/* Progress Bar */}
               <div className="flex justify-between items-center mb-6">
                 <Badge variant="secondary" className="text-sm px-3 py-1">
-                  Level {currentLevel + 1}
+                  {active?.levels?.[currentLevel]?.title ?? `Level ${currentLevel + 1}`}
                 </Badge>
                 <div className="flex gap-2">
                   <Badge variant="outline" className="text-xs px-3 py-1">
@@ -618,13 +618,6 @@ export function BaselineAssessmentModal({
               {/* Question Card - Takes most of the space */}
               <Card className="border-2 flex-1 flex flex-col mb-6">
                 <CardContent className="p-6 md:p-8 flex-1 flex flex-col justify-center space-y-8">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      {active?.levels?.[currentLevel]?.title ??
-                        `Level ${currentLevel + 1}`}
-                    </p>
-                  </div>
-
                   {/* Question Image */}
                   {question?.questionImage && (
                     <div className="flex justify-center">
@@ -638,15 +631,15 @@ export function BaselineAssessmentModal({
 
                   {/* Question Display - Large and centered with Devanagari font */}
                   <div
-                    className={`bg-gray-100 dark:bg-gray-800 p-8 md:p-12 rounded-lg text-center break-words font-bold font-devanagari ${
+                    className={`bg-gray-100 dark:bg-gray-800 p-4 md:p-6 rounded-lg text-center break-words font-semibold font-devanagari ${
                       hasMultipleLines
-                        ? "text-2xl md:text-3xl leading-normal"
+                        ? "text-xl md:text-2xl leading-[1.75]"
                         : "text-3xl md:text-4xl lg:text-5xl leading-tight"
-                    } min-h-[200px] md:min-h-[300px] flex items-center justify-center`}
+                    } min-h-[180px] md:min-h-[240px] max-h-[320px] md:max-h-[420px] overflow-y-auto flex items-center justify-center`}
                   >
-                    <div className="space-y-1 md:space-y-1">
+                    <div className="space-y-2 md:space-y-3 whitespace-pre-wrap break-words w-full">
                       {questionLines.map((line, i) => (
-                        <div key={i} className="block">
+                        <div key={i} className="block leading-[1.75]">
                           {line}
                         </div>
                       ))}

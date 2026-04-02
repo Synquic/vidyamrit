@@ -63,6 +63,7 @@ import {
   IProgramLevel,
   IAssessmentQuestion,
   QuestionType,
+  QuestionCategory,
   TimeframeUnit,
   uploadQuestionImage,
   deleteQuestionImage,
@@ -1139,6 +1140,9 @@ function ViewProgramDetails({ program }: ViewProgramDetailsProps) {
                                       .replace("_", " ")
                                       .toUpperCase()}
                                   </Badge>
+                                  <Badge variant="outline" className="capitalize">
+                                    {question.questionCategory || QuestionCategory.LETTER}
+                                  </Badge>
                                   <span className="text-sm font-medium">
                                     {question.points || 1} points
                                   </span>
@@ -1469,6 +1473,9 @@ function QuestionDisplay({
             <Badge variant="outline">
               {getQuestionTypeLabel(question.questionType)}
             </Badge>
+            <Badge variant="outline" className="capitalize">
+              {question.questionCategory || QuestionCategory.LETTER}
+            </Badge>
             <Badge variant="secondary">
               {question.points || 1} point
               {(question.points || 1) !== 1 ? "s" : ""}
@@ -1568,6 +1575,17 @@ function QuestionEditor({
   const [errors, setErrors] = useState<string[]>([]);
   const [imageUploading, setImageUploading] = useState(false);
 
+  useEffect(() => {
+    if (!question.questionCategory) {
+      setQuestion((prev) => ({
+        ...prev,
+        questionCategory: QuestionCategory.LETTER,
+      }));
+    }
+    // Only run once on open to backfill legacy questions without category
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSave = () => {
     const validationErrors = programsService.validateQuestion(question);
     if (validationErrors.length > 0) {
@@ -1580,7 +1598,14 @@ function QuestionEditor({
 
   const updateQuestion = (
     field: keyof IAssessmentQuestion,
-    value: string | number | boolean | string[] | number[] | QuestionType
+    value:
+      | string
+      | number
+      | boolean
+      | string[]
+      | number[]
+      | QuestionType
+      | QuestionCategory
   ) => {
     setQuestion((prev) => ({ ...prev, [field]: value }));
   };
@@ -1669,6 +1694,26 @@ function QuestionEditor({
             placeholder="Enter your question here..."
             rows={3}
           />
+        </div>
+
+        <div>
+          <Label htmlFor="questionCategory">Question Category</Label>
+          <Select
+            value={question.questionCategory || QuestionCategory.LETTER}
+            onValueChange={(value) =>
+              updateQuestion("questionCategory", value as QuestionCategory)
+            }
+          >
+            <SelectTrigger id="questionCategory">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={QuestionCategory.LETTER}>Letter</SelectItem>
+              <SelectItem value={QuestionCategory.WORD}>Word</SelectItem>
+              <SelectItem value={QuestionCategory.SENTENCE}>Sentence</SelectItem>
+              <SelectItem value={QuestionCategory.MATRA}>Matra</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Question Image */}

@@ -310,3 +310,15 @@ export const resetGroups = async (
   const response = await authAxios.post(`${baseUrl}/reset-groups`, { schoolId });
   return response.data;
 };
+
+export const startAllGroups = async (
+  schoolId: string
+): Promise<{
+  message: string;
+  groupsStarted: number;
+  skipped: number;
+  skippedReason?: string;
+}> => {
+  const response = await authAxios.post(`${baseUrl}/start-all`, { schoolId });
+  return response.data;
+};

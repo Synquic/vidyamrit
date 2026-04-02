@@ -31,20 +31,16 @@ import {
   ArrowLeft,
   Loader2,
   User,
-  GraduationCap,
   TrendingUp,
   TrendingDown,
   Minus,
   AlertCircle,
   Award,
-  FileText,
   Trash2,
 } from "lucide-react";
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -79,7 +75,7 @@ export default function IndividualStudentReport({
   student,
   onBack,
 }: IndividualStudentReportProps) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("assessments");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [confirmDeleteText, setConfirmDeleteText] = useState("");
   const navigate = useNavigate();
@@ -176,14 +172,11 @@ export default function IndividualStudentReport({
     );
   }, [report]);
 
-  // Prepare subject level comparison data
-  const subjectLevelData = useMemo(() => {
-    if (!report || !report.currentLevels) return [];
-    return Object.entries(report.currentLevels).map(([subject, level]) => ({
-      subject: subject.charAt(0).toUpperCase() + subject.slice(1),
-      level,
-    }));
-  }, [report]);
+  const currentLevelMetric = useMemo(() => {
+    const levels = Object.values(report?.currentLevels || {}).map((level) => Number(level) || 0);
+    if (levels.length === 0) return 0;
+    return Math.max(...levels);
+  }, [report?.currentLevels]);
 
   if (isLoading) {
     return (
@@ -227,14 +220,6 @@ export default function IndividualStudentReport({
               <span className="text-base">Back</span>
             </Button>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/test-report/student/${student._id}`)}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Test Report
-              </Button>
               <Button
                 variant="destructive"
                 size="sm"
@@ -290,16 +275,17 @@ export default function IndividualStudentReport({
                     <span className="text-base capitalize">{report?.student?.gender || "Unknown"}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-base font-medium">Contact:</span>
+                    <span className="text-base">{report?.student?.mobileNumber || "Not provided"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span className="text-base font-medium">Class:</span>
                     <span className="text-base">Class {report?.student?.class || "Unknown"}</span>
                   </div>
-                  {report?.student?.caste && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-medium">Category:</span>
-                      <span className="text-base uppercase">{report.student.caste}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium">Category:</span>
+                    <span className="text-base uppercase">{report?.student?.caste || "N/A"}</span>
+                  </div>
                 </div>
               </div>
 
@@ -307,12 +293,8 @@ export default function IndividualStudentReport({
                 <h3 className="font-semibold text-base text-muted-foreground">Key Metrics</h3>
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-base">Total Tests</span>
-                    <Badge variant="default" className="text-sm px-3 py-1">{report?.summary?.totalAssessments || 0}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-base">Highest Level</span>
-                    <Badge variant="default" className="text-sm px-3 py-1">{report?.summary?.highestLevel || 0}</Badge>
+                    <span className="text-base">Current Level</span>
+                    <Badge variant="default" className="text-sm px-3 py-1">{currentLevelMetric}</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span className="text-base">Attendance</span>
@@ -338,17 +320,17 @@ export default function IndividualStudentReport({
         {/* Tabs for different sections */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex w-full overflow-x-auto no-scrollbar sm:grid sm:grid-cols-5 h-auto p-1">
-            <TabsTrigger value="overview" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Overview</TabsTrigger>
-            <TabsTrigger value="levels" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Levels</TabsTrigger>
+            {/* <TabsTrigger value="overview" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Overview</TabsTrigger> */}
+            {/* <TabsTrigger value="levels" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Levels</TabsTrigger> */}
             <TabsTrigger value="assessments" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Tests</TabsTrigger>
-            <TabsTrigger value="attendance" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Attendance</TabsTrigger>
-            <TabsTrigger value="progress" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Progress</TabsTrigger>
+            {/* <TabsTrigger value="attendance" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Attendance</TabsTrigger> */}
+            {/* <TabsTrigger value="progress" className="min-w-fit px-4 py-2.5 text-sm sm:text-base">Progress</TabsTrigger> */}
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
             {/* Current Status */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Current Status</CardTitle>
               </CardHeader>
@@ -398,10 +380,10 @@ export default function IndividualStudentReport({
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Subject Level Comparison Chart */}
-            {subjectLevelData.length > 0 && (
+            {/* {subjectLevelData.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Current Levels by Subject</CardTitle>
@@ -420,7 +402,7 @@ export default function IndividualStudentReport({
                   </div>
                 </CardContent>
               </Card>
-            )}
+            )} */}
           </TabsContent>
 
           {/* Levels Tab */}

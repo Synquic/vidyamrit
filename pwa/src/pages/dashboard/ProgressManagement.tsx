@@ -601,36 +601,6 @@ function CohortProgressDetail() {
 
 
 
-      {/* Auto Progress - Simple days counter */}
-      {assessmentReadiness && (
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-sm sm:text-base">Level {assessmentReadiness.currentLevel} Progress</h3>
-              <span className="text-sm text-muted-foreground">
-                {assessmentReadiness.completionPercentage.toFixed(0)}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-              <div
-                className={`h-3 rounded-full transition-all ${
-                  assessmentReadiness.isReadyForAssessment ? "bg-green-500" : "bg-blue-500"
-                }`}
-                style={{ width: `${Math.min(100, assessmentReadiness.completionPercentage)}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{assessmentReadiness.weeksCompleted} weeks completed</span>
-              <span>{assessmentReadiness.weeksRequired} weeks required</span>
-            </div>
-            {assessmentReadiness.daysRemaining && (
-              <p className="text-sm text-muted-foreground mt-2">
-                {assessmentReadiness.daysRemaining} teaching days remaining
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Student Progress Table */}
       <Card>
@@ -641,7 +611,7 @@ function CohortProgressDetail() {
                 <tr className="border-b bg-gray-50">
                   <th className="text-left p-3 sm:p-4 text-sm font-semibold">Name</th>
                   <th className="text-center p-3 sm:p-4 text-sm font-semibold">Status</th>
-                  <th className="text-center p-3 sm:p-4 text-sm font-semibold">Action</th>
+                  <th className="text-center p-3 sm:p-4 text-sm font-semibold">Test</th>
                 </tr>
               </thead>
               <tbody>

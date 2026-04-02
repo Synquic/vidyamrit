@@ -1010,78 +1010,72 @@ function CohortAttendanceDetail() {
             </CardContent>
           </Card>
         ) : (
-          cohortData.cohort.students.map((student) => {
-            const currentStatus = attendanceRecords[student._id];
-
-            return (
-              <Card
-                key={student._id}
-                className={`transition-colors ${
-                  currentStatus === "present"
-                    ? "border-green-200 bg-green-50"
-                    : currentStatus === "absent"
-                    ? "border-red-200 bg-red-50"
-                    : "border-gray-200"
-                }`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="flex-1 min-w-0">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(`/reports/student/${student._id}`)
-                          }
-                          className="font-medium text-primary hover:underline truncate cursor-pointer text-left"
+          <div className="overflow-x-auto rounded-md border">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-xs font-semibold text-gray-700">
+                <tr>
+                  <th className="px-3 py-2 text-left">Name</th>
+                  <th className="px-3 py-2 text-center">Present</th>
+                  <th className="px-3 py-2 text-center">Absent</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {cohortData.cohort.students.map((student) => {
+                  const currentStatus = attendanceRecords[student._id];
+                  return (
+                    <tr
+                      key={student._id}
+                      className={
+                        currentStatus === "present"
+                          ? "bg-green-50"
+                          : currentStatus === "absent"
+                          ? "bg-red-50"
+                          : ""
+                      }
+                    >
+                      <td className="px-3 py-2 align-middle">
+                        <div className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/reports/student/${student._id}`)}
+                            className="font-medium text-primary hover:underline text-left whitespace-normal break-words sm:truncate"
+                          >
+                            {student.name}
+                          </button>
+                          <p className="hidden sm:block text-xs text-gray-600 truncate">
+                            Roll No: {student.roll_no} • Class: {student.class}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-center align-middle">
+                        <Button
+                          variant={currentStatus === "present" ? "default" : "outline"}
+                          size="sm"
+                          disabled={isPastDateLocked || isHoliday}
+                          onClick={() => handleStatusChange(student._id, "present")}
+                          className={currentStatus === "present" ? "bg-green-600 hover:bg-green-700" : ""}
                         >
-                          {student.name}
-                        </button>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          Roll No: {student.roll_no} • Class: {student.class}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Button
-                        variant={
-                          currentStatus === "present" ? "default" : "outline"
-                        }
-                        size="sm"
-                        disabled={isPastDateLocked || isHoliday}
-                        onClick={() =>
-                          handleStatusChange(student._id, "present")
-                        }
-                        className={`flex-1 sm:flex-none ${
-                          currentStatus === "present"
-                            ? "bg-green-600 hover:bg-green-700"
-                            : ""
-                        }`}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Present
-                      </Button>
-                      <Button
-                        variant={
-                          currentStatus === "absent" ? "destructive" : "outline"
-                        }
-                        size="sm"
-                        disabled={isPastDateLocked || isHoliday}
-                        onClick={() =>
-                          handleStatusChange(student._id, "absent")
-                        }
-                        className="flex-1 sm:flex-none"
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Absent
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Present
+                        </Button>
+                      </td>
+                      <td className="px-3 py-2 text-center align-middle">
+                        <Button
+                          variant={currentStatus === "absent" ? "destructive" : "outline"}
+                          size="sm"
+                          disabled={isPastDateLocked || isHoliday}
+                          onClick={() => handleStatusChange(student._id, "absent")}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Absent
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -1270,6 +1264,21 @@ function IndividualAttendance() {
     setHasChanges(true);
   };
 
+    // Auto-select subject based on class name
+  useEffect(() => {
+    if (selectedClass && availablePrograms.length > 0) {
+      const classNumber = selectedClass.match(/\d+/)?.[0];
+      if (classNumber) {
+        const matchingProgram = availablePrograms.find((p) =>
+          p.name.startsWith(classNumber)
+        );
+        if (matchingProgram) {
+          setSelectedProgramId(matchingProgram.id);
+          setSelectedSubject(matchingProgram.subject);
+        }
+      }
+    }
+  }, [selectedClass, availablePrograms]);
 
   // Get unique class list from students
   const availableClasses = useMemo(() => {
@@ -1496,7 +1505,7 @@ function IndividualAttendance() {
 
           {/* Student Cards */}
           {!loadingStudents && !loadingAttendance && (
-            <div className="space-y-2">
+            <div>
               {filteredStudents.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center">
@@ -1504,75 +1513,72 @@ function IndividualAttendance() {
                   </CardContent>
                 </Card>
               ) : (
-                filteredStudents.map((student) => {
-                  const status = attendanceMap.get(student._id || "");
-                  return (
-                    <Card
-                      key={student._id}
-                      className={`transition-colors ${
-                        status === "present"
-                          ? "border-green-200 bg-green-50"
-                          : status === "absent"
-                          ? "border-red-200 bg-red-50"
-                          : "border-gray-200"
-                      }`}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="flex-1 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => navigate(`/reports/student/${student._id}`)}
-                                className="font-medium text-primary hover:underline truncate cursor-pointer text-left"
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-xs font-semibold text-gray-700">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Name</th>
+                        <th className="px-3 py-2 text-center">Present</th>
+                        <th className="px-3 py-2 text-center">Absent</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {filteredStudents.map((student) => {
+                        const status = attendanceMap.get(student._id || "");
+                        return (
+                          <tr
+                            key={student._id}
+                            className={
+                              status === "present"
+                                ? "bg-green-50"
+                                : status === "absent"
+                                ? "bg-red-50"
+                                : ""
+                            }
+                          >
+                            <td className="px-3 py-2 align-middle">
+                              <div className="min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/reports/student/${student._id}`)}
+                                  className="font-medium text-primary hover:underline text-left whitespace-normal break-words sm:truncate"
+                                >
+                                  {student.name}
+                                </button>
+                                <p className="hidden sm:block text-xs text-gray-600 truncate">
+                                  Roll No: {student.roll_no} • Class: {student.class}
+                                </p>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-center align-middle">
+                              <Button
+                                variant={status === "present" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => toggleAttendance(student._id || "", "present")}
+                                disabled={isPastDateLocked}
+                                className={status === "present" ? "bg-green-600 hover:bg-green-700" : ""}
                               >
-                                {student.name}
-                              </button>
-                              <p className="text-xs sm:text-sm text-gray-600 truncate">
-                                Roll No: {student.roll_no} • Class: {student.class}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 flex-shrink-0">
-                            <Button
-                              variant={
-                                status === "present" ? "default" : "outline"
-                              }
-                              size="sm"
-                              onClick={() =>
-                                toggleAttendance(student._id || "", "present")
-                              }
-                              disabled={isPastDateLocked}
-                              className={`flex-1 sm:flex-none ${
-                                status === "present"
-                                  ? "bg-green-600 hover:bg-green-700"
-                                  : ""
-                              }`}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Present
-                            </Button>
-                            <Button
-                              variant={
-                                status === "absent" ? "destructive" : "outline"
-                              }
-                              size="sm"
-                              onClick={() =>
-                                toggleAttendance(student._id || "", "absent")
-                              }
-                              disabled={isPastDateLocked}
-                              className="flex-1 sm:flex-none"
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Absent
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Present
+                              </Button>
+                            </td>
+                            <td className="px-3 py-2 text-center align-middle">
+                              <Button
+                                variant={status === "absent" ? "destructive" : "outline"}
+                                size="sm"
+                                onClick={() => toggleAttendance(student._id || "", "absent")}
+                                disabled={isPastDateLocked}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Absent
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
