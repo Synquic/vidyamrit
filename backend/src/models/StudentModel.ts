@@ -16,6 +16,19 @@ export interface IProgressHistory {
   mentorId?: mongoose.Types.ObjectId;
 }
 
+export interface IBaselineHistory {
+  program: mongoose.Types.ObjectId;
+  programName: string;
+  subject: string;
+  level: number;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  passed: boolean | null;
+  date: Date;
+  mentorId?: mongoose.Types.ObjectId;
+}
+
 export interface IStudent extends Document {
   roll_no?: string;
   aadharNumber?: string;
@@ -34,6 +47,9 @@ export interface IStudent extends Document {
 
   // Progress flags
   progressHistory: IProgressHistory[];
+
+  // Baseline assessment history
+  baselineHistory: IBaselineHistory[];
 
   // Additional tracking
   lastAssessmentDate?: Date;
@@ -164,6 +180,22 @@ const StudentSchema = new mongoose.Schema({
 
   // Progress flags
   progressHistory: [ProgressHistorySchema],
+
+  // Baseline assessment history
+  baselineHistory: [
+    {
+      program: { type: mongoose.Schema.Types.ObjectId, ref: "Program", required: true },
+      programName: { type: String, required: true, trim: true },
+      subject: { type: String, required: true, trim: true },
+      level: { type: Number, required: true },
+      score: { type: Number, required: true },
+      totalQuestions: { type: Number, required: true },
+      correctAnswers: { type: Number, required: true },
+      passed: { type: Boolean, default: null },
+      date: { type: Date, default: Date.now },
+      mentorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
+    },
+  ],
 
   // Additional tracking
   lastAssessmentDate: { type: Date },

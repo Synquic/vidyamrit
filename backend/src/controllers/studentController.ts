@@ -12,6 +12,19 @@ import Attendance from "../models/AttendanceModel";
 import Cohort from "../models/CohortModel";
 import logger from "../utils/logger";
 
+const buildBaselineSnapshot = (baseline: any) => ({
+  program: baseline.program,
+  programName: baseline.programName,
+  subject: baseline.subject,
+  level: baseline.level,
+  score: baseline.score,
+  totalQuestions: baseline.totalQuestions,
+  correctAnswers: baseline.correctAnswers,
+  passed: baseline.passed ?? null,
+  date: baseline.date || new Date(),
+  mentorId: baseline.mentorId,
+});
+
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
     const {
@@ -207,6 +220,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       "contactInfo",
       "knowledgeLevel",
       "cohort",
+      "baselineHistory",
     ];
     const filteredUpdate: any = {};
     for (const key of allowedFields) {
@@ -250,6 +264,75 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "A student with this Aadhar or APAAR ID already exists." });
     }
     res.status(500).json({ error: "Failed to update student. Please try again." });
+  }
+};
+
+export const addStudentBaselineHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      program,
+      programName,
+      subject,
+      level,
+      score,
+      totalQuestions,
+      correctAnswers,
+      passed,
+      date,
+    } = req.body;
+
+    if (!program || !programName || !subject || level === undefined || score === undefined || totalQuestions === undefined || correctAnswers === undefined) {
+      return res.status(400).json({ error: "Program, program name, subject, level, score, total questions, and correct answers are required" });
+    }
+
+    const query: any = { _id: id };
+    if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+      query.school = req.user.schoolId;
+    }
+
+    const student = await Student.findOne(query);
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    const baselineHistory = Array.isArray((student as any).baselineHistory) ? (student as any).baselineHistory : [];
+    const existingEntry = baselineHistory.find((entry: any) => entry.program?.toString?.() === program.toString());
+    if (existingEntry) {
+      return res.json({
+        message: "Baseline snapshot already exists for this program",
+        baselineHistory: baselineHistory.map((entry: any) => ({ ...entry.toObject?.(), ...entry })),
+      });
+    }
+
+    baselineHistory.push(buildBaselineSnapshot({
+      program,
+      programName,
+      subject,
+      level,
+      score,
+      totalQuestions,
+      correctAnswers,
+      passed,
+      date,
+      mentorId: req.user?._id,
+    }));
+
+    student.baselineHistory = baselineHistory as any;
+    await student.save();
+
+    const populatedStudent = await student.populate("school", "name");
+    const response = populatedStudent.toObject() as any;
+    response.schoolId = response.school;
+    delete response.school;
+
+    res.json({
+      message: "Baseline snapshot saved successfully",
+      student: response,
+    });
+  } catch (error: any) {
+    console.error("Error saving baseline snapshot:", error);
+    res.status(500).json({ error: "Failed to save baseline snapshot" });
   }
 };
 
@@ -721,6 +804,7 @@ export const getStudentComprehensiveReport = async (
         createdAt: studentObj.createdAt,
         updatedAt: studentObj.updatedAt,
         lastAssessmentDate: studentObj.lastAssessmentDate,
+        baselineHistory: studentObj.baselineHistory || [],
       },
       currentLevels,
       knowledgeLevelHistory,
