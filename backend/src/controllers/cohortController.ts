@@ -2031,3 +2031,41 @@ export const resetGroups = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// Start all pending groups for a school (only those with tutor assigned)
+export const startAllGroups = async (req: AuthRequest, res: Response) => {
+  try {
+    const { schoolId } = req.body;
+
+    if (!schoolId) {
+      return res.status(400).json({ error: "School ID is required" });
+    }
+
+    const startDate = new Date();
+    const result = await Cohort.updateMany(
+      { schoolId, status: "pending", tutorId: { $ne: null, $exists: true } },
+      {
+        $set: {
+          status: "active",
+          startDate,
+          "timeTracking.cohortStartDate": startDate,
+          "timeTracking.currentLevelStartDate": startDate,
+        },
+      }
+    );
+
+    const skipped = await Cohort.countDocuments({
+      schoolId, status: "pending", $or: [{ tutorId: null }, { tutorId: { $exists: false } }]
+    });
+
+    res.json({
+      message: "Groups started successfully",
+      groupsStarted: result.modifiedCount,
+      skipped,
+      skippedReason: skipped > 0 ? "Groups without tutor assigned were skipped" : undefined,
+    });
+  } catch (error: any) {
+    console.error("Error starting all groups:", error);
+    res.status(500).json({ error: "Error starting groups" });
+  }
+};

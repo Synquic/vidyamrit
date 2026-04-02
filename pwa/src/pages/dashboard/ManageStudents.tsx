@@ -54,7 +54,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown, Eye } from "lucide-react";
+import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown } from "lucide-react";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import {
   Collapsible,
@@ -752,13 +752,6 @@ function ManageStudents() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/reports/student/${student._id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => handleEdit(student)}
                         >
                           <Edit className="h-4 w-4" />
@@ -798,13 +791,6 @@ function ManageStudents() {
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/reports/student/${student._id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

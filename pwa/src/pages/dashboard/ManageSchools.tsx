@@ -514,11 +514,14 @@ function ManageSchools() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-[--radix-popover-trigger-width] p-0"
+                      className="w-[calc(100vw-2rem)] sm:w-[--radix-popover-trigger-width] p-0 max-h-[60vh] touch-pan-y overscroll-contain"
                       align="start"
                       side="bottom"
                       sideOffset={4}
-                      style={{ maxHeight: "var(--radix-popover-content-available-height, 300px)" }}
+                      style={{
+                        maxHeight:
+                          "var(--radix-popover-content-available-height, 60vh)",
+                      }}
                     >
                       <Command shouldFilter={false}>
                         <CommandInput
@@ -733,12 +736,7 @@ function ManageSchools() {
                           onValueChange={setCitySearch}
                         />
                         <CommandList
-                          className="max-h-[200px] overflow-y-auto"
-                          onWheel={(e) => {
-                            e.stopPropagation();
-                            const target = e.currentTarget;
-                            target.scrollTop += e.deltaY;
-                          }}
+                          className="max-h-[50vh] overflow-y-auto touch-pan-y overscroll-contain"
                         >
                           <CommandEmpty className="py-2 px-3 text-sm">
                             No city found.

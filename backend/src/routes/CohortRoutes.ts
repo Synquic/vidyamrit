@@ -18,6 +18,7 @@ import {
   markLevelComplete,
   autoGenerateGroups,
   resetGroups,
+  startAllGroups,
 } from "../controllers/cohortController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { roleMiddleware } from "../middlewares/roleMiddleware";
@@ -149,8 +150,15 @@ cohortRouter.post(
 // Reset all groups for a school
 cohortRouter.post(
   "/reset-groups",
-  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  roleMiddleware(UserRole.SUPER_ADMIN),
   resetGroups
+);
+
+// Start all pending groups for a school
+cohortRouter.post(
+  "/start-all",
+  roleMiddleware(UserRole.SUPER_ADMIN),
+  startAllGroups
 );
 
 export default cohortRouter;
