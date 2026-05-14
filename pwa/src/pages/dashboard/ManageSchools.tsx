@@ -265,14 +265,14 @@ function ManageSchools() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Schools</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Schools</h1>
+          <p className="text-muted-foreground text-sm">
             Manage your schools and their information
           </p>
         </div>
-        <Button
+        <Button className="w-full sm:w-auto"
           onClick={() => {
             // Reset to blank add form (default type = government)
             setEditingSchool(null);
@@ -345,8 +345,8 @@ function ManageSchools() {
           </Card>
         </div>
       ) : (
-        <div className="rounded-md border overflow-auto">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-[900px]">
             <TableHeader>
               <TableRow>
                 <TableHead>School Name</TableHead>
@@ -422,7 +422,7 @@ function ManageSchools() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[95vh] w-[95vw] flex flex-col overflow-hidden p-3 sm:p-6 pb-16 sm:pb-6">
+        <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[95vh] flex flex-col overflow-hidden p-3 sm:p-6 pb-16 sm:pb-6">
           <DialogHeader className="flex-shrink-0 px-1 sm:px-0">
             <DialogTitle className="text-lg sm:text-2xl">
               {editingSchool ? "Edit School" : "Add New School"}

@@ -808,8 +808,8 @@ export default function StudentDistributionReport({
                       <RechartsPieChart>
                         <Tooltip
                           formatter={(
-                            value: number,
-                            _name: string,
+                            value: any,
+                            _name: any,
                             props: any
                           ) => {
                             const total = data.reduce(
@@ -992,7 +992,7 @@ export default function StudentDistributionReport({
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPieChart>
                     <Tooltip
-                      formatter={(value: number, _name: string, props: any) => {
+                      formatter={(value: any, _name: any, props: any) => {
                         const total = classWiseData.reduce(
                           (sum, d) => sum + d.count,
                           0
@@ -1157,7 +1157,7 @@ export default function StudentDistributionReport({
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPieChart>
                     <Tooltip
-                      formatter={(value: number, _name: string, props: any) => {
+                      formatter={(value: any, _name: any, props: any) => {
                         const total = categoryWiseData.reduce(
                           (sum, d) => sum + d.count,
                           0

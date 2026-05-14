@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Capacitor } from "@capacitor/core";
 import { useParams, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -1080,7 +1081,7 @@ function CohortAttendanceDetail() {
       </div>
 
       {/* Save Button */}
-      <div className="sticky bottom-4">
+      <div className={`sticky ${Capacitor.isNativePlatform() ? "bottom-20" : "bottom-4"}`}>
         <Card className="shadow-lg">
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">

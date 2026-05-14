@@ -714,8 +714,8 @@ function ManageStudents() {
         </div>
       </div>
 
-      <div className="rounded-md border overflow-auto max-h-[60vh] overflow-x-auto">
-        <Table>
+      <div className="rounded-md border overflow-x-auto max-h-[60vh]">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">#</TableHead>

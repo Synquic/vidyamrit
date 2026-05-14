@@ -1,5 +1,6 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { Outlet } from "react-router";
+import { Capacitor } from "@capacitor/core";
 import {
   AUTH_ROUTE_PATHS,
   DASHBOARD_ROUTE_PATHS,
@@ -55,7 +56,7 @@ import TutorDashboard from "@/pages/dashboard/TutorDashboard";
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LandingPage />,
+    element: Capacitor.isNativePlatform() ? <Navigate to="/login" replace /> : <LandingPage />,
   },
   {
     path: PUBLIC_ROUTE_PATHS.support,
