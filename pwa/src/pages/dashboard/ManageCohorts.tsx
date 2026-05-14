@@ -1347,7 +1347,7 @@ function ManageCohorts() {
       )}
 
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingCohort ? "Edit Group" : "Create Group"}
@@ -1674,7 +1674,7 @@ function ManageCohorts() {
 
       {/* Generate Groups Modal */}
       <Dialog open={isGenerateModalOpen} onOpenChange={setIsGenerateModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Generate Groups</DialogTitle>
             <DialogDescription>
@@ -1884,7 +1884,7 @@ function ManageCohorts() {
 
       {/* Approval Modal */}
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Review and Approve Groups</DialogTitle>
             <DialogDescription>

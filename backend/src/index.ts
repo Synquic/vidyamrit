@@ -19,15 +19,22 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb" }));
 
 // CORS configuration
+// Mobile origins are always allowed regardless of CORS_ORIGIN env var
+const mobileOrigins = [
+  "https://localhost",       // Capacitor Android (androidScheme: https)
+  "capacitor://localhost",   // Capacitor iOS
+  "http://localhost",        // Capacitor fallback
+];
+const configuredOrigins = process.env.CORS_ORIGIN?.split(",") || [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "https://vidyamrit.in",
+  "https://www.vidyamrit.in",
+  "https://vidyamrit.synquic.in",
+];
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",") || [
-      "http://localhost:5173",
-      "http://localhost:4173",
-      "https://vidyamrit.in",
-      "https://www.vidyamrit.in",
-      "https://vidyamrit.synquic.in",
-    ],
+    origin: [...configuredOrigins, ...mobileOrigins],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

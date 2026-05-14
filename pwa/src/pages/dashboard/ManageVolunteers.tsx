@@ -503,8 +503,8 @@ function ManageVolunteers() {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-auto">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Account Name</TableHead>
@@ -660,7 +660,7 @@ function ManageVolunteers() {
 
       {/* Create Volunteer Dialog */}
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Create Volunteer Account</DialogTitle>
             <DialogDescription>
@@ -726,7 +726,7 @@ function ManageVolunteers() {
 
       {/* Volunteer Credentials Dialog */}
       <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Volunteer Account Created</DialogTitle>
             <DialogDescription>
@@ -839,7 +839,7 @@ Vidyamrit Team`;
 
       {/* Send Email Dialog */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Send Credentials via Email</DialogTitle>
             <DialogDescription>

@@ -273,8 +273,8 @@ function ManageTutors() {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-auto">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="min-w-[500px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -336,7 +336,7 @@ function ManageTutors() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingTutor ? "Edit Tutor" : "Create New Tutor"}

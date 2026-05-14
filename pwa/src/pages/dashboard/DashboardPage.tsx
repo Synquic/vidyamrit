@@ -195,7 +195,7 @@ function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50/30 to-amber-50/30 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+        <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
           {t("Admin Dashboard")}
         </h1>
         <p className="text-gray-600">

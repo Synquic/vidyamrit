@@ -109,18 +109,6 @@ function ManagePrograms() {
     levels: [],
   });
 
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Handle total levels change while preserving existing data
   const handleTotalLevelsChange = (
@@ -412,50 +400,17 @@ function ManagePrograms() {
 
   return (
     <div className="space-y-6">
-      {isMobile ? (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <Card className="max-w-md w-full">
-            <CardContent className="text-center py-12">
-              <div className="mb-6">
-                <svg
-                  className="mx-auto h-16 w-16 text-muted-foreground"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Desktop Only Feature
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                The Program Management interface is optimized for desktop use only.
-                Please access this page from a desktop or tablet device with a larger screen.
-              </p>
-              <div className="text-sm text-muted-foreground">
-                <p>Recommended screen width: 768px or larger</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <>
+      <>
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Manage Programs</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Manage Programs</h1>
+              <p className="text-muted-foreground text-sm">
                 Create and manage educational programs with structured learning
                 levels
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Dialog
                 open={isImportDialogOpen}
                 onOpenChange={setIsImportDialogOpen}
@@ -487,7 +442,7 @@ function ManagePrograms() {
                     Create Program
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Create New Program</DialogTitle>
                     <DialogDescription>
@@ -573,7 +528,8 @@ function ManagePrograms() {
                   No programs found
                 </div>
               ) : (
-                <Table>
+                <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
@@ -668,6 +624,7 @@ function ManagePrograms() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
 
               {/* Pagination */}
@@ -708,7 +665,7 @@ function ManagePrograms() {
           </Card>
           {/* Edit Dialog */}
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit Program</DialogTitle>
                 <DialogDescription>
@@ -732,7 +689,7 @@ function ManagePrograms() {
           </Dialog>
           {/* View Dialog */}
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{selectedProgram?.name}</DialogTitle>
                 <DialogDescription>
@@ -743,7 +700,6 @@ function ManagePrograms() {
             </DialogContent>
           </Dialog>
         </>
-      )}
     </div>
   );
 }
