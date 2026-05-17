@@ -10,7 +10,8 @@ export interface IUser extends Document {
     schoolId?: mongoose.Types.ObjectId | null;
     // Volunteer-specific fields
     expiresAt?: Date; // When volunteer access expires
-    isActive?: boolean; // To enable/disable volunteer access
+    isActive?: boolean;
+    profilePhoto?: string;
     //
     createdAt: Date;
     updatedAt: Date;
@@ -25,7 +26,8 @@ const UserSchema = new mongoose.Schema({
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false },
     // Volunteer-specific fields
     expiresAt: { type: Date, required: false }, // When volunteer access expires
-    isActive: { type: Boolean, default: true }, // To enable/disable volunteer access
+    isActive: { type: Boolean, default: true },
+    profilePhoto: { type: String, required: false },
     //
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

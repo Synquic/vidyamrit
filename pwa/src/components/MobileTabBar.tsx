@@ -40,13 +40,13 @@ const ALL_MOBILE_TABS: MobileTab[] = [
     title: "Group",
     url: DASHBOARD_ROUTE_PATHS.cohorts,
     icon: Users,
-    navTitle: "Cohort Management",
+    navTitle: "Group Management",
   },
   {
     title: "Test",
     url: DASHBOARD_ROUTE_PATHS.baselineAssessments,
     icon: ClipboardList,
-    navTitle: "Baseline Assessments",
+    navTitle: "Baseline Tests",
   },
   {
     title: "Attendance",
