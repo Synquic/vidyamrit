@@ -887,47 +887,6 @@ function ManageStudents() {
                     className="w-full h-12 sm:h-10 text-base sm:text-sm"
                   />
                 </div>
-                <div className="space-y-2 min-w-0">
-                  <Label htmlFor="gender" className="text-base sm:text-sm">
-                    Gender
-                  </Label>
-                  <Select
-                    value={formData.gender}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, gender: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full min-w-0 h-12 sm:h-10 text-base sm:text-sm">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 min-w-0">
-                  <Label htmlFor="caste" className="text-base sm:text-sm">
-                    Category (Optional)
-                  </Label>
-                  <Select
-                    value={formData.caste || ""}
-                    onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, caste: value }))
-                    }
-                  >
-                    <SelectTrigger className="w-full min-w-0 h-12 sm:h-10 text-base sm:text-sm">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="st">ST</SelectItem>
-                      <SelectItem value="gen">GEN</SelectItem>
-                      <SelectItem value="sc">SC</SelectItem>
-                      <SelectItem value="obc">OBC</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </div>
 

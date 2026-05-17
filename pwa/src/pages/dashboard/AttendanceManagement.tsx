@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
+import MobileAttendanceView from "@/components/MobileAttendanceView";
 import { useParams, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -1645,6 +1646,12 @@ export default function AttendanceManagement() {
   const { cohortId } = useParams<{ cohortId?: string }>();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"group" | "individual">("individual");
+
+  // On native, show mobile-optimised UI
+  if (Capacitor.isNativePlatform()) {
+    if (cohortId) return <CohortAttendanceDetail />;
+    return <MobileAttendanceView />;
+  }
 
   // If cohortId is present, show detail view; otherwise show overview
   if (cohortId) {

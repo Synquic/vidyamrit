@@ -53,6 +53,9 @@ import StudentReportPage from "@/pages/dashboard/StudentReportPage";
 // Tutor Dashboard
 import TutorDashboard from "@/pages/dashboard/TutorDashboard";
 
+// Profile
+import ProfilePage from "@/pages/dashboard/ProfilePage";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -228,6 +231,10 @@ export const router = createBrowserRouter([
             <ReportsPage />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: DASHBOARD_ROUTE_PATHS.profile,
+        element: <ProfilePage />,
       },
       {
         path: DASHBOARD_ROUTE_PATHS.studentReport,

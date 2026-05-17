@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -31,6 +31,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
 
@@ -46,71 +47,98 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <SidebarProvider>
-      {showSidebar && <AppSidebar />}
-      <SidebarInset className={!showSidebar ? "w-full" : ""}>
-        <header className="flex h-16 shrink-0 items-center gap-2 sm:gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-3 sm:px-4 shadow-sm overflow-visible">
-          {showSidebar && (
-            <>
-              <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-7 w-7 [&_svg]:size-4 hidden sm:flex" />
-              <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-12 px-3 [&_svg]:size-6 flex sm:hidden">
-                <span className="text-base font-medium">Menu</span>
-              </SidebarTrigger>
-            </>
+    <>
+      <SidebarProvider>
+        {showSidebar && <AppSidebar />}
+        <SidebarInset className={!showSidebar ? "w-full" : ""}>
+          {/* Native mobile app bar — hidden on /profile since ProfilePage has its own header */}
+          {isNative && location.pathname !== "/profile" && (
+            <header className="flex h-16 shrink-0 items-center justify-between px-4 border-b bg-white shadow-sm">
+              <img
+                src="/vidyamrit-logo.png"
+                alt="Vidyamrit"
+                className="h-10 w-10 rounded-full object-contain bg-orange-50 border border-orange-100"
+              />
+              <span className="text-lg font-bold text-gray-900 tracking-tight">
+                {location.pathname === "/dashboard" || location.pathname === "/tutor-dashboard"
+                  ? "Dashboard"
+                  : t(getBreadcrumbTitle())}
+              </span>
+              <button
+                onClick={() => navigate("/profile")}
+                className="h-10 w-10 rounded-full bg-orange-100 border-2 border-orange-200 flex items-center justify-center overflow-hidden flex-shrink-0"
+              >
+                <span className="text-orange-700 font-bold text-base">
+                  {user?.name?.charAt(0)?.toUpperCase() || "?"}
+                </span>
+              </button>
+            </header>
           )}
-          {showSidebar && (
-            <Separator orientation="vertical" className="mr-1 sm:mr-2 h-6" />
-          )}
-          <Breadcrumb className="min-w-0 flex-1 hidden md:block">
-            <BreadcrumbList className="flex-nowrap">
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link
-                    to="/dashboard"
-                    className="font-semibold hover:text-primary transition-colors"
-                  >
-                    {t("Admin Dashboard")}
-                  </Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              {location.pathname !== "/dashboard" && (
+          {!isNative && (
+            <header className="flex h-16 shrink-0 items-center gap-2 sm:gap-3 border-b bg-gradient-to-r from-background via-background to-background/95 backdrop-blur-sm px-3 sm:px-4 shadow-sm overflow-visible">
+              {showSidebar && (
                 <>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="font-medium">
-                      {t(getBreadcrumbTitle())}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
+                  <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-7 w-7 [&_svg]:size-4 hidden sm:flex" />
+                  <SidebarTrigger className="-ml-1 hover:bg-accent/50 rounded-lg transition-colors h-12 px-3 [&_svg]:size-6 flex sm:hidden">
+                    <span className="text-base font-medium">Menu</span>
+                  </SidebarTrigger>
                 </>
               )}
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="flex-1 min-w-0" />
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {!isViewUser && <Notifications />}
-            <LanguageToggleButton className="h-12 sm:h-8 px-4 sm:px-2.5 text-base sm:text-xs [&_svg]:size-6 sm:[&_svg]:size-4" />
+              {showSidebar && (
+                <Separator orientation="vertical" className="mr-1 sm:mr-2 h-6" />
+              )}
+              <Breadcrumb className="min-w-0 flex-1 hidden md:block">
+                <BreadcrumbList className="flex-nowrap">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link
+                        to="/dashboard"
+                        className="font-semibold hover:text-primary transition-colors"
+                      >
+                        {t("Admin Dashboard")}
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {location.pathname !== "/dashboard" && (
+                    <>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage className="font-medium">
+                          {t(getBreadcrumbTitle())}
+                        </BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+              <div className="flex-1 min-w-0" />
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                {!isViewUser && <Notifications />}
+                <LanguageToggleButton className="h-12 sm:h-8 px-4 sm:px-2.5 text-base sm:text-xs [&_svg]:size-6 sm:[&_svg]:size-4" />
+              </div>
+            </header>
+          )}
+          {/* Extra bottom padding on native so content doesn't hide behind the tab bar */}
+          <div className={`flex flex-1 flex-col gap-6 p-4 sm:p-6 min-h-0 ${showTabBar ? "pb-20" : ""}`}>
+            {children}
           </div>
-        </header>
-        {/* Extra bottom padding on native so content doesn't hide behind the tab bar */}
-        <div className={`flex flex-1 flex-col gap-6 p-4 sm:p-6 min-h-0 ${showTabBar ? "pb-20" : ""}`}>
-          {children}
-        </div>
-        {!isNative && (
-          <footer className="border-t bg-gradient-to-r from-background to-muted/30 px-4 py-3 text-xs text-muted-foreground text-center backdrop-blur-sm">
-            © {new Date().getFullYear()} Vidyamrit. Made by{" "}
-            <a
-              href="https://synquic.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-primary hover:text-primary/80 hover:underline transition-colors"
-            >
-              Synquic
-            </a>
-            .
-          </footer>
-        )}
-      </SidebarInset>
+          {!isNative && (
+            <footer className="border-t bg-gradient-to-r from-background to-muted/30 px-4 py-3 text-xs text-muted-foreground text-center backdrop-blur-sm">
+              © {new Date().getFullYear()} Vidyamrit. Made by{" "}
+              <a
+                href="https://synquic.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary hover:text-primary/80 hover:underline transition-colors"
+              >
+                Synquic
+              </a>
+              .
+            </footer>
+          )}
+        </SidebarInset>
+      </SidebarProvider>
       {showTabBar && <MobileTabBar />}
-    </SidebarProvider>
+    </>
   );
 }

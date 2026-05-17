@@ -17,6 +17,7 @@ export interface BaseUser {
     name: string;
   };
   phoneNo?: string;
+  profilePhoto?: string;
   createdAt: string;
   updatedAt: string;
 }

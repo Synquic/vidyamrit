@@ -20,6 +20,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
       role: user.role,
       schoolId: user.schoolId,
       phoneNo: user.phoneNo,
+      profilePhoto: user.profilePhoto,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

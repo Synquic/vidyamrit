@@ -7,6 +7,31 @@ const userRouter = Router();
 
 // Common user routes (profile, auth)
 userRouter.get("/me", authMiddleware, getCurrentUser);
+
+// Update own profile (name, profilePhoto)
+userRouter.patch("/me", authMiddleware, async (req: any, res) => {
+  try {
+    const uid = req.user?.uid;
+    const { profilePhoto, name, phoneNo } = req.body;
+    const User = require("../models/UserModel").default;
+    const update: any = { updatedAt: new Date() };
+    if (profilePhoto !== undefined) update.profilePhoto = profilePhoto;
+    if (name) update.name = name;
+    if (phoneNo) update.phoneNo = phoneNo;
+    const user = await User.findOneAndUpdate({ uid }, update, { new: true })
+      .populate("schoolId", "name type")
+      .exec();
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({
+      id: user._id, name: user.name, email: user.email,
+      phoneNo: user.phoneNo, role: user.role, schoolId: user.schoolId,
+      profilePhoto: user.profilePhoto,
+      createdAt: user.createdAt, updatedAt: user.updatedAt,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 userRouter.post("/register", authMiddleware, registerUser); // we register user in our db with firebase uid
 // login- handled by firebase.
 
