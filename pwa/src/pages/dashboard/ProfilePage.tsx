@@ -1,15 +1,16 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { LanguageToggleButton } from "@/components/LanguageToggleButton";
+import { useTranslation } from "react-i18next";
 import { logout } from "@/services/auth";
-import { ChevronLeft, LogOut, Camera, User } from "lucide-react";
+import { ChevronLeft, LogOut, Camera, User, Languages } from "lucide-react";
 import { auth } from "../../../firebaseConfig";
 import { apiUrl } from "@/services/index";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(user?.profilePhoto ?? null);
   const [saving, setSaving] = useState(false);
@@ -54,6 +55,15 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Hidden file input — outside any positioned container */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none", position: "fixed", top: "-9999px", left: "-9999px" }}
+        onChange={handlePhotoChange}
+      />
+
       {/* Hero */}
       <div className="bg-slate-500 pt-6 pb-20 flex flex-col items-center">
         {/* Top bar */}
@@ -62,7 +72,14 @@ export default function ProfilePage() {
             <ChevronLeft className="w-7 h-7" />
           </button>
           <span className="text-white text-lg font-semibold">Profile</span>
-          <LanguageToggleButton className="text-white border-white/40 h-9 px-3 text-sm [&_svg]:size-4" />
+          {/* Plain language toggle — no white background */}
+          <button
+            onClick={() => i18n.changeLanguage(i18n.language === "en" ? "hi" : "en")}
+            className="flex items-center gap-1.5 border border-white/40 rounded-lg px-3 py-1.5 text-white text-sm"
+          >
+            <Languages className="w-4 h-4" />
+            {i18n.language === "en" ? "हिंदी" : "English"}
+          </button>
         </div>
 
         {/* Avatar with upload button */}
@@ -81,13 +98,6 @@ export default function ProfilePage() {
           >
             <Camera className="w-4 h-4 text-white" />
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handlePhotoChange}
-          />
         </div>
 
         <h2 className="mt-3 text-white text-2xl font-bold text-center w-full px-6">
