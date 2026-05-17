@@ -2,12 +2,10 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
-import { ChevronRight, Search, Calendar, CheckCircle, XCircle, Clock, User, Users, ArrowLeft, Loader2, Play } from "lucide-react";
+import { ChevronRight, Search, Calendar, CheckCircle, XCircle, Clock, User, Users, ArrowLeft, Loader2 } from "lucide-react";
 import { getStudents } from "@/services/students";
 import { programsService } from "@/services/programs";
-import { getTutorAttendanceSummary, getAttendanceRecords, bulkMarkAttendance, AttendanceStatus, startCohort } from "@/services/attendance";
-import { getCohorts } from "@/services/cohorts";
+import { getTutorAttendanceSummary, getAttendanceRecords, bulkMarkAttendance, AttendanceStatus } from "@/services/attendance";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { toast } from "sonner";
 import { Link } from "react-router";
@@ -18,11 +16,6 @@ type Screen = "list" | "detail";
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatDateDisplay(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 export default function MobileAttendanceView() {
@@ -135,10 +128,9 @@ function ClassAttendance() {
       bulkMarkAttendance({
         schoolId: schoolId!,
         date: selectedDate,
-        subject: selectedSubject,
-        records: Array.from(attendanceMap.entries())
+        attendanceRecords: Array.from(attendanceMap.entries())
           .filter(([id]) => classStudents.some((s: any) => s._id === id))
-          .map(([studentId, status]) => ({ studentId, status })),
+          .map(([studentId, status]) => ({ studentId, status, subject: selectedSubject })),
       }),
     onSuccess: () => {
       toast.success("Attendance saved!");
