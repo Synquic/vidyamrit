@@ -721,8 +721,6 @@ function ManageStudents() {
               <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="">Age</TableHead>
-              <TableHead className="">Gender</TableHead>
-              <TableHead className="">Category</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -744,8 +742,6 @@ function ManageStudents() {
                       </button>
                     </TableCell>
                     <TableCell className="">{student.age}</TableCell>
-                    <TableCell className="">{student.gender}</TableCell>
-                    <TableCell className="">{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -786,8 +782,6 @@ function ManageStudents() {
                       </button>
                     </TableCell>
                     <TableCell className="">{student.age}</TableCell>
-                    <TableCell className="">{student.gender}</TableCell>
-                    <TableCell className="">{student.caste || "N/A"}</TableCell>
                     <TableCell>{student.class}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -808,7 +802,7 @@ function ManageStudents() {
               (viewMode === "archived" && filteredArchivedStudents.length === 0)) && (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={5}
                   className="text-center py-8 text-muted-foreground"
                 >
                   {searchQuery.trim()
