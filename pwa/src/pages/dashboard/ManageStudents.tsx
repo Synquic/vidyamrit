@@ -81,7 +81,6 @@ function ManageStudents() {
     name: "",
     age: 0,
     gender: "",
-    caste: "",
     mobileNumber: "",
     aadharNumber: "",
     apaarId: "",
@@ -247,7 +246,6 @@ function ManageStudents() {
         age,
         gender,
         class: className,
-        caste,
         mobileNumber,
         aadharNumber,
         apaarId,
@@ -260,7 +258,6 @@ function ManageStudents() {
           age,
           gender,
           class: className,
-          caste,
           mobileNumber,
           aadharNumber,
           apaarId,
@@ -278,7 +275,6 @@ function ManageStudents() {
       name: student.name,
       age: student.age,
       gender: student.gender,
-      caste: student.caste || "",
       mobileNumber: student.mobileNumber || "",
       aadharNumber: student.aadharNumber || "",
       apaarId: student.apaarId || "",
@@ -298,7 +294,6 @@ function ManageStudents() {
       name: "",
       age: 0,
       gender: "",
-      caste: "",
       mobileNumber: "",
       aadharNumber: "",
       apaarId: "",
@@ -863,11 +858,9 @@ function ManageStudents() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2 min-w-0">
-                  <Label htmlFor="age" className="text-base sm:text-sm">
-                    Age
-                  </Label>
+                  <Label htmlFor="age" className="text-base sm:text-sm">Age</Label>
                   <Input
                     id="age"
                     type="number"
@@ -880,6 +873,24 @@ function ManageStudents() {
                     }
                     className="w-full h-12 sm:h-10 text-base sm:text-sm"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender" className="text-base sm:text-sm">Gender</Label>
+                  <Select
+                    value={formData.gender}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, gender: value }))
+                    }
+                  >
+                    <SelectTrigger className="h-12 sm:h-10 text-base sm:text-sm">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
