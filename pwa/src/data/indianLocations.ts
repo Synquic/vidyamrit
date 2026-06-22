@@ -225,3 +225,19 @@ export const STATE_CITIES: Record<string, string[]> = {
   "Lakshadweep": ["Kavaratti", "Minicoy", "Agatti"],
   "Puducherry": ["Puducherry", "Karaikal", "Mahe", "Yanam"],
 };
+
+// Blocks (tehsils) for a given city/district. The key must match a city value
+// from STATE_CITIES. When a city has an entry here, the school form shows these
+// blocks; cities without an entry fall back to free entry / existing blocks.
+export const CITY_BLOCKS: Record<string, string[]> = {
+  Dewas: ["Bagli", "Dewas", "Kannod", "Khategaon", "Sonkatch", "Tonkkhurd"],
+  Dhar: [
+    "Badnavar", "Bagh", "Dahi", "Dhar", "Dharampuri", "Gandhwani",
+    "Kukshi", "Manavar", "Nalchha", "Nisarpur", "Sardarpur", "Tirla", "Umarban",
+  ],
+  Ratlam: ["Alot", "Bajna", "Jaora", "Piploda", "Ratlam", "Sailana"],
+  Khargone: [
+    "Badwaha", "Bhagbanpura", "Bhikan Goan", "Gogawan", "Jhirniya",
+    "Kasravad", "Khargone", "Maheshwar", "Segaon",
+  ],
+};

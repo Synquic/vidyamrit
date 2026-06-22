@@ -6,6 +6,7 @@ export interface Volunteer {
   id: string;
   name: string;
   email: string;
+  phoneNumber?: string; // Contact number (used for sending credentials via WhatsApp)
   password?: string; // Only returned when creating
   schoolId: {
     _id: string;
@@ -21,6 +22,7 @@ export interface CreateVolunteerDTO {
   schoolId: string;
   durationHours?: number; // Default 24 hours
   volunteerName?: string; // Default "Volunteer"
+  phoneNumber?: string; // Contact number for sending credentials
 }
 
 export interface UpdateVolunteerStatusDTO {

@@ -873,6 +873,8 @@ export default function BaselineAssessmentsPage() {
                                 status: getStudentBaselineStatus(student._id, program._id),
                               }));
                               const pendingPrograms = allProgramStatuses.filter((ps) => !ps.status.completed);
+                              // RE-TEST (disabled for now — kept for future use)
+                              // const completedProgs = allProgramStatuses.filter((ps) => ps.status.completed);
                               const allDone = pendingPrograms.length === 0;
 
                               return (
@@ -951,6 +953,56 @@ export default function BaselineAssessmentsPage() {
                                       </DropdownMenu>
                                     )}
                                   </TableCell>
+                                  {/*
+                                    RE-TEST (disabled for now — kept for future use).
+                                    To enable: also uncomment `completedProgs` above,
+                                    re-import DropdownMenuLabel + DropdownMenuSeparator,
+                                    and replace the Action <TableCell> above with this:
+
+                                    <TableCell className="text-center py-3 sm:py-4 pr-4 sm:pr-6">
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className={
+                                              allDone
+                                                ? "h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800"
+                                                : "h-8 sm:h-9 px-2.5 sm:px-3 text-xs sm:text-sm rounded-lg border-orange-200 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
+                                            }
+                                          >
+                                            {allDone ? (<><CheckCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />Re-test</>) : (<><Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />Test</>)}
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-56">
+                                          {pendingPrograms.map(({ program }) => (
+                                            <DropdownMenuItem key={program._id} onClick={() => handleAssessNow(student, program._id)} className="cursor-pointer py-2.5 text-sm">
+                                              <Play className="h-4 w-4 mr-2 text-orange-600 flex-shrink-0" />
+                                              <div className="flex flex-col">
+                                                <span className="font-medium">{program.name}</span>
+                                                <span className="text-xs text-muted-foreground">{program.subject}</span>
+                                              </div>
+                                            </DropdownMenuItem>
+                                          ))}
+                                          {completedProgs.length > 0 && (
+                                            <>
+                                              {pendingPrograms.length > 0 && <DropdownMenuSeparator />}
+                                              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Re-test (overwrites level)</DropdownMenuLabel>
+                                              {completedProgs.map(({ program, status }) => (
+                                                <DropdownMenuItem key={program._id} onClick={() => handleAssessNow(student, program._id)} className="cursor-pointer py-2.5 text-sm">
+                                                  <CheckCheck className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                                                  <div className="flex flex-col">
+                                                    <span className="font-medium">{program.name}</span>
+                                                    <span className="text-xs text-muted-foreground">Current: Level {status.level}</span>
+                                                  </div>
+                                                </DropdownMenuItem>
+                                              ))}
+                                            </>
+                                          )}
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </TableCell>
+                                  */}
                                 </TableRow>
                               );
                             });
