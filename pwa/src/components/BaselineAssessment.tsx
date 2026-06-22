@@ -97,6 +97,7 @@ export function BaselineAssessmentModal({
   const [showQuickComplete, setShowQuickComplete] = useState(false);
   const [showManualDecision, setShowManualDecision] = useState(false); // Manual mode: show Assign/Jump buttons after 10 questions
   const [isClosing, setIsClosing] = useState(false); // Track if modal is closing
+  const [showExitConfirm, setShowExitConfirm] = useState(false); // Confirm before discarding an in-progress test
 
   // algorithm refs - new 5-question batch system
   const levelQuestionsAnswered = useRef(0); // 0-10 questions per level
@@ -147,6 +148,18 @@ export function BaselineAssessmentModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, preSelectedProgramId]);
+
+  // Warn the teacher before an accidental refresh / back / tab-close while a
+  // test is in progress, so in-progress answers aren't silently lost.
+  useEffect(() => {
+    if (!isOpen || modalState !== "testing") return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isOpen, modalState]);
 
   const getActiveProgram = () => {
     if (currentProgramIndex < 0) return null;
@@ -508,14 +521,25 @@ export function BaselineAssessmentModal({
 
   if (!isOpen) return null;
 
+  // Closing the modal must NEVER assign a level. A level is committed ONLY via
+  // the explicit "End Test" (automatic) or "Assign Level" (manual) actions.
   const closeAll = async () => {
     setIsClosing(true);
-    if (modalState === "testing") await finalizeProgram();
+    setShowExitConfirm(false);
     // Wait for assessment complete callback to finish refreshing data
     if (onAssessmentComplete) {
       await onAssessmentComplete();
     }
     onClose();
+  };
+
+  // X button: if a test is in progress, confirm before discarding it.
+  const handleCloseRequest = () => {
+    if (modalState === "testing") {
+      setShowExitConfirm(true);
+      return;
+    }
+    closeAll();
   };
 
   return (
@@ -540,7 +564,7 @@ export function BaselineAssessmentModal({
         <Button
           variant="ghost"
           size="sm"
-          onClick={closeAll}
+          onClick={handleCloseRequest}
           disabled={isClosing}
           className="flex-shrink-0"
         >
@@ -907,6 +931,38 @@ export function BaselineAssessmentModal({
           )}
         </div>
       </div>
+
+      {/* Exit confirmation — closing mid-test discards progress, never assigns a level */}
+      {showExitConfirm && (
+        <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-4">
+          <Card className="w-full max-w-sm">
+            <CardContent className="p-6 space-y-4">
+              <h3 className="text-lg font-bold">Test band karein?</h3>
+              <p className="text-sm text-muted-foreground">
+                Yeh test abhi adhura hai. Band karne par iska progress save nahi hoga
+                aur student ko koi level assign nahi hoga.
+              </p>
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowExitConfirm(false)}
+                >
+                  Continue Test
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={closeAll}
+                  disabled={isClosing}
+                >
+                  Exit without saving
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

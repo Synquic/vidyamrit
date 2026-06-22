@@ -7,8 +7,8 @@ import { AuthRequest } from "../types/auth";
 // Create a new volunteer account for a school
 export const createVolunteer = async (req: AuthRequest, res: Response) => {
   try {
-    const { schoolId, durationHours = 24, volunteerName = "Volunteer" } = req.body;
-    
+    const { schoolId, durationHours = 24, volunteerName = "Volunteer", phoneNumber } = req.body;
+
     if (!schoolId) {
       return res.status(400).json({ error: "School ID is required" });
     }
@@ -34,7 +34,7 @@ export const createVolunteer = async (req: AuthRequest, res: Response) => {
       uid: firebaseUser.uid,
       name: `${volunteerName} - School ${schoolId}`,
       email: volunteerEmail,
-      phoneNo: "0000000000", // Placeholder
+      phoneNo: (phoneNumber && String(phoneNumber).trim()) || "0000000000",
       role: UserRole.VOLUNTEER,
       schoolId: schoolId,
       expiresAt: expiresAt,
@@ -52,6 +52,7 @@ export const createVolunteer = async (req: AuthRequest, res: Response) => {
         expiresAt: expiresAt,
         schoolId: schoolId,
         name: volunteer.name,
+        phoneNumber: volunteer.phoneNo,
       },
       message: `Volunteer account created successfully. Expires at ${expiresAt.toLocaleString()}`,
     });
@@ -77,6 +78,7 @@ export const getVolunteersBySchool = async (req: AuthRequest, res: Response) => 
         id: vol._id,
         name: vol.name,
         email: vol.email,
+        phoneNumber: vol.phoneNo,
         expiresAt: vol.expiresAt,
         isActive: vol.isActive,
         schoolId: vol.schoolId,
@@ -102,6 +104,7 @@ export const getAllVolunteers = async (req: AuthRequest, res: Response) => {
         id: vol._id,
         name: vol.name,
         email: vol.email,
+        phoneNumber: vol.phoneNo,
         expiresAt: vol.expiresAt,
         isActive: vol.isActive,
         schoolId: vol.schoolId,
