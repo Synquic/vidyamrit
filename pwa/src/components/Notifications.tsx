@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Bell, X, BookOpen, Users, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -110,7 +111,7 @@ export default function Notifications() {
           <span className="absolute top-0.5 right-0.5 sm:top-0 sm:right-0 h-2.5 w-2.5 sm:h-2 sm:w-2 bg-red-500 rounded-full animate-pulse" />
         )}
       </Button>
-      {isOpen && (
+      {isOpen && createPortal(
         <>
           <div
             className="fixed inset-0 z-[99]"
@@ -184,7 +185,8 @@ export default function Notifications() {
               </p>
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
