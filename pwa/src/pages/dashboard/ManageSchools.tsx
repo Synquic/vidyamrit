@@ -70,7 +70,7 @@ import {
   updateSchool,
   deleteSchool,
 } from "@/services/schools";
-import { INDIAN_STATES, STATE_CITIES } from "@/data/indianLocations";
+import { INDIAN_STATES, STATE_CITIES, CITY_BLOCKS } from "@/data/indianLocations";
 import { programsService } from "@/services/programs";
 
 function ManageSchools() {
@@ -141,16 +141,21 @@ function ManageSchools() {
     return STATE_CITIES[formData.state] || [];
   }, [formData.state]);
 
-  // Default blocks + unique blocks from existing schools
+  // Blocks depend on the selected city/district. If the city has a defined
+  // block list, show only those; otherwise fall back to defaults + blocks
+  // already used by existing schools.
   const DEFAULT_BLOCKS = [
     "Indore Urban 1", "Indore Urban 2", "Indore Rural", "Sanwer", "Mhow", "Depalpur",
   ];
   const blocksForDropdown = useMemo(() => {
+    if (formData.city && CITY_BLOCKS[formData.city]) {
+      return CITY_BLOCKS[formData.city];
+    }
     const schoolBlocks = schools
       .filter((s) => s.block)
       .map((s) => s.block!);
     return [...new Set([...DEFAULT_BLOCKS, ...schoolBlocks])].sort();
-  }, [schools]);
+  }, [formData.city, schools]);
 
   const createMutation = useMutation({
     mutationFn: createSchool,
@@ -331,6 +336,7 @@ function ManageSchools() {
                       pinCode: "",
                       pointOfContact: "",
                       phone: "",
+                      block: "",
                       testPromotionType: "automatic" as "automatic" | "manual",
                       pointOfContacts: [{ name: "", phone: "" }],
                     });
@@ -487,106 +493,17 @@ function ManageSchools() {
                 </div>
               </div>
 
-              {/* School Name & Block */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 items-end">
-                <div className="space-y-1 sm:space-y-2 col-span-1 sm:col-span-3">
-                  <Label htmlFor="name" className="text-xs sm:text-sm">School Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    className="w-full text-xs sm:text-sm h-8 sm:h-10"
-                  />
-                </div>
-                <div className="space-y-1 sm:space-y-2 col-span-1">
-                  <Label className="text-xs sm:text-sm">Block</Label>
-                  <Popover open={blockOpen} onOpenChange={setBlockOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={blockOpen}
-                        className="w-full justify-between font-normal text-xs sm:text-sm h-8 sm:h-10"
-                      >
-                        {formData.block || "Select block..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-[calc(100vw-2rem)] sm:w-[--radix-popover-trigger-width] p-0 max-h-[60vh] touch-pan-y overscroll-contain"
-                      align="start"
-                      side="bottom"
-                      sideOffset={4}
-                      style={{
-                        maxHeight:
-                          "var(--radix-popover-content-available-height, 60vh)",
-                      }}
-                    >
-                      <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Search block..."
-                          value={blockSearch}
-                          onValueChange={setBlockSearch}
-                          className="text-xs sm:text-sm h-8 sm:h-10"
-                        />
-                        <CommandList
-                          className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                          onWheel={(e) => {
-                            e.stopPropagation();
-                            e.currentTarget.scrollTop += e.deltaY;
-                          }}
-                        >
-                          <CommandEmpty className="py-2 px-3 text-xs sm:text-sm">
-                            No block found.
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {blockSearch.trim() &&
-                              !blocksForDropdown.some(
-                                (b) => b.toLowerCase() === blockSearch.trim().toLowerCase()
-                              ) && (
-                                <CommandItem
-                                  value={`add-${blockSearch.trim()}`}
-                                  onSelect={() => {
-                                    setFormData((prev) => ({ ...prev, block: blockSearch.trim() }));
-                                    setBlockSearch("");
-                                    setBlockOpen(false);
-                                  }}
-                                >
-                                  <Plus className="mr-2 h-3 sm:h-4 w-3 sm:w-4" />
-                                  Add "{blockSearch.trim()}"
-                                </CommandItem>
-                              )}
-                            {blocksForDropdown
-                              .filter((b) =>
-                                b.toLowerCase().includes(blockSearch.toLowerCase())
-                              )
-                              .map((block) => (
-                                <CommandItem
-                                  key={block}
-                                  value={block}
-                                  onSelect={() => {
-                                    setFormData((prev) => ({ ...prev, block }));
-                                    setBlockSearch("");
-                                    setBlockOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      formData.block === block ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {block}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+              {/* School Name */}
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="name" className="text-xs sm:text-sm">School Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  className="w-full text-xs sm:text-sm h-8 sm:h-10"
+                />
               </div>
 
 
@@ -695,7 +612,7 @@ function ManageSchools() {
                   <Select
                     value={formData.state}
                     onValueChange={(value) =>
-                      setFormData((prev) => ({ ...prev, state: value, city: "" }))
+                      setFormData((prev) => ({ ...prev, state: value, city: "", block: "" }))
                     }
                   >
                     <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-10">
@@ -726,7 +643,7 @@ function ManageSchools() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-[--radix-popover-trigger-width] p-0"
+                      className="w-(--radix-popover-trigger-width) p-0"
                       align="start"
                       side="bottom"
                       sideOffset={4}
@@ -757,7 +674,7 @@ function ManageSchools() {
                                 <CommandItem
                                   value={`add-${citySearch.trim()}`}
                                   onSelect={() => {
-                                    setFormData((prev) => ({ ...prev, city: citySearch.trim() }));
+                                    setFormData((prev) => ({ ...prev, city: citySearch.trim(), block: "" }));
                                     setCitySearch("");
                                     setCityOpen(false);
                                   }}
@@ -775,7 +692,7 @@ function ManageSchools() {
                                   key={city}
                                   value={city}
                                   onSelect={() => {
-                                    setFormData((prev) => ({ ...prev, city }));
+                                    setFormData((prev) => ({ ...prev, city, block: "" }));
                                     setCitySearch("");
                                     setCityOpen(false);
                                   }}
@@ -798,6 +715,99 @@ function ManageSchools() {
                     <p className="text-xs text-muted-foreground">Select state first</p>
                   )}
                 </div>
+              </div>
+
+              {/* Block (depends on selected city) */}
+              <div className="space-y-1 sm:space-y-2">
+                <Label className="text-xs sm:text-sm">Block</Label>
+                <Popover open={blockOpen} onOpenChange={setBlockOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={blockOpen}
+                      className="w-full justify-between font-normal text-xs sm:text-sm h-8 sm:h-10"
+                      disabled={!formData.city}
+                    >
+                      {formData.block || "Select block..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-(--radix-popover-trigger-width) p-0 max-h-[60vh] touch-pan-y overscroll-contain"
+                    align="start"
+                    side="bottom"
+                    sideOffset={4}
+                    style={{
+                      maxHeight:
+                        "var(--radix-popover-content-available-height, 60vh)",
+                    }}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Search block..."
+                        value={blockSearch}
+                        onValueChange={setBlockSearch}
+                        className="text-xs sm:text-sm h-8 sm:h-10"
+                      />
+                      <CommandList
+                        className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                        onWheel={(e) => {
+                          e.stopPropagation();
+                          e.currentTarget.scrollTop += e.deltaY;
+                        }}
+                      >
+                        <CommandEmpty className="py-2 px-3 text-xs sm:text-sm">
+                          No block found.
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {blockSearch.trim() &&
+                            !blocksForDropdown.some(
+                              (b) => b.toLowerCase() === blockSearch.trim().toLowerCase()
+                            ) && (
+                              <CommandItem
+                                value={`add-${blockSearch.trim()}`}
+                                onSelect={() => {
+                                  setFormData((prev) => ({ ...prev, block: blockSearch.trim() }));
+                                  setBlockSearch("");
+                                  setBlockOpen(false);
+                                }}
+                              >
+                                <Plus className="mr-2 h-3 sm:h-4 w-3 sm:w-4" />
+                                Add "{blockSearch.trim()}"
+                              </CommandItem>
+                            )}
+                          {blocksForDropdown
+                            .filter((b) =>
+                              b.toLowerCase().includes(blockSearch.toLowerCase())
+                            )
+                            .map((block) => (
+                              <CommandItem
+                                key={block}
+                                value={block}
+                                onSelect={() => {
+                                  setFormData((prev) => ({ ...prev, block }));
+                                  setBlockSearch("");
+                                  setBlockOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.block === block ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {block}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {!formData.city && (
+                  <p className="text-xs text-muted-foreground">Select city first</p>
+                )}
               </div>
 
               {/* Year & PIN */}

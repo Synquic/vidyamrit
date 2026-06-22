@@ -66,6 +66,7 @@ import {
   CheckCircle,
   XCircle,
   Mail,
+  MessageCircle,
   Phone,
   MapPin,
   GraduationCap,
@@ -101,6 +102,7 @@ function ManageVolunteers() {
     schoolId: "",
     durationHours: 24,
     volunteerName: "Volunteer",
+    phoneNumber: "",
   });
 
   const queryClient = useQueryClient();
@@ -247,6 +249,7 @@ function ManageVolunteers() {
       schoolId: selectedSchool?._id || "",
       durationHours: 24,
       volunteerName: "Volunteer",
+      phoneNumber: "",
     });
   };
 
@@ -272,6 +275,29 @@ function ManageVolunteers() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
+  };
+
+  // Open WhatsApp with the credentials pre-filled (admin just hits send).
+  const sendCredentialsViaWhatsApp = (volunteer: Volunteer) => {
+    const digits = (volunteer.phoneNumber || "").replace(/\D/g, "");
+    if (!digits || digits === "0000000000") {
+      toast.error("No phone number saved for this volunteer");
+      return;
+    }
+    // Assume 10-digit numbers are Indian; prefix country code 91.
+    const withCc = digits.length === 10 ? `91${digits}` : digits;
+    const message =
+      `Vidyamrit Volunteer Login\n\n` +
+      `Account: ${volunteer.name}\n` +
+      `Email: ${volunteer.email}\n` +
+      `Password: ${volunteer.password}\n` +
+      `School: ${volunteer.schoolId?.name || ""}\n` +
+      `Expires: ${new Date(volunteer.expiresAt).toLocaleString()}\n\n` +
+      `Multiple volunteers can use the same login. Please keep it secure.`;
+    window.open(
+      `https://wa.me/${withCc}?text=${encodeURIComponent(message)}`,
+      "_blank"
+    );
   };
 
   const isExpired = (expiresAt: string) => {
@@ -687,6 +713,21 @@ function ManageVolunteers() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))
+                }
+                placeholder="e.g. 9876543210"
+              />
+              <p className="text-xs text-muted-foreground">
+                Used to send login credentials via WhatsApp
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="durationHours">Access Duration (Hours) *</Label>
               <Input
                 id="durationHours"
@@ -829,6 +870,16 @@ Vidyamrit Team`;
             >
               <Mail className="mr-2 h-4 w-4" />
               Send by Email
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (createdVolunteer) sendCredentialsViaWhatsApp(createdVolunteer);
+              }}
+              className="w-full sm:w-auto border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800"
+            >
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Send by WhatsApp
             </Button>
             <Button onClick={() => setIsCredentialsDialogOpen(false)} className="w-full sm:w-auto">
               I've Saved the Credentials
