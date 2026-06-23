@@ -751,7 +751,7 @@ function ManageSchools() {
                         className="text-xs sm:text-sm h-8 sm:h-10"
                       />
                       <CommandList
-                        className="max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                        className="max-h-[200px] overflow-y-auto touch-pan-y overscroll-contain [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                         onWheel={(e) => {
                           e.stopPropagation();
                           e.currentTarget.scrollTop += e.deltaY;
