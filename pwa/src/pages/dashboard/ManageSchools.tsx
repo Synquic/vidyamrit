@@ -629,7 +629,7 @@ function ManageSchools() {
                 </div>
                 <div className="space-y-1 sm:space-y-2">
                   <Label className="text-xs sm:text-sm">City</Label>
-                  <Popover open={cityOpen} onOpenChange={setCityOpen}>
+                  <Popover open={cityOpen} onOpenChange={setCityOpen} modal>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -657,11 +657,7 @@ function ManageSchools() {
                           className="text-xs sm:text-sm h-8 sm:h-10"
                         />
                         <CommandList
-                          className="max-h-[50vh] overflow-y-auto touch-pan-y overscroll-contain"
-                          onWheel={(e) => {
-                            e.stopPropagation();
-                            e.currentTarget.scrollTop += e.deltaY;
-                          }}
+                          className="max-h-[50vh] overflow-y-auto touch-pan-y overscroll-contain [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                         >
                           <CommandEmpty className="py-2 px-3 text-xs sm:text-sm">
                             No city found.
@@ -720,7 +716,7 @@ function ManageSchools() {
               {/* Block (depends on selected city) */}
               <div className="space-y-1 sm:space-y-2">
                 <Label className="text-xs sm:text-sm">Block</Label>
-                <Popover open={blockOpen} onOpenChange={setBlockOpen}>
+                <Popover open={blockOpen} onOpenChange={setBlockOpen} modal>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -751,11 +747,7 @@ function ManageSchools() {
                         className="text-xs sm:text-sm h-8 sm:h-10"
                       />
                       <CommandList
-                        className="max-h-[200px] overflow-y-auto touch-pan-y overscroll-contain [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                        onWheel={(e) => {
-                          e.stopPropagation();
-                          e.currentTarget.scrollTop += e.deltaY;
-                        }}
+                        className="max-h-[50vh] overflow-y-auto touch-pan-y overscroll-contain [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                       >
                         <CommandEmpty className="py-2 px-3 text-xs sm:text-sm">
                           No block found.
