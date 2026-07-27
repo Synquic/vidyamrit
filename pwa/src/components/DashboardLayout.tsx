@@ -24,6 +24,7 @@ import Notifications from "./Notifications";
 import { useAuth } from "@/hooks/useAuth";
 import { MobileTabBar } from "./MobileTabBar";
 import { Capacitor } from "@capacitor/core";
+import { useAndroidBackButton } from "@/hooks/useAndroidBackButton";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -34,6 +35,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  // Android hardware back button (native only; no-op on web)
+  useAndroidBackButton();
 
   const isNative = Capacitor.isNativePlatform();
   // Hide sidebar for view users or on native (Capacitor) — uses tab bar instead
