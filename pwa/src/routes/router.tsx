@@ -20,6 +20,7 @@ import LogoutPage from "@/pages/auth/LogoutPage";
 // Public Pages
 import LandingPage from "@/pages/public/LandingPage";
 import SupportPage from "@/pages/public/SupportPage";
+import PrivacyPolicyPage from "@/pages/public/PrivacyPolicyPage";
 
 // Dashboard Pages
 import DashboardPage from "@/pages/dashboard/DashboardPage";
@@ -64,6 +65,10 @@ export const router = createBrowserRouter([
   {
     path: PUBLIC_ROUTE_PATHS.support,
     element: <SupportPage />,
+  },
+  {
+    path: PUBLIC_ROUTE_PATHS.privacy,
+    element: <PrivacyPolicyPage />,
   },
   // 404 not found
   {

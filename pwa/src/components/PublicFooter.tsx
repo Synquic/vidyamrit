@@ -8,6 +8,8 @@ import {
   Instagram,
   Linkedin,
 } from "lucide-react";
+import { Link } from "react-router";
+import { PUBLIC_ROUTE_PATHS } from "@/routes";
 
 export default function PublicFooter() {
   return (
@@ -189,12 +191,12 @@ export default function PublicFooter() {
                 © {new Date().getFullYear()} Vidyamrit. All rights reserved.
               </span>
               <div className="flex space-x-4">
-                <a
-                  href="#"
+                <Link
+                  to={PUBLIC_ROUTE_PATHS.privacy}
                   className="font-sans text-gray-400 text-sm hover:text-amber-400 transition-colors"
                 >
                   Privacy Policy
-                </a>
+                </Link>
                 <a
                   href="#"
                   className="font-sans text-gray-400 text-sm hover:text-amber-400 transition-colors"

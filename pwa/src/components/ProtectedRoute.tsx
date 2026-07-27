@@ -2,7 +2,7 @@ import { Navigate, useLocation } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { useRoleAccess } from "../hooks/useRoleAccess";
 import { UserRole } from "../types/user";
-import { Spinner } from "@/components/ui/spinner";
+import LoadingScreen from "@/components/LoadingScreen";
 import { AUTH_ROUTE_PATHS } from "@/routes";
 
 interface ProtectedRouteProps {
@@ -16,11 +16,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner size="medium" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!user) {

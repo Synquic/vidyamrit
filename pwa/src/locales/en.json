@@ -92,20 +92,13 @@
   "Closed": "Closed",
   "Active": "Active",
   "Inactive": "Inactive",
-  "Conversion Metrics": "Conversion Metrics",
-  "Enquiry to customer conversion tracking": "Enquiry to customer conversion tracking",
   "Total Enquiries": "Total Enquiries",
-  "Converted": "Converted",
   "Conversion Rate": "Conversion Rate",
   "Recent Products": "Recent Products",
   "Latest products added to catalog": "Latest products added to catalog",
   "Recent Enquiries": "Recent Enquiries",
   "Latest customer enquiries and their status": "Latest customer enquiries and their status",
-  "Categories": "Categories",
-  "Products": "Products",
   "Inventory Items": "Inventory Items",
-  "Enquiries": "Enquiries",
-  "Customers": "Customers",
   "Admin Users": "Admin Users",
   "attendance": {
     "title": "Attendance Management",
@@ -154,5 +147,8 @@
   "Empowering education, one student at a time.": "Empowering education, one student at a time.",
   "Join us in transforming lives through quality education and making a lasting impact in communities.": "Join us in transforming lives through quality education and making a lasting impact in communities.",
   "Discover the hidden gems of the world, one step at a time.": "Discover the hidden gems of the world, one step at a time.",
-  "Lorem Ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt": "Lorem Ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt"
+  "Lorem Ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt": "Lorem Ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt",
+  "Literacy. Learning. Livelihood.": "Literacy. Learning. Livelihood.",
+  "Loading...": "Loading...",
+  "Logging out...": "Logging out..."
 }
