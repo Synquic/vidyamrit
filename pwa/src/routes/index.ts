@@ -1,5 +1,6 @@
 export const PUBLIC_ROUTE_PATHS = {
   support: "/support",
+  privacy: "/privacy",
 } as const;
 
 export type PublicRouteKey = keyof typeof PUBLIC_ROUTE_PATHS;

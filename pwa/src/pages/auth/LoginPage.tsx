@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "react-i18next";
 import { LanguageToggleButton } from "@/components/LanguageToggleButton";
+import LoadingScreen from "@/components/LoadingScreen";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -21,7 +22,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate("/dashboard");
+      // replace: keep /login out of the history stack so the Android back
+      // button doesn't land here and bounce straight back to the dashboard.
+      navigate("/dashboard", { replace: true });
     }
   }, [user, loading, navigate]);
 
@@ -31,7 +34,7 @@ export default function LoginPage() {
       setError(null);
       setSuccessMessage(null);
       await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err: unknown) {
       // Handle Firebase error or custom error object
       if (
@@ -91,7 +94,7 @@ export default function LoginPage() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <LoadingScreen />;
   }
 
   return (
