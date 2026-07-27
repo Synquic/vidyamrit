@@ -53,7 +53,11 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
+# NOTE: vidyamrit-upload.jks and keystore.properties are committed ON PURPOSE.
+# The repo is private, and this is only the Play App Signing *upload* key --
+# if it ever leaks, reset it from Play Console (the real app signing key is held
+# by Google and is unaffected).
+# If this repo is ever made public, reset the upload key in Play Console first.
 #*.jks
 #*.keystore
 
