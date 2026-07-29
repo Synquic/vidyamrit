@@ -27,13 +27,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { getStudents, Student } from "@/services/students";
 import { getSchools, School } from "@/services/schools";
 import { programsService, IProgram } from "@/services/programs";
@@ -168,7 +161,8 @@ export default function StudentDistributionReport({
   const [viewType, setViewType] = useState<ViewType>("level");
 
   // Block and School filtering state
-  const [selectedBlock, setSelectedBlock] = useState<string>("all");
+  // Empty set means every block, matching how selectedSchoolIds works below.
+  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
   const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(
     new Set()
   );
@@ -218,13 +212,27 @@ export default function StudentDistributionReport({
     return Array.from(blocks).sort();
   }, [schools]);
 
-  // Filter schools by selected block
+  const toggleBlock = (block: string) => {
+    setSelectedBlocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(block)) {
+        next.delete(block);
+      } else {
+        next.add(block);
+      }
+      return next;
+    });
+  };
+
+  // Filter schools by selected blocks
   const filteredSchools = useMemo(() => {
-    if (selectedBlock === "all") {
+    if (selectedBlocks.size === 0) {
       return schools;
     }
-    return schools.filter((school) => school.block === selectedBlock);
-  }, [schools, selectedBlock]);
+    return schools.filter(
+      (school) => !!school.block && selectedBlocks.has(school.block)
+    );
+  }, [schools, selectedBlocks]);
 
   // Get effective selected schools (if none selected, use all filtered schools)
   const effectiveSelectedSchoolIds = useMemo(() => {
@@ -584,25 +592,76 @@ export default function StudentDistributionReport({
               <Label className="font-medium text-sm whitespace-nowrap">
                 Block:
               </Label>
-              <Select
-                value={selectedBlock}
-                onValueChange={(value) => {
-                  setSelectedBlock(value);
-                  setSelectedSchoolIds(new Set());
-                }}
-              >
-                <SelectTrigger className="w-[180px] h-8">
-                  <SelectValue placeholder="Select Block" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Blocks</SelectItem>
-                  {availableBlocks.map((block) => (
-                    <SelectItem key={block} value={block}>
-                      {block}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-[180px] justify-between"
+                  >
+                    <span className="truncate">
+                      {selectedBlocks.size === 0
+                        ? `All Blocks (${availableBlocks.length})`
+                        : selectedBlocks.size === 1
+                        ? Array.from(selectedBlocks)[0]
+                        : `${selectedBlocks.size} blocks selected`}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-[240px] p-0" align="start">
+                  <div className="p-2 border-b flex justify-between items-center">
+                    <span className="text-sm font-medium">Select Blocks</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() =>
+                          setSelectedBlocks(new Set(availableBlocks))
+                        }
+                      >
+                        All
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setSelectedBlocks(new Set())}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="max-h-[200px] overflow-y-auto p-2 space-y-1">
+                    {availableBlocks.length === 0 ? (
+                      <p className="text-sm text-muted-foreground p-2">
+                        No blocks found
+                      </p>
+                    ) : (
+                      availableBlocks.map((block) => (
+                        <div
+                          key={block}
+                          className="flex items-center space-x-2 p-1.5 rounded hover:bg-muted cursor-pointer"
+                          onClick={() => toggleBlock(block)}
+                        >
+                          <Checkbox
+                            id={`dist-block-filter-${block}`}
+                            checked={selectedBlocks.has(block)}
+                            onCheckedChange={() => toggleBlock(block)}
+                          />
+                          <Label
+                            htmlFor={`dist-block-filter-${block}`}
+                            className="text-sm cursor-pointer flex-1 truncate"
+                          >
+                            {block}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="h-6 w-px bg-border hidden sm:block" />
@@ -1295,7 +1354,8 @@ export default function StudentDistributionReport({
         <CardHeader>
           <CardTitle>
             Summary
-            {selectedBlock !== "all" && ` - ${selectedBlock}`}
+            {selectedBlocks.size === 1 && ` - ${Array.from(selectedBlocks)[0]}`}
+            {selectedBlocks.size > 1 && ` - ${selectedBlocks.size} blocks`}
             {selectedSchoolIds.size > 0 &&
               ` (${effectiveSelectedSchoolIds.size} schools selected)`}
           </CardTitle>

@@ -12,6 +12,7 @@ import {
   getStudentCohortStatus,
   getArchivedStudents,
   restoreStudent,
+  permanentlyDeleteStudent,
   getStudentComprehensiveReport,
   addStudentBaselineHistory,
 } from "../controllers/studentController";
@@ -85,5 +86,11 @@ studentRouter.post(
   roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
   restoreStudent
 ); // Restore archived student
+studentRouter.delete(
+  "/:id/permanent",
+  authMiddleware,
+  roleMiddleware(UserRole.SUPER_ADMIN, UserRole.TUTOR),
+  permanentlyDeleteStudent
+); // Hide an archived student from the whole app (record kept in the database)
 
 export default studentRouter;

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createStudent,
   deleteStudent,
+  permanentlyDeleteStudent,
   getStudents,
   getArchivedStudents,
   restoreStudent,
@@ -13,6 +14,7 @@ import {
   type UpdateStudentDTO,
 } from "@/services/students";
 import { getAssessments, type Assessment } from "@/services/assessments";
+import { getApiErrorMessage } from "@/services";
 import { programsService } from "@/services/programs";
 import { useSchoolContext } from "@/contexts/SchoolContext";
 import { getSchool } from "@/services/schools";
@@ -54,7 +56,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown } from "lucide-react";
+import { Plus, Loader2, Edit, Archive, RotateCcw, Search, Filter, X, ChevronDown, Trash2 } from "lucide-react";
 import { BaselineAssessmentModal } from "@/components/BaselineAssessment";
 import {
   Collapsible,
@@ -66,6 +68,9 @@ function ManageStudents() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPermanentDeleteDialogOpen, setIsPermanentDeleteDialogOpen] =
+    useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState("");
   const [isAssessmentOpen, setIsAssessmentOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -196,6 +201,9 @@ function ManageStudents() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["archivedStudents"] });
+      // Archiving also drops the student out of their groups.
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["cohorts-for-attendance"] });
       setIsDeleteDialogOpen(false);
       toast.success("Student archived successfully");
     },
@@ -210,6 +218,24 @@ function ManageStudents() {
       }
 
       toast.error(errorMessage);
+    },
+  });
+
+  // Permanently delete (hide) an archived student. Cohort queries change too,
+  // since the backend pulls the student out of every cohort.
+  const permanentDeleteMutation = useMutation({
+    mutationFn: permanentlyDeleteStudent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["archivedStudents"] });
+      queryClient.invalidateQueries({ queryKey: ["cohorts"] });
+      queryClient.invalidateQueries({ queryKey: ["cohorts-for-attendance"] });
+      setIsPermanentDeleteDialogOpen(false);
+      setConfirmDeleteText("");
+      toast.success("Student deleted successfully");
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete student"));
     },
   });
 
@@ -313,6 +339,15 @@ function ManageStudents() {
     }
     await archiveMutation.mutateAsync(deletingStudent._id);
     setConfirmArchiveText("");
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!deletingStudent) return;
+    if (confirmDeleteText !== deletingStudent.name) {
+      toast.error("Student name does not match");
+      return;
+    }
+    await permanentDeleteMutation.mutateAsync(deletingStudent._id);
   };
 
   const handleRestore = async (student: Student) => {
@@ -789,6 +824,20 @@ function ManageStudents() {
                           <RotateCcw className="h-4 w-4 mr-1" />
                           Restore
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => {
+                            setDeletingStudent(student);
+                            setConfirmDeleteText("");
+                            setIsPermanentDeleteDialogOpen(true);
+                          }}
+                          disabled={permanentDeleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1037,6 +1086,58 @@ function ManageStudents() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Archive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={isPermanentDeleteDialogOpen}
+        onOpenChange={(open: boolean) => {
+          setIsPermanentDeleteDialogOpen(open);
+          if (!open) {
+            setConfirmDeleteText("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Student?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deletingStudent?.name}". They will
+              be removed from this list, from any groups they belong to, and
+              from all reports. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="confirm-delete" className="text-sm font-medium">
+              Type the student's name to confirm:{" "}
+              <span className="font-semibold">"{deletingStudent?.name}"</span>
+            </Label>
+            <Input
+              id="confirm-delete"
+              value={confirmDeleteText}
+              onChange={(e) => setConfirmDeleteText(e.target.value)}
+              placeholder="Enter student name"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmDeleteText("")}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handlePermanentDelete}
+              disabled={
+                permanentDeleteMutation.isPending ||
+                confirmDeleteText !== deletingStudent?.name
+              }
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {permanentDeleteMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
