@@ -1,4 +1,7 @@
 import { apiUrl, authAxios } from "./index";
+import type { School } from "./schools";
+import type { Student } from "./students";
+import type { Assessment } from "./assessments";
 
 const baseUrl = `${apiUrl}/views`;
 
@@ -433,4 +436,20 @@ export const getMyViewData = async (): Promise<ViewData> => {
   const response = await authAxios.get(`${baseUrl}/me/data`);
   return response.data;
 };
+
+export interface ViewStudentLevelsData {
+  schools: School[];
+  students: Student[];
+  assessments: Assessment[];
+}
+
+/**
+ * Data behind the Analytics screen of the current user's view. Already scoped
+ * to the schools the view is allowed to see.
+ */
+export const getMyViewStudentLevels =
+  async (): Promise<ViewStudentLevelsData> => {
+    const response = await authAxios.get(`${baseUrl}/me/student-levels`);
+    return response.data;
+  };
 
