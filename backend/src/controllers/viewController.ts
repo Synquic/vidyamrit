@@ -5,7 +5,10 @@ import View, { IView } from "../models/ViewModel";
 import User from "../models/UserModel";
 import { UserRole } from "../configs/roles";
 import logger from "../utils/logger";
-import { aggregateViewData } from "../services/viewDataService";
+import {
+  aggregateViewData,
+  getStudentLevelsData,
+} from "../services/viewDataService";
 import mongoose from "mongoose";
 
 function logWithViewInfo(message: string, view?: any, error?: any) {
@@ -590,6 +593,47 @@ export const getMyViewData = async (req: AuthRequest, res: Response) => {
  * Activate/Deactivate a view user
  * Only super_admin can activate/deactivate views
  */
+/**
+ * Data for the Analytics (student levels) screen of the signed-in view user.
+ *
+ * Kept separate from /me/data because the Analytics screen is always present on
+ * a view dashboard — it isn't one of the toggleable config sections — and it
+ * needs per-student rows rather than the aggregated counts /me/data returns.
+ */
+export const getMyViewStudentLevels = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (req.user?.role !== UserRole.VIEW_USER) {
+      return res
+        .status(403)
+        .json({ error: "Only view users can access this endpoint" });
+    }
+
+    const view = await View.findOne({ "viewUser.uid": req.user.uid });
+    if (!view) {
+      return res.status(404).json({ error: "View not found for this user" });
+    }
+    if (!view.viewUser.isActive) {
+      return res.status(403).json({ error: "View access is deactivated" });
+    }
+
+    const access = (view.config?.access || {}) as any;
+    const data = await getStudentLevelsData(access);
+
+    logWithViewInfo(
+      `Student levels data served (${data.schools.length} schools, ${data.students.length} students)`,
+      view
+    );
+
+    res.json(data);
+  } catch (error: any) {
+    logger.error(`Error fetching view student levels: ${error.message}`);
+    res.status(500).json({ error: "Failed to fetch student levels data" });
+  }
+};
+
 export const activateView = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
