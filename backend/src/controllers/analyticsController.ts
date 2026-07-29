@@ -16,11 +16,24 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
 
+    // Records outlive their school: deleting a school leaves its students,
+    // groups, tutors and assessments pointing at an id that no longer resolves.
+    // Every count below is scoped to schools that still exist, otherwise the
+    // dashboard reports records that no other screen in the app can show.
+    const realSchoolIds = await School.distinct("_id");
+    const realSchoolIdSet = new Set(
+      realSchoolIds.map((id: any) => id?.toString())
+    );
+
     // Get filter based on user role
     const schoolFilter =
-      user.role === "super_admin" ? {} : { school: user.schoolId };
+      user.role === "super_admin"
+        ? { school: { $in: realSchoolIds } }
+        : { school: user.schoolId };
     const cohortFilter =
-      user.role === "super_admin" ? {} : { schoolId: user.schoolId };
+      user.role === "super_admin"
+        ? { schoolId: { $in: realSchoolIds } }
+        : { schoolId: user.schoolId };
 
     // Total Schools
     const totalSchools = await School.countDocuments();
@@ -39,12 +52,13 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       "knowledgeLevel.date": { $gte: thirtyDaysAgo },
     });
 
-    // Combine and deduplicate
+    // Combine and deduplicate. These ids come off student/assessment records,
+    // so they are checked against the schools that actually exist.
     const activeSchoolIds = new Set(
       [
         ...schoolsWithRecentAssessments.map((id) => id?.toString()),
         ...schoolsWithRecentKnowledge.map((id) => id?.toString()),
-      ].filter(Boolean)
+      ].filter((id) => !!id && realSchoolIdSet.has(id))
     );
 
     const activeSchools =
@@ -68,7 +82,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       [
         ...schoolsWithStudentBaseline.map((id) => id?.toString()),
         ...schoolsWithAssessmentBaseline.map((id) => id?.toString()),
-      ].filter(Boolean)
+      ].filter((id) => !!id && realSchoolIdSet.has(id))
     );
 
     // Total Students
@@ -97,9 +111,13 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     });
 
     // Tutors/Mentors
+    // Tutors whose school was deleted are left out — they can't reach any data
+    // in the app either. Unassigned tutors (no school yet) still count.
     const totalTutors = await User.countDocuments({
       role: { $in: ["tutor", "mentor"] },
-      ...(user.role !== "super_admin" && { schoolId: user.schoolId }),
+      ...(user.role === "super_admin"
+        ? { $or: [{ schoolId: { $in: realSchoolIds } }, { schoolId: null }] }
+        : { schoolId: user.schoolId }),
     });
     const engagedTutors = await Cohort.distinct("tutorId", {
       ...cohortFilter,
@@ -109,7 +127,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
 
     // Total Assessments - combine from multiple sources
     // 1. Legacy Assessment model (baseline assessments)
-    const legacyAssessmentCount = await Assessment.countDocuments();
+    const legacyAssessmentCount = await Assessment.countDocuments(schoolFilter);
 
     // 2. ProgramAssessment model (new baseline system)
     const programAssessmentCount = await ProgramAssessment.countDocuments({
@@ -315,7 +333,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     ]);
 
     // Recent activities
-    const recentActivityFilter: any = {};
+    const recentActivityFilter: any = { school: { $in: realSchoolIds } };
     if (user.role !== "super_admin" && user.schoolId) {
       recentActivityFilter.school = new mongoose.Types.ObjectId(user.schoolId);
     }

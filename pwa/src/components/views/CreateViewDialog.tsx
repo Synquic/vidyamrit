@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -64,15 +64,6 @@ const VIEW_TYPE_LABELS: Record<string, string> = {
   cohort: "Group",
 };
 
-const BLOCKS = [
-  "Indore Urban 1",
-  "Indore Urban 2",
-  "Indore Rural",
-  "Sanwer",
-  "Mhow",
-  "Depalpur",
-];
-
 export function CreateViewDialog({
   open,
   onOpenChange,
@@ -102,6 +93,16 @@ export function CreateViewDialog({
     queryFn: getSchools,
     enabled: open,
   });
+
+  // Derived from the schools we already fetched rather than a fixed list, so a
+  // block can never be missing here while schools exist in it.
+  const availableBlocks = useMemo(
+    () =>
+      Array.from(
+        new Set((schools ?? []).map((s) => s.block).filter(Boolean) as string[])
+      ).sort(),
+    [schools]
+  );
 
   // const { data: programsData } = useQuery({
   //   queryKey: ["programs"],
@@ -899,7 +900,12 @@ export function CreateViewDialog({
               <div className="space-y-2">
                 <Label>Allowed Blocks (leave empty for all)</Label>
                 <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
-                  {BLOCKS.map((block) => (
+                  {availableBlocks.length === 0 && (
+                    <p className="text-sm text-muted-foreground p-1">
+                      No blocks found on any school yet.
+                    </p>
+                  )}
+                  {availableBlocks.map((block) => (
                     <div key={block} className="flex items-center space-x-2">
                       <Checkbox
                         id={`block-${block}`}
