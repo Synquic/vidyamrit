@@ -294,6 +294,20 @@ function ViewDashboard() {
 
 /* ============ Overview Section ============ */
 function OverviewSection({ data }: { data: any }) {
+  // Progress is only summarised when the view includes the "student" progress
+  // view — the other progress views (cohort, school, block…) don't carry a
+  // per-student status to count.
+  const progressStudents: { status?: string }[] | undefined =
+    data.progress?.student;
+  const progressingCount =
+    progressStudents?.filter((s) => s.status === "progressing").length ?? 0;
+  const needsAttentionCount =
+    progressStudents?.filter((s) => s.status === "not_progressing").length ?? 0;
+  // Students who aren't in an active group yet. Counted rather than derived by
+  // subtraction so the three rows always reflect the actual statuses.
+  const notAssessedCount =
+    progressStudents?.filter((s) => s.status === "not_assessed").length ?? 0;
+
   const overviewCards = [
     data.schools && {
       title: "Schools",
@@ -359,6 +373,21 @@ function OverviewSection({ data }: { data: any }) {
       mainColor: "text-indigo-700",
       subColor: "text-indigo-600/70",
       stats: [],
+    },
+    progressStudents && {
+      title: "Progress",
+      icon: <TrendingUp className="h-5 w-5 text-teal-600" />,
+      bg: "from-teal-50 to-teal-100/50",
+      border: "border-teal-200/50",
+      iconBg: "bg-teal-500/10",
+      mainValue: progressStudents.length,
+      mainColor: "text-teal-700",
+      subColor: "text-teal-600/70",
+      stats: [
+        { label: "Progressing", value: progressingCount, color: "text-green-600" },
+        { label: "Needs attention", value: needsAttentionCount, color: "text-red-500" },
+        { label: "Not assessed", value: notAssessedCount, color: "text-gray-500" },
+      ],
     },
   ].filter(Boolean) as any[];
 

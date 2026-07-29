@@ -138,6 +138,13 @@ export const restoreStudent = async (id: string): Promise<Student> => {
   return response.data.student;
 };
 
+// Removes an archived student from the app. The backend keeps the record but
+// hides it everywhere, so there is no way to undo this from the UI.
+export const permanentlyDeleteStudent = async (id: string): Promise<string> => {
+  const response = await authAxios.delete(`${baseUrl}/${id}/permanent`);
+  return response.data.studentId;
+};
+
 // Check student cohort assignment status for a school
 export interface StudentCohortStatus {
   totalStudents: number;

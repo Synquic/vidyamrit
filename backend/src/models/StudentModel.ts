@@ -58,6 +58,10 @@ export interface IStudent extends Document {
   isArchived: boolean;
   archivedAt?: Date;
 
+  // Hidden flag (see the query hooks at the bottom of this file)
+  isDeleted: boolean;
+  deletedAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -200,9 +204,15 @@ const StudentSchema = new mongoose.Schema({
   // Additional tracking
   lastAssessmentDate: { type: Date },
 
-  // Archive flag
+  // Archive flag — student moves to the "Inactive" tab, still visible in
+  // cohorts and reports (with an "Inactive" badge).
   isArchived: { type: Boolean, default: false },
   archivedAt: { type: Date },
+
+  // Hidden flag — the record stays in the database but disappears from the
+  // whole app. Set from the Inactive tab; see the query hooks below.
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date },
 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -215,6 +225,33 @@ StudentSchema.index({ roll_no: 1, school: 1 }, { unique: true });
 // Index for knowledgeLevel queries
 StudentSchema.index({ "knowledgeLevel.program": 1 });
 StudentSchema.index({ "knowledgeLevel.subject": 1 });
+StudentSchema.index({ isDeleted: 1 });
+
+// Deleted students are hidden from every read, everywhere in the app, instead
+// of each caller remembering to filter. Student is queried from ~8 controllers
+// and services; filtering per call site would eventually miss one and leak a
+// deleted student into a cohort or report.
+//
+// Pass { includeDeleted: true } via setOptions() to opt out — needed wherever a
+// query must see the whole collection, such as the roll_no uniqueness check
+// (a deleted student still occupies its roll_no in the unique index).
+//
+// Note: isArchived is deliberately untouched here. Archived students keep
+// showing in cohorts and reports with their "Inactive" badge, as before.
+function excludeDeleted(this: any) {
+  if (!this.getOptions?.().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+}
+
+StudentSchema.pre(/^find/, excludeDeleted);
+StudentSchema.pre("countDocuments", excludeDeleted);
+StudentSchema.pre("distinct", excludeDeleted);
+StudentSchema.pre("aggregate", function (this: any) {
+  if (!this.options?.includeDeleted) {
+    this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+  }
+});
 
 // Pre-save middleware to update timestamps
 StudentSchema.pre("save", function (next) {

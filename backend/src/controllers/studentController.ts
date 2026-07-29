@@ -61,10 +61,12 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
       finalRollNo = `STU-${schoolShort}-${timestamp}-${random}`;
       
+      // includeDeleted: a hidden student still occupies its roll_no in the
+      // unique index, so the uniqueness check has to see the whole collection.
       const existingStudent = await Student.findOne({
         roll_no: finalRollNo,
         school: finalSchoolId,
-      });
+      }).setOptions({ includeDeleted: true });
       if (!existingStudent) {
         isUnique = true;
       } else {
@@ -337,6 +339,28 @@ export const addStudentBaselineHistory = async (req: AuthRequest, res: Response)
 };
 
 // Archive student (soft delete)
+// Takes a student out of every group they are currently in.
+//
+// Both sides of the relationship are updated: the id is pulled from
+// Cohort.students (cohort cards read their headcount straight off that array),
+// and the student's own open cohort entries get a dateLeaved so the membership
+// history is kept rather than erased — the same pattern cohortController uses
+// when students are removed from a group by hand.
+const removeStudentFromCohorts = async (studentId: any) => {
+  const cohortResult = await Cohort.updateMany(
+    { students: studentId },
+    { $pull: { students: studentId } }
+  );
+
+  await Student.updateOne(
+    { _id: studentId, "cohort.dateLeaved": { $exists: false } },
+    { $set: { "cohort.$[elem].dateLeaved": new Date() } },
+    { arrayFilters: [{ "elem.dateLeaved": { $exists: false } }] }
+  );
+
+  return cohortResult.modifiedCount;
+};
+
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -358,13 +382,19 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     if (!archivedStudent) {
       return res.status(404).json({ error: "Student not found" });
     }
-    
+
+    // An archived student is no longer being taught, so drop them out of their
+    // groups. They can't be picked again while archived either — the group
+    // picker reads GET /students, which already excludes archived students.
+    // Restoring does not put them back in a group; a tutor re-assigns them.
+    await removeStudentFromCohorts(archivedStudent._id);
+
     // Transform the response to match frontend expectations
     const response = archivedStudent.toObject() as any;
     response.schoolId = response.school;
     delete response.school;
-    
-    res.json({ 
+
+    res.json({
       message: "Student archived successfully",
       student: response
     });
@@ -458,6 +488,58 @@ export const restoreStudent = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error restoring student:", error);
     res.status(500).json({ error: "Failed to restore student" });
+  }
+};
+
+// Hide an archived student from the entire app.
+//
+// The record is kept in the database — attendance, assessments and progress
+// history stay intact — but the query hooks on StudentModel drop it from every
+// read, so it disappears from the Inactive tab, cohorts, reports and analytics.
+// There is no UI to bring it back; that needs direct database access.
+export const permanentlyDeleteStudent = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    // Only reachable from the Inactive tab, so the student must already be
+    // archived. This stops an active student being hidden by a stray request.
+    const query: any = { _id: id, isArchived: true };
+    if (req.user && req.user.role !== UserRole.SUPER_ADMIN) {
+      query.school = req.user.schoolId;
+    }
+
+    const deletedStudent = await Student.findOneAndUpdate(
+      query,
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    if (!deletedStudent) {
+      return res.status(404).json({ error: "Archived student not found" });
+    }
+
+    // Archiving already cleared their groups, so this is normally a no-op —
+    // it covers students archived before that behaviour existed.
+    const cohortsAffected = await removeStudentFromCohorts(deletedStudent._id);
+
+    logger.info(
+      `Student ${deletedStudent._id} hidden by user ${req.user?._id}; removed from ${cohortsAffected} cohort(s)`
+    );
+
+    res.json({
+      message: "Student deleted successfully",
+      studentId: deletedStudent._id,
+    });
+  } catch (error) {
+    console.error("Error deleting student:", error);
+    res.status(500).json({ error: "Failed to delete student" });
   }
 };
 

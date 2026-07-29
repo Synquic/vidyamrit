@@ -57,6 +57,13 @@ const STAKEHOLDER_TYPES: { value: StakeholderType; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
+// The API stores these view types as "cohort"; the rest of the product calls
+// them groups, so only the label differs. Changing the stored value would break
+// the backend switch and every view that has already been saved.
+const VIEW_TYPE_LABELS: Record<string, string> = {
+  cohort: "Group",
+};
+
 const BLOCKS = [
   "Indore Urban 1",
   "Indore Urban 2",
@@ -729,7 +736,6 @@ export function CreateViewDialog({
                     <Label className="text-sm">Progress Views:</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        "group",
                         "student",
                         "school",
                         "block",
@@ -759,7 +765,7 @@ export function CreateViewDialog({
                             htmlFor={`progress-${view}`}
                             className="text-sm capitalize"
                           >
-                            {view}
+                            {VIEW_TYPE_LABELS[view] ?? view}
                           </Label>
                         </div>
                       ))}
@@ -819,7 +825,7 @@ export function CreateViewDialog({
                               htmlFor={`attendance-${view}`}
                               className="text-sm capitalize"
                             >
-                              {view}
+                              {VIEW_TYPE_LABELS[view] ?? view}
                             </Label>
                           </div>
                         )
