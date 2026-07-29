@@ -1,5 +1,8 @@
 import { Response } from "express";
 import School from "../models/SchoolModel";
+import Student from "../models/StudentModel";
+import Cohort from "../models/CohortModel";
+import User from "../models/UserModel";
 import { UserRole } from "../configs/roles";
 import { AuthRequest } from "../types/auth";
 
@@ -95,6 +98,32 @@ export const deleteSchool = async (req: AuthRequest, res: Response) => {
     // Only super admin can delete schools
     if (req.user?.role !== UserRole.SUPER_ADMIN) {
       return res.status(403).json({ error: "Unauthorized" });
+    }
+
+    // Students, groups, tutors, assessments, attendance and view configs all
+    // reference a school by id and none of them are cleaned up here. Deleting a
+    // school that still has records leaves them pointing at an id that no
+    // longer resolves: they stop appearing anywhere in the app while still
+    // being counted, and a tutor left on a deleted school sees an empty
+    // dashboard with no error. So refuse, and say what is in the way.
+    const [studentCount, cohortCount, staffCount] = await Promise.all([
+      Student.countDocuments({ school: req.params.id }),
+      Cohort.countDocuments({ schoolId: req.params.id }),
+      User.countDocuments({ schoolId: req.params.id }),
+    ]);
+
+    if (studentCount || cohortCount || staffCount) {
+      const parts = [
+        studentCount && `${studentCount} student(s)`,
+        cohortCount && `${cohortCount} group(s)`,
+        staffCount && `${staffCount} staff account(s)`,
+      ].filter(Boolean);
+
+      return res.status(400).json({
+        error:
+          `This school still has ${parts.join(", ")}. ` +
+          `Move or archive them first, then delete the school.`,
+      });
     }
 
     const school = await School.findByIdAndDelete(req.params.id);
