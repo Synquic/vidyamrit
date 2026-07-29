@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getMyViewData } from "@/services/views";
+import { getMyViewData, getMyViewStudentLevels } from "@/services/views";
+import StudentLevelsReport from "@/components/reports/StudentLevelsReport";
 import { useAuth } from "@/hooks/useAuth";
 import { logout } from "@/services/auth";
 import { AUTH_ROUTE_PATHS } from "@/routes";
@@ -32,6 +33,7 @@ import {
   Calendar,
   LogOut,
   LayoutDashboard,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +45,8 @@ type SectionKey =
   | "cohorts"
   | "assessments"
   | "progress"
-  | "attendance";
+  | "attendance"
+  | "analytics";
 
 interface SidebarItem {
   key: SectionKey;
@@ -71,6 +74,16 @@ function ViewDashboard() {
   } = useQuery({
     queryKey: ["myViewData"],
     queryFn: getMyViewData,
+    retry: 1,
+  });
+
+  // Analytics is always available on a view dashboard, so this isn't gated on a
+  // config section. Only fetched once the tab is opened — the payload carries a
+  // row per student and there is no reason to pull it for every visit.
+  const { data: studentLevels, isLoading: isLoadingStudentLevels } = useQuery({
+    queryKey: ["myViewStudentLevels"],
+    queryFn: getMyViewStudentLevels,
+    enabled: activeSection === "analytics",
     retry: 1,
   });
 
@@ -126,6 +139,12 @@ function ViewDashboard() {
         label: "Attendance",
         icon: <Calendar className="h-4 w-4" />,
       });
+    // Always present — not one of the toggleable config sections.
+    items.push({
+      key: "analytics",
+      label: "Analytics",
+      icon: <BarChart3 className="h-4 w-4" />,
+    });
     return items;
   }, [viewData]);
 
@@ -165,7 +184,10 @@ function ViewDashboard() {
 
   const { data } = viewData;
 
-  const hasNoData =
+  // Analytics is always available, so an unconfigured view still has something
+  // to show. The "nothing enabled" message now lives inside Overview rather
+  // than replacing the whole dashboard, which would hide Analytics too.
+  const hasNoConfiguredSections =
     !data.schools &&
     !data.tutors &&
     !data.students &&
@@ -202,98 +224,116 @@ function ViewDashboard() {
         </Button>
       </div>
 
-      {hasNoData ? (
-        <div className="flex-1 flex items-center justify-center p-4">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">
-                No data sections are enabled for this view.
-              </p>
-            </CardContent>
-          </Card>
+      {/* Mobile Tabs - horizontal scroll */}
+      <div className="md:hidden border-b overflow-x-auto shrink-0">
+        <div className="flex min-w-max px-2 py-1 gap-1">
+          {sidebarItems.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setActiveSection(item.key)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 text-sm rounded-md whitespace-nowrap transition-colors",
+                activeSection === item.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
         </div>
-      ) : (
-        <>
-          {/* Mobile Tabs - horizontal scroll */}
-          <div className="md:hidden border-b overflow-x-auto shrink-0">
-            <div className="flex min-w-max px-2 py-1 gap-1">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => setActiveSection(item.key)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 text-sm rounded-md whitespace-nowrap transition-colors",
-                    activeSection === item.key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      </div>
 
-          {/* Desktop Layout: Sidebar + Content */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-52 border-r flex-col shrink-0 p-3 gap-1 overflow-y-auto">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => setActiveSection(item.key)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-colors text-left w-full",
-                    activeSection === item.key
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
-              ))}
-            </aside>
+      {/* Desktop Layout: Sidebar + Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:flex w-52 border-r flex-col shrink-0 p-3 gap-1 overflow-y-auto">
+          {sidebarItems.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setActiveSection(item.key)}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg transition-colors text-left w-full",
+                activeSection === item.key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-6">
-              <div className="max-w-6xl mx-auto">
-                {activeSection === "overview" && (
-                  <OverviewSection data={data} />
-                )}
-                {activeSection === "schools" && data.schools && (
-                  <SchoolsSection data={data.schools} />
-                )}
-                {activeSection === "tutors" && data.tutors && (
-                  <TutorsSection data={data.tutors} />
-                )}
-                {activeSection === "students" && data.students && (
-                  <StudentsSection data={data.students} />
-                )}
-                {activeSection === "cohorts" && data.cohorts && (
-                  <GroupsSection data={data.cohorts} />
-                )}
-                {activeSection === "assessments" && data.assessments && (
-                  <TestsSection data={data.assessments} />
-                )}
-                {activeSection === "progress" && data.progress && (
-                  <ProgressSection data={data.progress} />
-                )}
-                {activeSection === "attendance" && data.attendance && (
-                  <AttendanceSection data={data.attendance} />
-                )}
-              </div>
-            </main>
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="max-w-6xl mx-auto">
+            {activeSection === "overview" &&
+              (hasNoConfiguredSections ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-center text-muted-foreground">
+                      No data sections are enabled for this view. Open
+                      Analytics to see student levels.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <OverviewSection data={data} />
+              ))}
+            {activeSection === "schools" && data.schools && (
+              <SchoolsSection data={data.schools} />
+            )}
+            {activeSection === "tutors" && data.tutors && (
+              <TutorsSection data={data.tutors} />
+            )}
+            {activeSection === "students" && data.students && (
+              <StudentsSection data={data.students} />
+            )}
+            {activeSection === "cohorts" && data.cohorts && (
+              <GroupsSection data={data.cohorts} />
+            )}
+            {activeSection === "assessments" && data.assessments && (
+              <TestsSection data={data.assessments} />
+            )}
+            {activeSection === "progress" && data.progress && (
+              <ProgressSection data={data.progress} />
+            )}
+            {activeSection === "attendance" && data.attendance && (
+              <AttendanceSection data={data.attendance} />
+            )}
+            {activeSection === "analytics" &&
+              (isLoadingStudentLevels || !studentLevels ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <StudentLevelsReport data={studentLevels} matrixOnly />
+              ))}
           </div>
-        </>
-      )}
+        </main>
+      </div>
     </div>
   );
 }
 
 /* ============ Overview Section ============ */
 function OverviewSection({ data }: { data: any }) {
+  // Progress is only summarised when the view includes the "student" progress
+  // view — the other progress views (cohort, school, block…) don't carry a
+  // per-student status to count.
+  const progressStudents: { status?: string }[] | undefined =
+    data.progress?.student;
+  const progressingCount =
+    progressStudents?.filter((s) => s.status === "progressing").length ?? 0;
+  const needsAttentionCount =
+    progressStudents?.filter((s) => s.status === "not_progressing").length ?? 0;
+  // Students who aren't in an active group yet. Counted rather than derived by
+  // subtraction so the three rows always reflect the actual statuses.
+  const notAssessedCount =
+    progressStudents?.filter((s) => s.status === "not_assessed").length ?? 0;
+
   const overviewCards = [
     data.schools && {
       title: "Schools",
@@ -359,6 +399,21 @@ function OverviewSection({ data }: { data: any }) {
       mainColor: "text-indigo-700",
       subColor: "text-indigo-600/70",
       stats: [],
+    },
+    progressStudents && {
+      title: "Progress",
+      icon: <TrendingUp className="h-5 w-5 text-teal-600" />,
+      bg: "from-teal-50 to-teal-100/50",
+      border: "border-teal-200/50",
+      iconBg: "bg-teal-500/10",
+      mainValue: progressStudents.length,
+      mainColor: "text-teal-700",
+      subColor: "text-teal-600/70",
+      stats: [
+        { label: "Progressing", value: progressingCount, color: "text-green-600" },
+        { label: "Needs attention", value: needsAttentionCount, color: "text-red-500" },
+        { label: "Not assessed", value: notAssessedCount, color: "text-gray-500" },
+      ],
     },
   ].filter(Boolean) as any[];
 

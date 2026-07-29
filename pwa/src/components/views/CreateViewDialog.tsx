@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -57,14 +57,12 @@ const STAKEHOLDER_TYPES: { value: StakeholderType; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
-const BLOCKS = [
-  "Indore Urban 1",
-  "Indore Urban 2",
-  "Indore Rural",
-  "Sanwer",
-  "Mhow",
-  "Depalpur",
-];
+// The API stores these view types as "cohort"; the rest of the product calls
+// them groups, so only the label differs. Changing the stored value would break
+// the backend switch and every view that has already been saved.
+const VIEW_TYPE_LABELS: Record<string, string> = {
+  cohort: "Group",
+};
 
 export function CreateViewDialog({
   open,
@@ -95,6 +93,16 @@ export function CreateViewDialog({
     queryFn: getSchools,
     enabled: open,
   });
+
+  // Derived from the schools we already fetched rather than a fixed list, so a
+  // block can never be missing here while schools exist in it.
+  const availableBlocks = useMemo(
+    () =>
+      Array.from(
+        new Set((schools ?? []).map((s) => s.block).filter(Boolean) as string[])
+      ).sort(),
+    [schools]
+  );
 
   // const { data: programsData } = useQuery({
   //   queryKey: ["programs"],
@@ -729,7 +737,6 @@ export function CreateViewDialog({
                     <Label className="text-sm">Progress Views:</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        "group",
                         "student",
                         "school",
                         "block",
@@ -759,7 +766,7 @@ export function CreateViewDialog({
                             htmlFor={`progress-${view}`}
                             className="text-sm capitalize"
                           >
-                            {view}
+                            {VIEW_TYPE_LABELS[view] ?? view}
                           </Label>
                         </div>
                       ))}
@@ -819,7 +826,7 @@ export function CreateViewDialog({
                               htmlFor={`attendance-${view}`}
                               className="text-sm capitalize"
                             >
-                              {view}
+                              {VIEW_TYPE_LABELS[view] ?? view}
                             </Label>
                           </div>
                         )
@@ -893,7 +900,12 @@ export function CreateViewDialog({
               <div className="space-y-2">
                 <Label>Allowed Blocks (leave empty for all)</Label>
                 <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2">
-                  {BLOCKS.map((block) => (
+                  {availableBlocks.length === 0 && (
+                    <p className="text-sm text-muted-foreground p-1">
+                      No blocks found on any school yet.
+                    </p>
+                  )}
+                  {availableBlocks.map((block) => (
                     <div key={block} className="flex items-center space-x-2">
                       <Checkbox
                         id={`block-${block}`}

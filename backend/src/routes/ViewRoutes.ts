@@ -8,6 +8,7 @@ import {
   deleteView,
   getViewData,
   getMyViewData,
+  getMyViewStudentLevels,
   activateView,
 } from "../controllers/viewController";
 import { authMiddleware } from "../middlewares/authMiddleware";
@@ -38,6 +39,9 @@ viewRouter.get("/me/view", getMyView);
 
 // Get my view data (for view users) - MUST come before /:id routes
 viewRouter.get("/me/data", getMyViewData);
+
+// Analytics (student levels) data for the signed-in view user
+viewRouter.get("/me/student-levels", getMyViewStudentLevels);
 
 // Get single view - super_admin or view user (their own view)
 viewRouter.get("/:id", getView);

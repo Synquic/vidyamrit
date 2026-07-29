@@ -13,13 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -64,7 +57,21 @@ import { DASHBOARD_ROUTE_PATHS } from "@/routes";
 type ViewMode = "expandable" | "matrix";
 
 interface StudentLevelsReportProps {
-  onBack: () => void;
+  onBack?: () => void;
+  /**
+   * Pre-fetched, already-scoped data. The super admin report leaves this out
+   * and fetches everything itself; the view dashboard passes data that its
+   * own access config has already limited, so this component must not go and
+   * fetch the whole database behind its back.
+   */
+  data?: {
+    schools: SchoolType[];
+    students: Student[];
+    assessments?: Assessment[];
+    programs?: IProgram[];
+  };
+  /** Hides the Expandable/Matrix switch and the per-school drill-down. */
+  matrixOnly?: boolean;
 }
 
 interface GroupedData {
@@ -88,14 +95,19 @@ interface StudentLevelInfo {
 
 export default function StudentLevelsReport({
   onBack,
+  data,
+  matrixOnly = false,
 }: StudentLevelsReportProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [schools, setSchools] = useState<SchoolType[]>([]);
-  const [programs, setPrograms] = useState<IProgram[]>([]);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isProvided = !!data;
+  const [students, setStudents] = useState<Student[]>(data?.students ?? []);
+  const [schools, setSchools] = useState<SchoolType[]>(data?.schools ?? []);
+  const [programs, setPrograms] = useState<IProgram[]>(data?.programs ?? []);
+  const [assessments, setAssessments] = useState<Assessment[]>(
+    data?.assessments ?? []
+  );
+  const [loading, setLoading] = useState(!isProvided);
   const [error, setError] = useState<string | null>(null);
   const [expandedSchools, setExpandedSchools] = useState<Set<string>>(
     new Set()
@@ -105,22 +117,37 @@ export default function StudentLevelsReport({
   );
 
   // New state for enhanced filtering
-  const [viewMode, setViewMode] = useState<ViewMode>("expandable");
-  const [selectedBlock, setSelectedBlock] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    matrixOnly ? "matrix" : "expandable"
+  );
+  // Empty set means every block, matching how selectedSchoolIds works below.
+  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
   const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(
     new Set()
   );
 
-  // Redirect if not super admin
+  // Redirect if not super admin. Skipped when data is supplied, because the
+  // caller has already decided what this user is allowed to see.
   useEffect(() => {
+    if (isProvided) return;
     if (user && user.role !== UserRole.SUPER_ADMIN) {
       navigate(DASHBOARD_ROUTE_PATHS.dashboard);
     }
-  }, [user, navigate]);
+  }, [user, navigate, isProvided]);
 
   useEffect(() => {
+    if (isProvided) return;
     fetchData();
-  }, []);
+  }, [isProvided]);
+
+  // Keep in sync when the caller refetches.
+  useEffect(() => {
+    if (!data) return;
+    setSchools(data.schools);
+    setStudents(data.students);
+    setAssessments(data.assessments ?? []);
+    setPrograms(data.programs ?? []);
+  }, [data]);
 
   const fetchData = async () => {
     try {
@@ -159,13 +186,30 @@ export default function StudentLevelsReport({
     return Array.from(blocks).sort();
   }, [schools]);
 
-  // Filter schools by selected block
+  const isBlockSelected = (block?: string | null) =>
+    selectedBlocks.size === 0 || (!!block && selectedBlocks.has(block));
+
+  const toggleBlock = (block: string) => {
+    setSelectedBlocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(block)) {
+        next.delete(block);
+      } else {
+        next.add(block);
+      }
+      return next;
+    });
+  };
+
+  // Filter schools by selected blocks
   const filteredSchools = useMemo(() => {
-    if (selectedBlock === "all") {
+    if (selectedBlocks.size === 0) {
       return schools;
     }
-    return schools.filter((school) => school.block === selectedBlock);
-  }, [schools, selectedBlock]);
+    return schools.filter(
+      (school) => !!school.block && selectedBlocks.has(school.block)
+    );
+  }, [schools, selectedBlocks]);
 
   // Get effective selected schools (if none selected, use all filtered schools)
   const effectiveSelectedSchoolIds = useMemo(() => {
@@ -423,10 +467,12 @@ export default function StudentLevelsReport({
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 md:mb-8">
-          <Button variant="ghost" onClick={onBack} className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Reports
-          </Button>
+          {onBack && (
+            <Button variant="ghost" onClick={onBack} className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Reports
+            </Button>
+          )}
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">
               Student Levels - Class & School Wise
@@ -442,56 +488,113 @@ export default function StudentLevelsReport({
           <CardContent className="py-4">
             <div className="flex flex-wrap items-center gap-4">
               {/* View Mode Toggle */}
-              <div className="flex items-center gap-2">
-                <Label className="font-medium text-sm whitespace-nowrap">
-                  View:
-                </Label>
-                <div className="flex gap-1">
-                  <Button
-                    variant={viewMode === "expandable" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("expandable")}
-                  >
-                    <List className="mr-1 h-3 w-3" />
-                    Expandable
-                  </Button>
-                  <Button
-                    variant={viewMode === "matrix" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setViewMode("matrix")}
-                  >
-                    <LayoutGrid className="mr-1 h-3 w-3" />
-                    Matrix
-                  </Button>
-                </div>
-              </div>
+              {!matrixOnly && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Label className="font-medium text-sm whitespace-nowrap">
+                      View:
+                    </Label>
+                    <div className="flex gap-1">
+                      <Button
+                        variant={
+                          viewMode === "expandable" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setViewMode("expandable")}
+                      >
+                        <List className="mr-1 h-3 w-3" />
+                        Expandable
+                      </Button>
+                      <Button
+                        variant={viewMode === "matrix" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setViewMode("matrix")}
+                      >
+                        <LayoutGrid className="mr-1 h-3 w-3" />
+                        Matrix
+                      </Button>
+                    </div>
+                  </div>
 
-              <div className="h-6 w-px bg-border hidden sm:block" />
+                  <div className="h-6 w-px bg-border hidden sm:block" />
+                </>
+              )}
 
               {/* Block Filter */}
               <div className="flex items-center gap-2">
                 <Label className="font-medium text-sm whitespace-nowrap">
                   Block:
                 </Label>
-                <Select
-                  value={selectedBlock}
-                  onValueChange={(value) => {
-                    setSelectedBlock(value);
-                    setSelectedSchoolIds(new Set());
-                  }}
-                >
-                  <SelectTrigger className="w-[180px] h-8">
-                    <SelectValue placeholder="Select Block" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Blocks</SelectItem>
-                    {availableBlocks.map((block) => (
-                      <SelectItem key={block} value={block}>
-                        {block}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-[180px] justify-between"
+                    >
+                      <span className="truncate">
+                        {selectedBlocks.size === 0
+                          ? `All Blocks (${availableBlocks.length})`
+                          : selectedBlocks.size === 1
+                          ? Array.from(selectedBlocks)[0]
+                          : `${selectedBlocks.size} blocks selected`}
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[240px] p-0" align="start">
+                    <div className="p-2 border-b flex justify-between items-center">
+                      <span className="text-sm font-medium">Select Blocks</span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() =>
+                            setSelectedBlocks(new Set(availableBlocks))
+                          }
+                        >
+                          All
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setSelectedBlocks(new Set())}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto p-2 space-y-1">
+                      {availableBlocks.length === 0 ? (
+                        <p className="text-sm text-muted-foreground p-2">
+                          No blocks found
+                        </p>
+                      ) : (
+                        availableBlocks.map((block) => (
+                          <div
+                            key={block}
+                            className="flex items-center space-x-2 p-1.5 rounded hover:bg-muted cursor-pointer"
+                            onClick={() => toggleBlock(block)}
+                          >
+                            <Checkbox
+                              id={`block-filter-${block}`}
+                              checked={selectedBlocks.has(block)}
+                              onCheckedChange={() => toggleBlock(block)}
+                            />
+                            <Label
+                              htmlFor={`block-filter-${block}`}
+                              className="text-sm cursor-pointer flex-1 truncate"
+                            >
+                              {block}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               <div className="h-6 w-px bg-border hidden sm:block" />
@@ -608,11 +711,7 @@ export default function StudentLevelsReport({
                 {viewMode === "matrix"
                   ? aggregatedData.totalStudents
                   : Object.values(groupedData)
-                      .filter(
-                        (s) =>
-                          selectedBlock === "all" ||
-                          s.school.block === selectedBlock
-                      )
+                      .filter((s) => isBlockSelected(s.school.block))
                       .reduce(
                         (sum, school) =>
                           sum +
@@ -830,11 +929,7 @@ export default function StudentLevelsReport({
           /* Expandable View - Individual schools */
           <div className="space-y-4">
             {Object.values(groupedData)
-              .filter((schoolData) => {
-                // Filter by selected block
-                if (selectedBlock === "all") return true;
-                return schoolData.school.block === selectedBlock;
-              })
+              .filter((schoolData) => isBlockSelected(schoolData.school.block))
               .map((schoolData) => {
                 const schoolKey = schoolData.school._id;
                 if (!schoolKey) return null;
@@ -1379,8 +1474,10 @@ export default function StudentLevelsReport({
                 Summary{" "}
                 {viewMode === "matrix"
                   ? "(Selected Schools)"
-                  : selectedBlock !== "all"
-                  ? `(${selectedBlock})`
+                  : selectedBlocks.size === 1
+                  ? `(${Array.from(selectedBlocks)[0]})`
+                  : selectedBlocks.size > 1
+                  ? `(${selectedBlocks.size} blocks)`
                   : "(All Schools)"}
               </CardTitle>
             </CardHeader>
@@ -1390,10 +1487,8 @@ export default function StudentLevelsReport({
                   <div className="text-2xl md:text-3xl font-bold">
                     {viewMode === "matrix"
                       ? aggregatedData.totalSchools
-                      : Object.values(groupedData).filter(
-                          (s) =>
-                            selectedBlock === "all" ||
-                            s.school.block === selectedBlock
+                      : Object.values(groupedData).filter((s) =>
+                          isBlockSelected(s.school.block)
                         ).length}
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
@@ -1405,11 +1500,7 @@ export default function StudentLevelsReport({
                     {viewMode === "matrix"
                       ? Object.keys(aggregatedData.classes).length
                       : Object.values(groupedData)
-                          .filter(
-                            (s) =>
-                              selectedBlock === "all" ||
-                              s.school.block === selectedBlock
-                          )
+                          .filter((s) => isBlockSelected(s.school.block))
                           .reduce(
                             (sum, school) =>
                               sum + Object.keys(school.classes).length,
@@ -1425,11 +1516,7 @@ export default function StudentLevelsReport({
                     {viewMode === "matrix"
                       ? aggregatedData.totalStudents
                       : Object.values(groupedData)
-                          .filter(
-                            (s) =>
-                              selectedBlock === "all" ||
-                              s.school.block === selectedBlock
-                          )
+                          .filter((s) => isBlockSelected(s.school.block))
                           .reduce(
                             (sum, school) =>
                               sum +

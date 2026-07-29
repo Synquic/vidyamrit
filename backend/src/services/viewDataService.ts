@@ -1462,3 +1462,51 @@ export async function aggregateViewData(config: IViewConfig) {
   }
 }
 
+
+/**
+ * Raw data behind the Analytics (student levels) screen on a view dashboard.
+ *
+ * The matrix is computed in the browser so its block and school filters stay
+ * instant, which means the client needs per-student rows rather than a
+ * pre-aggregated summary. Everything here is scoped by the view's access
+ * config, and the student projection deliberately leaves out aadharNumber,
+ * apaarId, caste, mobileNumber and guardian contacts — a stakeholder view has
+ * no use for them.
+ */
+export async function getStudentLevelsData(access: IViewConfig["access"]) {
+  const schools = await School.find(buildSchoolFilter(access))
+    .select("name block state city type")
+    .lean();
+
+  if (schools.length === 0) {
+    return { schools: [], students: [], assessments: [] };
+  }
+
+  const schoolIds = schools.map((s) => s._id);
+
+  const studentDocs = await Student.find({
+    school: { $in: schoolIds },
+    isArchived: { $ne: true },
+  })
+    .select("name class school knowledgeLevel")
+    .populate("school", "name")
+    .lean();
+
+  // The report reads student.schoolId, which is the shape GET /students returns.
+  const students = studentDocs.map((doc: any) => {
+    const { school, ...rest } = doc;
+    return { ...rest, schoolId: school };
+  });
+
+  // Fallback source for students whose knowledgeLevel predates the
+  // program/subject structure.
+  const assessments = await Assessment.find({ school: { $in: schoolIds } })
+    .select("student subject level date")
+    .lean();
+
+  logger.info(
+    `getStudentLevelsData: ${schools.length} school(s), ${students.length} student(s)`
+  );
+
+  return { schools, students, assessments };
+}
