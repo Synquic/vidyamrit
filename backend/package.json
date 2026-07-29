@@ -6,9 +6,9 @@
   "author": "ashutosh7i",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "start": "node init && ts-node src/index.ts",
+    "dev": "node init && tsx watch src/index.ts",
+    "build": "node init && tsc",
     "serve": "node dist/index.js",
     "bootstrapSuperAdmin": "ts-node src/utils/bootstrapSuperAdmin.ts",
     "test:attendance-progress": "tsx src/scripts/testAttendanceProgress.ts"

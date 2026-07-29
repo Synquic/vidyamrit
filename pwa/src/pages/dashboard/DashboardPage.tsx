@@ -213,16 +213,13 @@ function DashboardPage() {
           icon={School}
           color="from-orange-500 to-orange-600"
         />
+        {/* No trend here: nothing on this page compares against an earlier
+            period, so the old badge was just active/total wearing an up arrow. */}
         <StatsCard
           title="Total Students"
           value={overview.totalStudents}
           subtitle={`from all schools`}
           icon={Users}
-          trend="up"
-          trendValue={`${(
-            (overview.activeStudents / overview.totalStudents) *
-            100
-          ).toFixed(1)}%`}
           color="from-blue-500 to-blue-600"
         />
         <StatsCard
@@ -250,10 +247,12 @@ function DashboardPage() {
           icon={Target}
           color="from-emerald-500 to-emerald-600"
         />
+        {/* This counts students that aren't archived — it has never had
+            anything to do with the last 30 days. */}
         <StatsCard
           title="Active Students"
           value={overview.activeStudents}
-          subtitle="Engaged in last 30 days"
+          subtitle="Not archived"
           icon={UserCheck}
           color="from-green-500 to-green-600"
         />
@@ -264,15 +263,14 @@ function DashboardPage() {
           icon={UserX}
           color="from-red-500 to-red-600"
         />
+        {/* Success rate dropped: with no ProgramAssessment data the backend
+            falls back to "students whose recorded level is above 0", which is
+            true of almost every student and always read as ~100%. */}
         <StatsCard
           title="Total Tests"
           value={overview.totalAssessments}
-          subtitle={`${overview.assessmentSuccessRate.toFixed(
-            1
-          )}% success rate`}
+          subtitle="Assessments recorded"
           icon={Award}
-          trend="up"
-          trendValue={`${overview.assessmentSuccessRate.toFixed(1)}%`}
           color="from-yellow-500 to-yellow-600"
         />
       </div>
